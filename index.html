@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>BLMF | Catálogo</title>
+<style>
+:root {
+  --bg: #0b0b0b;
+  --panel: #121212;
+  --panel-2: #181818;
+  --line: #2a2a2a;
+  --text: #f5f5f5;
+  --muted: #c9c9c9;
+  --red: #b30018;
+  --red-2: #e11d2f;
+  --shadow: 0 18px 40px rgba(0,0,0,.45);
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; padding: 0; background:
+  radial-gradient(circle at top right, rgba(179,0,24,.18), transparent 32%),
+  linear-gradient(180deg, #090909 0%, #111 100%);
+  color: var(--text);
+  font-family: Inter, Segoe UI, Arial, sans-serif;
+}
+a { color: inherit; }
+.wrap { max-width: 1320px; margin: 0 auto; padding: 24px; }
+.hero {
+  background: linear-gradient(135deg, rgba(179,0,24,.95), rgba(90,0,12,.96));
+  border: 1px solid rgba(255,255,255,.08);
+  border-radius: 22px;
+  padding: 28px;
+  box-shadow: var(--shadow);
+  margin-bottom: 22px;
+}
+.hero h1 {
+  margin: 0 0 8px;
+  font-size: clamp(1.8rem, 3vw, 3rem);
+  line-height: 1.05;
+}
+.hero p {
+  margin: 0;
+  max-width: 900px;
+  color: rgba(255,255,255,.92);
+  font-size: 1rem;
+}
+.note {
+  margin-top: 14px;
+  font-size: .92rem;
+  color: rgba(255,255,255,.9);
+}
+.toolbar {
+  display: grid;
+  grid-template-columns: 1.2fr .8fr .8fr .8fr auto;
+  gap: 12px;
+  margin-bottom: 18px;
+}
+@media (max-width: 980px) {
+  .toolbar { grid-template-columns: 1fr 1fr; }
+}
+@media (max-width: 640px) {
+  .toolbar { grid-template-columns: 1fr; }
+}
+.input, .select, .button {
+  width: 100%;
+  border: 1px solid rgba(255,255,255,.08);
+  background: rgba(18,18,18,.96);
+  color: var(--text);
+  border-radius: 14px;
+  padding: 14px 14px;
+  font-size: .98rem;
+  outline: none;
+  box-shadow: var(--shadow);
+}
+.input:focus, .select:focus {
+  border-color: rgba(225,29,47,.8);
+  box-shadow: 0 0 0 3px rgba(225,29,47,.2);
+}
+.button {
+  cursor: pointer;
+  background: linear-gradient(135deg, var(--red-2), var(--red));
+  border: none;
+  font-weight: 700;
+}
+.stats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin: 0 0 16px;
+}
+.pill {
+  border: 1px solid rgba(255,255,255,.08);
+  background: rgba(24,24,24,.92);
+  color: var(--muted);
+  border-radius: 999px;
+  padding: 8px 12px;
+  font-size: .9rem;
+}
+.sheet {
+  border: 1px solid rgba(255,255,255,.08);
+  border-radius: 22px;
+  overflow: hidden;
+  background: rgba(18,18,18,.96);
+  box-shadow: var(--shadow);
+}
+.sheet-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 14px 18px;
+  background: linear-gradient(180deg, #1a1a1a, #121212);
+  border-bottom: 1px solid rgba(255,255,255,.06);
+}
+.sheet-head .title {
+  font-weight: 700;
+}
+.table-wrap {
+  overflow: auto;
+  max-height: 72vh;
+}
+table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  min-width: 920px;
+}
+thead th {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  text-align: left;
+  padding: 14px 16px;
+  background: linear-gradient(180deg, #26060a, #160407);
+  color: #fff;
+  border-bottom: 1px solid rgba(255,255,255,.08);
+  font-size: .92rem;
+  text-transform: uppercase;
+  letter-spacing: .04em;
+  cursor: pointer;
+}
+tbody td {
+  padding: 12px 16px;
+  border-bottom: 1px solid rgba(255,255,255,.05);
+  color: #f0f0f0;
+  vertical-align: top;
+}
+tbody tr:nth-child(odd) td { background: rgba(255,255,255,.01); }
+tbody tr:hover td { background: rgba(179,0,24,.08); }
+.col-cdd { width: 16%; color: #f7c7cd; }
+.col-ano { width: 10%; white-space: nowrap; }
+.muted { color: var(--muted); }
+.footer {
+  margin-top: 16px;
+  color: var(--muted);
+  font-size: .9rem;
+}
+.small {
+  font-size: .86rem;
+  color: var(--muted);
+}
+.empty {
+  padding: 28px 18px;
+  color: var(--muted);
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <section class="hero">
+    <h1>Catálogo da BLMF</h1>
+    <p>Biblioteca Libertária Maxwell Ferreira · CCLA</p>
+    <p class="note">Página estática pensada para GitHub Pages, em visual de planilha, com busca e filtros rápidos sobre o catálogo limpo.</p>
+  </section>
+
+  <section class="toolbar">
+    <input id="search" class="input" type="search" placeholder="Buscar por autor, título, editora ou CDD…">
+    <select id="authorFilter" class="select">
+      <option value="">Todos os autores</option>
+    </select>
+    <select id="yearFilter" class="select">
+      <option value="">Todos os anos</option>
+    </select>
+    <select id="publisherFilter" class="select">
+      <option value="">Todas as editoras</option>
+    </select>
+    <button id="clearBtn" class="button">Limpar filtros</button>
+  </section>
+
+  <div class="stats">
+    <div class="pill" id="totalPill">Total: 0</div>
+    <div class="pill" id="visiblePill">Exibidos: 0</div>
+    <div class="pill">Colunas: CDD · autor · título · ano · editora</div>
+  </div>
+
+  <section class="sheet">
+    <div class="sheet-head">
+      <div class="title">BLMF · Catálogo consultável</div>
+      <div class="small">Clique no cabeçalho para ordenar</div>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th data-key="CDD">CDD</th>
+            <th data-key="autor">autor</th>
+            <th data-key="titulo">título</th>
+            <th data-key="ano">ano</th>
+            <th data-key="editora">editora</th>
+          </tr>
+        </thead>
+        <tbody id="tbody"></tbody>
+      </table>
+      <div id="empty" class="empty" hidden>Nenhum resultado para os filtros atuais.</div>
+    </div>
+  </section>
+
+  <p class="footer">Observação: a coluna CDD está preparada no layout, mas o backup limpo não preserva um índice CDD consistente e diretamente reutilizável para extração automática. A estrutura da página já permite completar essa coluna depois, sem refazer o restante.</p>
+</div>
+
+<script>
+const rows = [{"CDD": "", "autor": "Abad, Diego", "titulo": "Ricardo Flores Magon o Apostolo da Revolucao Mexicana Ricardo Flores Magon: o Apostolo da Revolucao Mexicana", "ano": "", "editora": "Achiame e Faisca"}, {"CDD": "", "autor": "Addor, Carlos Augusto; Deminicis, Rafael (Orgs.)", "titulo": "Historia do Anarquismo no Brasil", "ano": "2009", "editora": "Robson Achiame"}, {"CDD": "", "autor": "Albert, Michael; Chomsky, Noam; Ortellado, Pablo; Bookchin, Murray; Guillen, Abraham", "titulo": "Autogestao Hoje Teorias e Praticas Contemporaneas Autogestao Hoje - Teorias e Praticas Contemporaneas", "ano": "2004", "editora": "Faisca"}, {"CDD": "", "autor": "Aldegheri, Carlos", "titulo": "Carlos & Anita Aldegheri Vidas Dedicadas Ao Anarquismo", "ano": "2017", "editora": "Nucleo de Estudos Libertarios Carlos Aldegheri & Ccs"}, {"CDD": "", "autor": "Almeida, Angela", "titulo": "Revolucao e Guerra Civil na Espanha", "ano": "1981", "editora": ""}, {"CDD": "", "autor": "Andrade, Manoel Correia de", "titulo": "A Terra e o Homem no Nordeste Brasiliense", "ano": "1963", "editora": ""}, {"CDD": "", "autor": "Andrde; Joaquim Pinto de", "titulo": "Economia Nao Se Aplica Economia Economia", "ano": "2010", "editora": "Joaquim Pinto de Andrade"}, {"CDD": "", "autor": "Angela Maria Roberti Martins e Jose Damiro de Moraes (Org.)", "titulo": "Dimensoes da Cultura e da Experiencia Libertarias", "ano": "2020", "editora": "Editora Ayran / Faperj"}, {"CDD": "", "autor": "Arellano Y Buenrostro, Alejandro", "titulo": "As Raizes do Fenomeno do Chiapas o Ja Basta da Resistencia Zapatista", "ano": "2002", "editora": "Alfarrabio Editora"}, {"CDD": "", "autor": "Arroyos, Floreal Samitier; Rua Jose Luis Garia", "titulo": "Siempre Volviendo a Empezar Cnt Dentro Y Fuera de Espana (1939-2009)", "ano": "2011", "editora": "Centre D´estudis Llibertaris Federica Montseny"}, {"CDD": "", "autor": "Arruda, Carlos", "titulo": "Cabanos Novela Historica Cabanos: Novela Historica 1 Ed", "ano": "1997", "editora": "Cejup"}, {"CDD": "", "autor": "Augusto, Sergio", "titulo": "Bakunin Sangue, Suor e Barricadas Bakunin, Sangue, Suor e Barricadas Papirus", "ano": "1988", "editora": "Maria Aparecida"}, {"CDD": "", "autor": "Azaumbuja, Darcy", "titulo": "Introducao a Ciencia Politica", "ano": "1967", "editora": "Globo S.a."}, {"CDD": "", "autor": "Baena, Antonio", "titulo": "Compendio das Eras das Provincia do para", "ano": "1969", "editora": ""}, {"CDD": "", "autor": "Bakunin, Mikhail", "titulo": "Deus e o Estado", "ano": "2011", "editora": "Hedra"}, {"CDD": "", "autor": "Bakunin, Mikhail", "titulo": "Deus e o Estado", "ano": "2014", "editora": "Hedra"}, {"CDD": "", "autor": "Bakunin, Mikhail", "titulo": "Escritos Contra Marx Conflitos na Internacional", "ano": "1989", "editora": "Novos Tempos Editora"}, {"CDD": "", "autor": "Bakunin, Mikhail", "titulo": "Revolucao e Liberdade Cartas de 1845 a 1875 Revolucao e Liberdade: Cartas de 1845 a 1875 2ª", "ano": "2011", "editora": "Hedra"}, {"CDD": "", "autor": "Baqueiro, Carlos", "titulo": "O Inimigo do Rei Imprimindo Utopias Anarquistas", "ano": "", "editora": ""}, {"CDD": "", "autor": "Barros, Haroldo", "titulo": "Trabalhadores do Comercio no Movimento Sindical Paraense um Estudo Sobre os 80 Anos do Sindicato dos Empregados no Comercio do para (1926 - 2006)", "ano": "2007", "editora": "Robson Jose Guimaraes"}, {"CDD": "", "autor": "Barros, Melka", "titulo": "Memorias da Travessia", "ano": "", "editora": "Cbl"}, {"CDD": "", "autor": "Batista, Paulo Cesar", "titulo": "Joao Batista Martir da Luta Pela Reforma Agraria Violencia e Impunidade no para", "ano": "2009", "editora": "Expressao Popular"}, {"CDD": "", "autor": "Baudelaire, Charles Pierre", "titulo": "Paraisos Artificiais o Opio e Poema do Haxixe Paraisos Artificiais: o Opio e Poema do Haxixe", "ano": "", "editora": ""}, {"CDD": "", "autor": "Bayer, Osvaldo", "titulo": "Los Anarquistas Expropriadores", "ano": "", "editora": "Tristan Navaja"}, {"CDD": "", "autor": "Bayer, Osvaldo", "titulo": "Os Anarquistas Expropriadores", "ano": "2004", "editora": "Luta Libertaria"}, {"CDD": "", "autor": "Beltrao, Jane", "titulo": "Conheca Belem, Comemore o para", "ano": "2008", "editora": "Jose dos Anjos"}, {"CDD": "", "autor": "Bernal, Raul Ornelas", "titulo": "Autonomie, L´axe de La Resistance Zapatiste", "ano": "2007", "editora": "Rue Des Cascades"}, {"CDD": "", "autor": "Bernardo, Joao", "titulo": "O Inimigo Oculto Ensaio Sobre a Luta de Classes. Manifesto Anti-ecologico", "ano": "", "editora": "Afrontamento B11"}, {"CDD": "", "autor": "Berry, Davvvvvvvvvvvvvvvvid", "titulo": "Le Mouvement Anarchiste En France 1917-1945", "ano": "2014", "editora": "Les Editions Libertaires / Editions Noires Et Rouges"}, {"CDD": "", "autor": "Berthier, Rene", "titulo": "Do Federalismo do Federalismo Intermezzo Editorial", "ano": "08/2016", "editora": "Plinio Augusto Coelho"}, {"CDD": "", "autor": "Berthier, Rene; Vilain, Eric", "titulo": "Marxismo e Anarquismo Marxismo e Uniforme", "ano": "2016", "editora": "Intermezzo"}, {"CDD": "", "autor": "Besnard, Pierre", "titulo": "Os Sindicatos Operarios e a Revolucao Social Vol I", "ano": "1988", "editora": "Novos Tempos Editora"}, {"CDD": "", "autor": "Biblioteca Terra Livre", "titulo": "Ferrer Ferrer", "ano": "2021", "editora": "Biblioteca Terra Livre"}, {"CDD": "", "autor": "Bookchin, Murray", "titulo": "Municipalismo Libertario Municipalismo Libertario", "ano": "1999", "editora": "Plinio a. Coelho"}, {"CDD": "", "autor": "Bookchin, Murray", "titulo": "O Bairro, a Comuna, a Cidade... Espacos Libertarios", "ano": "2003", "editora": ""}, {"CDD": "", "autor": "Bookchin, Murray", "titulo": "Pour Une Ecologie Sociale Et Radicale", "ano": "", "editora": "Vincent Gerber"}, {"CDD": "", "autor": "Bringel, Fabiano de Oliveira; Macedo, Catia de Oliveira Junior Paulo Olivio Correa de Aquino (Org)", "titulo": "As Geografias Agrarias a Partir da Panamazonia Lutas Socioambientais e Fronteiras do Capital no Brasil", "ano": "2023", "editora": "Editora Cabana"}, {"CDD": "", "autor": "Bruno, Lucia", "titulo": "O Que e Autonomia Operaria", "ano": "1985", "editora": "Editora Brasiliense"}, {"CDD": "", "autor": "Bruno, Lucia Barreto", "titulo": "O Que e Autonomia Operaria", "ano": "", "editora": "Brasiliense"}, {"CDD": "", "autor": "Bueno, Wilson", "titulo": "Morro do Quiabo o Sonho em Movimento Morro do Quiabo: o Sonho em Movimento Lemos Editorial", "ano": "", "editora": "Paulo Lemos"}, {"CDD": "", "autor": "C.n.t.", "titulo": "A Guerra Civil Espanhola nos Documentos Libertarios", "ano": "1999", "editora": "Plinio Augusto Coelho"}, {"CDD": "", "autor": "Carlos, Juan", "titulo": "A Estrategia do Especifismo", "ano": "", "editora": ""}, {"CDD": "", "autor": "Carneiro, Maria Luiza Tucci", "titulo": "O Racismo na Historia do Brasil Mito e Realidade", "ano": "1999", "editora": "Editora Atica"}, {"CDD": "", "autor": "Carson, Miguel Orduna; Hernandez, Alejandro de La Torre", "titulo": "Historias de Anarquistas", "ano": "2017", "editora": "Secretaria de Cultura- Instituto Nacional de Antropologia Y Historia - Unam"}, {"CDD": "", "autor": "Castro, Claudio Moura", "titulo": "Ciencia e Universidade", "ano": "1985", "editora": "Jorge Zahar Editor"}, {"CDD": "", "autor": "Cerruti, Isabel", "titulo": "O Triunfo da Anarquia e Outros Escritos", "ano": "2018", "editora": "Biblioteca Terra Livre"}, {"CDD": "", "autor": "Chinem, Rivaldo", "titulo": "Sentenca Padres e Posseiros do Araguaia", "ano": "1983", "editora": "Paz e Terra"}, {"CDD": "", "autor": "Chomsky, Noam", "titulo": "Governo no Futuro --", "ano": "2007", "editora": "Record Ltda"}, {"CDD": "", "autor": "Cirano, Marcos", "titulo": "Os Caminhos de Dom Helder Perseguicoes e Censuras Editora Guararapes", "ano": "1983", "editora": ""}, {"CDD": "", "autor": "Codello, Francesco", "titulo": "A Boa Educacao Experiencias Libertarias e Teorias Anarquistas na Europa, de Godwin a Neill. a Boa Educacao: Experiencias Libertarias e Teorias Anarquistas na Europa, de Godwin a Neill.", "ano": "2007", "editora": "Editora Imaginario"}, {"CDD": "", "autor": "Codello, Francesco", "titulo": "Nem Obedecer Nem Comandar", "ano": "", "editora": "Barricada de Livros"}, {"CDD": "", "autor": "Coelho, Geraldo Martires", "titulo": "Anarquistas, Demagogos e Dissidentes a Imprensa Liberal no para de 1822", "ano": "1987", "editora": "Cejup"}, {"CDD": "", "autor": "Collins, Jeff", "titulo": "Heidegger e os Nazistas", "ano": "2006", "editora": "Fernanda Gurgel"}, {"CDD": "", "autor": "Colombo, Eduardo; Creagh, Ronald; Castellanos, Heloisa; Garnier, J.p.", "titulo": "Politicas do Medo", "ano": "2016", "editora": "Intermezzo"}, {"CDD": "", "autor": "Comite de Mulheres - a Resistencia e Vida", "titulo": "Mulher, Vida, Liberdade!", "ano": "", "editora": "Comite de Mulheres - a Resistencia e Vida"}, {"CDD": "", "autor": "Comite de Solidariedade a Resistencia Curda- Sao Paulo Sao Paulo, Brasil", "titulo": "Sobresa Rojavaye Revolucao, uma Palavra Feminina.", "ano": "", "editora": ""}, {"CDD": "", "autor": "Cordeiro, Cristiano", "titulo": "Memoria & Historia", "ano": "1982", "editora": "Angela Maria"}, {"CDD": "", "autor": "Correa, Felipe", "titulo": "Criar um Povo Forte Contribuicoes para a Discussao Sobre Poder Popular", "ano": "2010", "editora": "Editora Faisca"}, {"CDD": "", "autor": "Correa, Felipe", "titulo": "Teoria Bakuniniana do Estado", "ano": "", "editora": ""}, {"CDD": "", "autor": "Costa, Tulio", "titulo": "O Que e Anarquismo", "ano": "1985", "editora": "Vanya Sant'anna"}, {"CDD": "", "autor": "Crimethinc", "titulo": "Da Democracia a Liberdade Diferenca Entre Governo e Autodeterminacao", "ano": "", "editora": ""}, {"CDD": "", "autor": "Cubero, Jaime", "titulo": "Jaime Cubero Selecao de Textos e Entrevistas Jaime Cubero: Selecao de Textos e Entrevistas Centro de Cultura Social", "ano": "2017", "editora": "Luiz Maria Veiga"}, {"CDD": "", "autor": "D. Paulo Evaristo, Cardeal Arns", "titulo": "Brasil Nunca Mais Vozes", "ano": "1985", "editora": ""}, {"CDD": "", "autor": "Danton, Jose", "titulo": "Problemas e Possibilidades para o Anarquismo America Latina –", "ano": "", "editora": "Felipe Correa"}, {"CDD": "", "autor": "De Beavoir, Simone", "titulo": "Os Mandarins os Mandarins", "ano": "", "editora": "Difusao Europeia do Livro"}, {"CDD": "", "autor": "De Castro, Paulo", "titulo": "Do Colonialismo de Israel a Libertacao da Palestina", "ano": "1969", "editora": ""}, {"CDD": "", "autor": "De Cleyre, Voltairine", "titulo": "Acao Direta e Outros Escritos", "ano": "2023", "editora": "Hedra"}, {"CDD": "", "autor": "Deleuze, Gilles", "titulo": "Nietzsche e a Filosofia", "ano": "1976", "editora": "Editora Rio"}, {"CDD": "", "autor": "Dell´umbria, Alexis", "titulo": "Echos Du Mexique Indien Et Rebelle", "ano": "2006", "editora": "Rue Des Cascades"}, {"CDD": "", "autor": "Di Paolo, Pasquale", "titulo": "Cabanagem a Revolucao Popular da Amazonia Cabanagem, a Revolucao Popular da Amazonia Edicoes Cejup", "ano": "05/1985", "editora": "Gengis Freire"}, {"CDD": "", "autor": "Diniz, Elias", "titulo": "A Luta Pela Terra Numa Parte da Amazonia o Tragico 07 de Setembro de 1984 em Moju e Seus Desdobramentos", "ano": "2009", "editora": "Raimundo Sergio; William Gaia e Jose Miguel Alves"}, {"CDD": "", "autor": "Domingo, Paola; Lara-alegrin, Lara; Benmiloud, Karim (Coord)", "titulo": "Amerique(s) Anarchiste(s) Expressions Libertaires Du Xixe Au Xxie Siecle Amerique(s) Anarchiste(s): Expressions Libertaires Du Xixe Au Xxie Siecle", "ano": "", "editora": "America Libertaria"}, {"CDD": "", "autor": "Durkheim, Emile", "titulo": "As Regras do Metodo Sociologico", "ano": "2011", "editora": "Martin Claret"}, {"CDD": "", "autor": "Editora Imaginario/ Iel", "titulo": "Durruti da Revolucao a Revolta Durruti: da Revolucao a Revolta", "ano": "2013", "editora": "Editora Imaginario"}, {"CDD": "", "autor": "Emece, Fabio", "titulo": "Sujeito Sujeito Sujeito Sujeito", "ano": "2021", "editora": "Cafofo Selo e Editora"}, {"CDD": "", "autor": "Enio Silveira", "titulo": "Encontros Com a Civilizacao Brasileira Nao Se Aplica", "ano": "1978", "editora": "Enio Silveira"}, {"CDD": "", "autor": "Enio Silveira (Orgs.)", "titulo": "Encontros Com a Civilizacao Brasileira Nao Se Aplica", "ano": "1979", "editora": "Regina Melo Brandao"}, {"CDD": "", "autor": "Ervin, Lorenzo Kom'boa", "titulo": "A Plantation Progressista Racismo Dentro dos Grupos de Esquerda Radical a Plantation Progressista: Racismo Dentro dos Grupos de Esquerda Radical", "ano": "06/2023", "editora": "Escurecendo o Anarquismo"}, {"CDD": "", "autor": "Ervin, Lorenzo Kom´boa", "titulo": "Anarquismo e Revolucao Negra e Outros Textos do Anarquismo Negro", "ano": "2015", "editora": "Coletivo Editorial Singular"}, {"CDD": "", "autor": "Evaldo Cabral de Mello", "titulo": "Frei Joaquim do Amor Divino Caneca 34 Ltda", "ano": "", "editora": ""}, {"CDD": "", "autor": "Evaldo Cabral de Mello", "titulo": "Olinda Restaurada Guerra e Acucar no Nordeste - (1630-1654) Topbooks", "ano": "1998", "editora": ""}, {"CDD": "", "autor": "Faculdade de Letras Universidade Federal do Rio de Janeiro", "titulo": "Estudos Neolatinos Estudos Neolatinos", "ano": "2012", "editora": "Alea"}, {"CDD": "", "autor": "Federacao Anarquista do Rio de Janeiro (Farj)", "titulo": "Anarquismo Social e Organizacao", "ano": "2008", "editora": "Alexandre Barbosa de Souza e Bruno Costa"}, {"CDD": "", "autor": "Fernandes, Rubem Cesar (Org)", "titulo": "Dilemas do Socialismo a Controversia Entre Marx, Engels e os Populistas Russos Dilemas do Socialismo: a Controversia Entre Marx, Engels e os Populistas Russos", "ano": "1982", "editora": "Paz e Terra"}, {"CDD": "", "autor": "Ferreira, Andrey Cordeiro; Toniatti, Tadeu Bernardes de Souza (Org.) (Org.)", "titulo": "De Baixo para Cima e da Periferia para o Centro Textos Politicos, Filosoficos e de Teoria Sociologica de Mikhail Bakunin", "ano": "2014", "editora": "Alternativa"}, {"CDD": "", "autor": "Freire Roberto", "titulo": "Soma uma Terapia Anarquista", "ano": "1993", "editora": ""}, {"CDD": "", "autor": "Freire, Susanita", "titulo": "O Fim de um Simbolo Theatro Joao Minhoca: Companhia Authomatica", "ano": "2000", "editora": "Achiame"}, {"CDD": "", "autor": "Freitas, Allan de", "titulo": "Lumpen Sociedade das Bolhas Lumpen: Sociedade das Bolhas", "ano": "2017", "editora": "Biblioteca Terra Livre/ Laboratorio de Educacao Anarquista"}, {"CDD": "", "autor": "Freitas, Allan de; Debs, Vinicios", "titulo": "Banqueiro X Bancaria", "ano": "2018", "editora": "Biblioteca Terra Livre"}, {"CDD": "", "autor": "Freitas, Decio", "titulo": "A Miseravel Revolucao das Classes Infames", "ano": "2005", "editora": "Record"}, {"CDD": "", "autor": "Fucik, Julius; Alleg, Henri; Serge, Victor", "titulo": "A Hora Obscura Testemunhas da Repressao Politica", "ano": "", "editora": ""}, {"CDD": "", "autor": "Galeano, Eduardo", "titulo": "As Veias Abertas da America Latina", "ano": "1976", "editora": "Antonio Candido; Fernando Gasparian e Fernando Henrique Cardoso"}, {"CDD": "", "autor": "Gelderloos, Peter", "titulo": "Como a Nao Violencia Protege o Estado", "ano": "2011", "editora": "Editora Deriva"}, {"CDD": "", "autor": "Gelderloos, Peter", "titulo": "Como a Nao-violencia Protege o Estado", "ano": "", "editora": "Subta"}, {"CDD": "", "autor": "Giannini, Giancarlo", "titulo": "Amor e Anarquia", "ano": "", "editora": ""}, {"CDD": "", "autor": "Gimenez, Antoine & Les Gimenologues", "titulo": "Les Fils de La Nuit 1. Souvenirs de La Guerre D´espagne", "ano": "2016", "editora": "Libertalia"}, {"CDD": "", "autor": "Gimenez, Antoine; Les Guimenologues", "titulo": "Les Fils de La Nuit 2. a La Recherche Des Fils de La Nuit", "ano": "2016", "editora": "Libertalia"}, {"CDD": "", "autor": "Goldfeder, Sonia", "titulo": "A Primavera de Praga", "ano": "1981", "editora": "Kazumi Munakata"}, {"CDD": "", "autor": "Goldman, Emma", "titulo": "O Individuo, a Sociedade e o Estado, e Outros Ensaios", "ano": "2011", "editora": "Hedra"}, {"CDD": "", "autor": "Goldsmith, Raymond", "titulo": "Desenvolvimento Financeiro Sob um Seculo de Inflacao Brasil 1850-1984 Harper & Row do Brasil Ltda", "ano": "1986", "editora": "Claudio R. Contador"}, {"CDD": "", "autor": "Gomez, Francisco Pineda", "titulo": "La Revolucion Del Sur 1912-1914 La Revolicion Del Sur 1912-1914 1. Ed", "ano": "2005", "editora": "Ediciones Era"}, {"CDD": "", "autor": "Goncalves, Adelaide", "titulo": "A Bibliografia Libertaria um Seculo de Anarquismo em Lingua Portuguesa a Bibliografia Libertaria, um Seculo de Anarquismo em Lingua Portuguesa Editora Imaginario / Nu-sol", "ano": "1919", "editora": "Plinio a. a. Coelho"}, {"CDD": "", "autor": "Goncalves, Adelaide - Silva, Jorge", "titulo": "A Imprensa Libertaria do Ceara (1908-1922)", "ano": "", "editora": ""}, {"CDD": "", "autor": "Goncalves, Adelaide; Bruno, Allyson; Queiroz, Camila (Org)", "titulo": "Maria Lacerda de Moura Renovacao 1919", "ano": "2015", "editora": "Ufc"}, {"CDD": "", "autor": "Goutte, Guillaume", "titulo": "Tout Pour Tous L´experience Zapatiste, Une Alternative Concrete Au Capitalisme Tout Pour Tous: L´experience Zapatiste, Une Alternative Concrete Au Capitalisme", "ano": "", "editora": "Libertalia"}, {"CDD": "", "autor": "Graeber, David", "titulo": "Fragmentos de Antropologia Anarquista", "ano": "2011", "editora": "Editora Deriva"}, {"CDD": "", "autor": "Graeber, David", "titulo": "Fragmentos de uma Antropologia Anarquista", "ano": "2011", "editora": "Paulo Capra"}, {"CDD": "", "autor": "Greaber, David", "titulo": "O Anarquismos no Seculo Xxi e Outros Ensaios o Anarquismo no Seculo Xxi: e Outros Ensaios 1. Ed", "ano": "", "editora": "Coletivo Coisa Preta"}, {"CDD": "", "autor": "Green, Gilbert", "titulo": "Anarquismo Ou Marxismo uma Opcao Politica Achiame Ltda", "ano": "1982", "editora": "Robson Achiame Fernandes"}, {"CDD": "", "autor": "Grupo de Anarquistas Russos no Estrangeiro [Dielo Dutra]", "titulo": "A Plataforma Organizacional", "ano": "2017", "editora": "Faisca"}, {"CDD": "", "autor": "Guerin, Daniel", "titulo": "A Revolucao Sexual", "ano": "1980", "editora": "Brasiliense"}, {"CDD": "", "autor": "Guerin, Daniel", "titulo": "Ni Dieu Ni Maitre Anthologie de L´anarchisme", "ano": "1999", "editora": "La Decouverte"}, {"CDD": "", "autor": "Guerin, Daniel", "titulo": "Ni Dieu Ni Maitre Anthologie de L´anarchisme. Vol Ii", "ano": "1999", "editora": "La Decouverte"}, {"CDD": "", "autor": "Guerin, Daniel", "titulo": "Ni Dieu Ni Maitres Anthologie de L´anarchisme. Vol.i", "ano": "1999", "editora": "La Decouverte"}, {"CDD": "", "autor": "Guillaume, James", "titulo": "A Internacional Documentos e Recordacoes 1 a Internacional: Documentos e Recordacoes 1 1", "ano": "2009", "editora": "Faisca Publicacoes Libertarias/ Editora Imaginario"}, {"CDD": "", "autor": "Harnecker, Marta", "titulo": "Os Desafios da Esquerda Latino-americana", "ano": "2000", "editora": "Expressao Popular"}, {"CDD": "", "autor": "Hobsbawm, Eric J.", "titulo": "Revolucionarios Ensaios Contemporaneos Revolucionarios: Ensaios Contemporaneos", "ano": "1982", "editora": "Paz e Terra"}, {"CDD": "", "autor": "Invernizzi, Gabriele; Ceberio, Jesus; Pisani, Francis", "titulo": "Sandinistas Entrevistas Com Lideres Sandinistas: Bayardo Arce, Humberto Ortega e Jaime Wheelock Sandinistas: Entrevistas Com Lideres Sandinistas: Bayardo Arce, Humberto Ortega e Jaime Wheelock", "ano": "1985", "editora": "Brasiliense Sa"}, {"CDD": "", "autor": "Iv Internacional", "titulo": "Documentos de Fundacao da Iv Internacional Congresso de 1938", "ano": "2008", "editora": "Sundermann"}, {"CDD": "", "autor": "Jacob, Mat", "titulo": "Chiapas Insurrection Zapatiste Au Mexique Chiapas: Insurrection Zapatiste Au Mexique", "ano": "2015", "editora": "Actes Sud"}, {"CDD": "", "autor": "Joffily, Bernardo", "titulo": "Osvaldao e a Saga do Araguaia", "ano": "", "editora": "Expressao Popular"}, {"CDD": "", "autor": "Jose Alvaro Moises", "titulo": "Greve de Massa e Crise Politica Estudo da Crise dos 300 Mil (1953-1954) Polis", "ano": "1978", "editora": "Jose Alvaro Moises"}, {"CDD": "", "autor": "Karila-cohen, Pierre; Wilfert, Blaise", "titulo": "Lecon D´histoire Sur Le Syndicalisme En France", "ano": "1998", "editora": "Puf"}, {"CDD": "", "autor": "Koval, Boris", "titulo": "Historia do Proletariado Brasileiro 1857 a 1967 Alfa-omega", "ano": "1982", "editora": "Clarisse de Lima Averina"}, {"CDD": "", "autor": "Kropotkin, Piotr", "titulo": "A Conquista do Pao", "ano": "2011", "editora": "Robson Achiame"}, {"CDD": "", "autor": "Kropotkin, Piotr", "titulo": "El Apoyo Mutuo Un Factor de Evolucion El Apoyo Mutuo: Un Factor de Evolucion", "ano": "2019", "editora": "Espartako&crixos Editorial"}, {"CDD": "", "autor": "Kropotkin, Piotr", "titulo": "Socialismo Socialismo", "ano": "2021", "editora": "Intermezzo; Biblioteca Terra Livre"}, {"CDD": "", "autor": "Kropotkin, Piotr Alexeievich.", "titulo": "Memorias de um Revolucionario", "ano": "", "editora": "Centro de Cultura Social Ccs"}, {"CDD": "", "autor": "Latouche, Serge", "titulo": "A Ocidentalizacao do Mundo Ensaio Sobre a Significacao, o Alcance e os Limites da Uniformizacao Planetaria", "ano": "1994", "editora": "Vozes"}, {"CDD": "", "autor": "Latouche, Serge", "titulo": "Os Perigos do Mercado Planetario", "ano": "1998", "editora": "Instituto Piaget"}, {"CDD": "", "autor": "Le Guin, Ursula K.", "titulo": "O Dia Antes da Revolucao e Outros Contos", "ano": "2021", "editora": "Barricada de Livros"}, {"CDD": "", "autor": "Lenin, Vladimir Ilich", "titulo": "Imperialismo Fase Superior do Capitalismo Imperialismo: Fase Superior do Capitalismo 6º Edicao", "ano": "1991", "editora": ""}, {"CDD": "", "autor": "Lenin, Vladimir; Betto, Frei; Castro, Fidel", "titulo": "As Tarefas Revolucionarias da Juventude", "ano": "2000", "editora": "Expressao Popular"}, {"CDD": "", "autor": "Lenoir, Hugues.", "titulo": "Educar para Emancipar", "ano": "2007", "editora": "Universidade Federal do Amazonas"}, {"CDD": "", "autor": "Leslie, Sheldon", "titulo": "Anarquistas, Imigrantes e o Movimento Operario Brasileiro 1890-1920", "ano": "1979", "editora": "Antonio Candido"}, {"CDD": "", "autor": "Leuenroth, Edgard", "titulo": "O Movimento Operario a Greve de 1917 o Movimento Operario: a Greve de 1917 Ccs", "ano": "2021", "editora": "Antonio Carlos de Oliveira"}, {"CDD": "", "autor": "Lipiansky, Edmond Marc", "titulo": "A Pedagogia Libertaria", "ano": "1999", "editora": "Plinio a. Coelho"}, {"CDD": "", "autor": "Lobo, Elisabeth", "titulo": "Emma Goldman Emma Goldman Encanto Radical", "ano": "1983", "editora": "Nilton Sodre"}, {"CDD": "", "autor": "Lobo, Elizabeth Souza", "titulo": "Emma Goldman a Vida Como Revolucao Emma Goldman - a Vida Como Revolucao", "ano": "1993", "editora": "Brasiliense"}, {"CDD": "", "autor": "Ludmila, Aline Et Al", "titulo": "Unidas nos Lancemos na Luta o Legado Anarquista de Maria.a,soares", "ano": "2022", "editora": "Tenda de Livros"}, {"CDD": "", "autor": "Ludmila, Aline Et Al (Org.)", "titulo": "Historia de um Ideal Vivido por uma Mulher e Textos Escolhidos de Juana Rouco Buela", "ano": "2022", "editora": "Tenda de Livros"}, {"CDD": "", "autor": "Luiz, Jaddson; Indio, Joker; Hardcore, Jhonny; Knup, Marina; Remigio, Mauricio; Velho Valo", "titulo": "Amazonia em Kaos Relatos Punk Abaixo da Linha do Equador", "ano": "2020", "editora": "Monstro dos Mares"}, {"CDD": "", "autor": "Luxemburgo, Rosa", "titulo": "Reforma Ou Revolucao? Expressao Popular", "ano": "2015", "editora": "Ricardo Nascimento Barreiros"}, {"CDD": "", "autor": "Magnani, Silvia Lang", "titulo": "O Movimento Anarquista em Sp (1906-1917)", "ano": "1982", "editora": "Editora Brasiliense"}, {"CDD": "", "autor": "Maitron, Jean", "titulo": "Le Mouvement Anarchiste En France 1.des Origines a 1914 Tel Gaillimard", "ano": "", "editora": ""}, {"CDD": "", "autor": "Maitron, Jean", "titulo": "Le Mouvement Anarchiste En France 2. de 1914 a nos Jours", "ano": "", "editora": "Tel Gaillimard"}, {"CDD": "", "autor": "Makhno, Nestor", "titulo": "Anarquia & Organizacao Plataforma de Organizacao e Outros Escritos Anarquia & Organizacao: Plataforma de Organizacao e Outros Escritos", "ano": "", "editora": "Angelo Bruno"}, {"CDD": "", "autor": "Malatesta, Bakunin, Kropotkin, Engels e D. Guerin", "titulo": "O Anarquismo e a Democracia Burguesa", "ano": "", "editora": "Armandina Venancio"}, {"CDD": "", "autor": "Malatesta, Errico", "titulo": "Anarquistas, Socialistas e Comunistas", "ano": "1989", "editora": "Cortez"}, {"CDD": "", "autor": "Malatesta, Errico", "titulo": "Escritos Revolucionarios Escritos Revolucionarios", "ano": "1989", "editora": "Novos Tempos Escritora"}, {"CDD": "", "autor": "Malatesta,enrico", "titulo": "Escritos Revolucionarios Escritos Revolucionarios Novos Tempos", "ano": "", "editora": "Plinio Augusto Coelho"}, {"CDD": "", "autor": "Maria Nazareth Ferreira", "titulo": "A Imprensa Operaria no Brasil 1880-1920 Vozes", "ano": "1978", "editora": "Jose Marques de Melo"}, {"CDD": "", "autor": "Marx, Karl", "titulo": "O Capital o Capital", "ano": "1961", "editora": "Melso S.a."}, {"CDD": "", "autor": "Marx, Karl - Engels, Frederich", "titulo": "A Ideologia Alema (Feuerbath) Heucitec", "ano": "1989", "editora": "Florestan Fernandes"}, {"CDD": "", "autor": "Marx, Karl; Engels, F.", "titulo": "O Anarquismo o Anarquismo", "ano": "1987", "editora": "Editora Academica"}, {"CDD": "", "autor": "Matos, Andityas Soares de Costa", "titulo": "A An-arquia Que Vem Fragmentos de um Dicionario de Politica Radical", "ano": "2022", "editora": "Sobinfluencia"}, {"CDD": "", "autor": "Mayer, Arno, J", "titulo": "Dinamica da Contra-revolucao na Europa 1870-1956", "ano": "1977", "editora": "Paz e Terra"}, {"CDD": "", "autor": "Mbah, Sam; Igariwey, I.e", "titulo": "Anarquismos Africanos a Historia de um Movimento Anarquismo Africano - a Historia de um Movimento", "ano": "2023", "editora": "Escurecendo o Anarquismo"}, {"CDD": "", "autor": "Mc Cabe, Mary Alice - Org Sister Of Notre Dame de Namur", "titulo": "A Nossa Luta Foi uma Luta Sagrada o Povo do Assentamento Maceio Conta a Historia da Sua Luta Pela Terra Instituto Terramar", "ano": "", "editora": "Instituto Terra Mar"}, {"CDD": "", "autor": "Michael Albert - Noam Chomsky - Pablo Ortellando - Murray Bookchin - Abraham Guillen", "titulo": "Autogestao Hoje Teorias e Praticas Contemporaneas Autogestao Hoje: Teorias e Praticas Contemporaneas Faisca", "ano": "2004", "editora": "Vitor Reis"}, {"CDD": "", "autor": "Mintz, Frank", "titulo": "Autogestao e Anarcossindicalismo Analise e Criticas Relativas a Espanha, 1931-1990", "ano": "2016", "editora": "Intermezzo; Ccs; Iel"}, {"CDD": "", "autor": "Mitsue Morissawa", "titulo": "A Historia da Luta Pela Terra e o MST Expressao Popular", "ano": "", "editora": ""}, {"CDD": "", "autor": "Moacyr Felix (Orgs.)", "titulo": "Encontros Com a Civilizacao Brasileira Nao Se Aplica", "ano": "", "editora": ""}, {"CDD": "", "autor": "Moarcyr Felix (Org.)", "titulo": "Encontros Com a Civilizacao Brasileira Nao Se Aplica", "ano": "1978", "editora": "Enio Silveira"}, {"CDD": "", "autor": "Moraes, Carla Kelen de Andrade. Acioli, Edane de Jesus Franca Et Al.", "titulo": "Terceira Margem Amazonia Outras Expressoes :terceira Margem Amazonia: Outras Expressoes 1 Ed", "ano": "2012", "editora": "Outras Expressoes"}, {"CDD": "", "autor": "Moraes, Wallace.", "titulo": "Brasil e Venezuela. Historico das Relacoes Trabalhistas de 1889 Ate Lula e Chaves", "ano": "2011", "editora": "Robson Achiame"}, {"CDD": "", "autor": "Motta, Fernando, C, Prestes", "titulo": "Burocracia e Autogestao a Proposta de Proudhon", "ano": "1981", "editora": "Brasiliense"}, {"CDD": "", "autor": "Nepomuceno, Eric", "titulo": "Emiliano Zapata Tierra Y Libertad! Emiliano Zapata - Tierra Y Libertad! Brasiliense", "ano": "1982", "editora": "Jose W. Moraes"}, {"CDD": "", "autor": "Nettlau, Max", "titulo": "Historia da Anarquia das Origens Ao Anarco-comunismo Historia da Anarquia: das Origens Ao Anarco-comunismo Hedra Ltda", "ano": "2008", "editora": "Plinio Augusto Coelho"}, {"CDD": "", "autor": "Nucleo de Estudos Libertarios - Carlo Aldegheri", "titulo": "Memorias de um Exilado Everaldo Dias - Episodios de Deportacao", "ano": "2022", "editora": "Nelca"}, {"CDD": "", "autor": "Nucleo de Sociabilidade Libertaria", "titulo": "Verve Verve Programa de Estudos Pos-graduados em Ciencias Sociais Puc-sp", "ano": "2012", "editora": "Nucleo de Sociabilidade Libertaria"}, {"CDD": "", "autor": "Ocalan, Abdullah", "titulo": "Libertando a Vida a Revolucao das Mulheres", "ano": "2016", "editora": "Fundacao Lauro Campos"}, {"CDD": "", "autor": "Oiticica, Jose", "titulo": "A Doutrina Anarquista Ao Alcance de Todos", "ano": "", "editora": "Cip-brasil"}, {"CDD": "", "autor": "Oliveira, Jane", "titulo": "Intervencao na America Latina", "ano": "2002", "editora": "Robson Achiame"}, {"CDD": "", "autor": "Oliveira, Persio", "titulo": "Introducao a Sociologia", "ano": "1995", "editora": "Joao Guizzo"}, {"CDD": "", "autor": "Organizacao no Gods no Masters e Imprensa Marginal", "titulo": "Eles nos Devem uma Vida Crass: Escritos, Dialogos e Gritos", "ano": "2017", "editora": "Imprensa Marginal"}, {"CDD": "", "autor": "Orwell, George", "titulo": "Lutando na Espanha e o Ensaio: Recordando a Guerra Civil", "ano": "1967", "editora": ""}, {"CDD": "", "autor": "Palheta, Aercio", "titulo": "A Revolucao dos Cabanos em Perguntas e Respostas", "ano": "2009", "editora": "Alvaro Jinkings & Paulo Palmieri"}, {"CDD": "", "autor": "Parsons, Lucy", "titulo": "Mais Prigosa Que Mil Manifestante uma Colecao de Textos", "ano": "2023", "editora": "Escurecendo o Anarquismo"}, {"CDD": "", "autor": "Passetti, Edson", "titulo": "Anarquismo Urgente Anarquismo Urgente", "ano": "", "editora": "Centro de Cultura Social - Ccs"}, {"CDD": "", "autor": "Pereira, Almir", "titulo": "Escorco Historico dos Atos da Revolucao de 30 no para", "ano": "1998", "editora": ""}, {"CDD": "", "autor": "Petitfils, Jean-christian", "titulo": "Os Socialismos Utopicos", "ano": "1977", "editora": "Circulo do Livro S.a"}, {"CDD": "", "autor": "Pinho, Adelino Tavares", "titulo": "Pela Educacao e Pelo Trabalho e Outros Escritos", "ano": "2015", "editora": "Biblioteca Terra Livre"}, {"CDD": "", "autor": "Pinto, Lucio Flavio", "titulo": "Album da Memoria o para do Seculo Xx Edicao Jornal Pessoal", "ano": "2014", "editora": "Smith Producoes Graficas Ltda"}, {"CDD": "", "autor": "Poitena, Andreza; Nimbopyrua, Catarina; Takua, Simone", "titulo": "Remedio do Mato Cura e Cultura Atraves da Floresta", "ano": "2023", "editora": "Cultive Resistencia"}, {"CDD": "", "autor": "Pomer, Leon", "titulo": "As Independencias na America Latina", "ano": "1981", "editora": "Jose e. Andrade"}, {"CDD": "", "autor": "Portella. Ana Paula; Bezerra Sheila Bezerra", "titulo": "Biopoder e Tecnologias Reprodutivas", "ano": "2008", "editora": "Sidney, Wanderley"}, {"CDD": "", "autor": "Proudhon", "titulo": "Filosofia da Miseria", "ano": "2007", "editora": "Escala"}, {"CDD": "", "autor": "Proudhon", "titulo": "Filosofia da Miseria Tomo I", "ano": "", "editora": "Escala"}, {"CDD": "", "autor": "Proudhon, Joseph Pierre", "titulo": "A Propriedade e um Roubo e Outros Escritos Anarquistas", "ano": "2000", "editora": "Jo Saldanha; Lucia Bohrer"}, {"CDD": "", "autor": "Raiol, Domingos", "titulo": "Motins Politicos Ou Historia do Principais Acontecimentos Politicos da Provincia do para Desde o Ano de 1821 Ate 1835 Motins Politicos: Ou Historia do Principais Acontecimentos Politicos da Provincia do para Desde o Ano de 1821 Ate 1835 Editora Universitaria Ufpa", "ano": "1970", "editora": "Aloysio da Costa Chaves"}, {"CDD": "", "autor": "Raiol, Domingos", "titulo": "Motins Politicos Ou Historia dos Principais Acontecimentos Politicos da Provincia do para Desde o Ano de 1821 Ate 1835 Motins Politicos: Ou Historia dos Principais Acontecimentos Politicos da Provincia do para Desde o Ano de 1821 Ate 1835 Editora Universitaria Ufpa", "ano": "1970", "editora": ""}, {"CDD": "", "autor": "Ratgeb", "titulo": "De La Huelga Salvage a La Autogestion Revolucionaria", "ano": "1978", "editora": "Editorial Anagrama"}, {"CDD": "", "autor": "Reclus, Elisee", "titulo": "A Evolucao, a Revolucao e o Ideal Anarquista", "ano": "2002", "editora": "Plinio Augusto Coelho"}, {"CDD": "", "autor": "Reclus, Elisee", "titulo": "A Evolucao, a Revolucao e o Ideal Anarquista", "ano": "", "editora": "Imaginario / Expressao & Arte"}, {"CDD": "", "autor": "Reclus, Elisee", "titulo": "Anarquia Pela Educacao", "ano": "2016", "editora": "Hedra"}, {"CDD": "", "autor": "Reclus, Elisee", "titulo": "Do Sentimento da Natureza nas Sociedades Modernas e Outros Escritos", "ano": "2015", "editora": "Edusp"}, {"CDD": "", "autor": "Reclus, Elisee", "titulo": "Elisee Reclus e a Geografia das Liberdades", "ano": "dez/2011", "editora": "Plinio Augusto Coelho"}, {"CDD": "", "autor": "Reclus, Elisee", "titulo": "Renovacao de uma Cidade Reparticao dos Homens", "ano": "2010", "editora": "Plinio Augusto Coelho"}, {"CDD": "", "autor": "Reclus, Elisee / Kropotkin, Piotr", "titulo": "Escritos Sobre Educacao e Geografia", "ano": "2011", "editora": "Biblioteca Terra Livre"}, {"CDD": "", "autor": "Reed, John", "titulo": "Mexico Insurgente Mexico Insurgente 1 Ed.", "ano": "2010", "editora": "Boitempo"}, {"CDD": "", "autor": "Reich, Wilhem", "titulo": "Psicologia de Massa do Fascismo", "ano": "1974", "editora": "Publicacoes Escorpiao"}, {"CDD": "", "autor": "Reis, Daniel Aarao Fo", "titulo": "Revolucao Chinesa Revolucao Chinesa", "ano": "1971", "editora": "Nobuka Rachi; Rosane S. Nicolai"}, {"CDD": "", "autor": "Reszler, Andre", "titulo": "A Estetica Anarquista Achiame", "ano": "", "editora": "T. Costa"}, {"CDD": "", "autor": "Revista do Ifch / Ufrgs", "titulo": "Globalizacao, Nacionalismo e Regionalismo", "ano": "1997", "editora": "Nucleo de Editoracao e Redes do Ifch"}, {"CDD": "", "autor": "Ribeiro, Bruno", "titulo": "Helenira Resende e a Guerrilha do Araguaraia", "ano": "2007", "editora": "Expressao Popular"}, {"CDD": "", "autor": "Rocha, Andre", "titulo": "O MST e a Luta Pela Terra no para", "ano": "03/2015", "editora": "Mariana V. de Andrade"}, {"CDD": "", "autor": "Rocha, Antonio Penalves", "titulo": "A Economia Politica na Sociedade Escravista", "ano": "1996", "editora": "Editora Hucitec"}, {"CDD": "", "autor": "Rocque, Carlos", "titulo": "Antonio Lemos e Sua Epoca Amazonia Edicoes Culturais Ltda (Amada)", "ano": "1973", "editora": ""}, {"CDD": "", "autor": "Rodrigues, Edgar", "titulo": "Notas e Comentarios Historicos-sociais", "ano": "1998", "editora": "Cc&p Editores"}, {"CDD": "", "autor": "Rodrigues, Edgar", "titulo": "O Anarquismo na Escola, no Teatro, na Poesia o Anarquismo - na Escola, no Teatro, na Poesia", "ano": "1992", "editora": "Achiame"}, {"CDD": "", "autor": "Rodrigues, Edgar", "titulo": "O Anarquismo no Banco dos Reus (1969-1972) (1969-1972)", "ano": "1993", "editora": "Vjr Editores Associados"}, {"CDD": "", "autor": "Rodrigues, Edgar", "titulo": "Os Anarquistas Trabalhadores Italianos no Brasil os Anarquistas - Trabalhadores Italianos no Brasil Global Editora", "ano": "05/1984", "editora": "Edgar Rodrigues"}, {"CDD": "", "autor": "Rosen-cros, Pauline", "titulo": "Duro Companeros! Oaxaca 2006: Recits D´une Insurrection Mexicaine", "ano": "2010", "editora": "Tahin Party"}, {"CDD": "", "autor": "Rossi, Clovis", "titulo": "Miliatarismo na America Latina Tudo e Historia Militarismo na America Latina", "ano": "", "editora": "Jose e. Andrade"}, {"CDD": "", "autor": "Russ, Jaqueline", "titulo": "O Socialismo Utopica", "ano": "1991", "editora": "Universidade Hoje"}, {"CDD": "", "autor": "Saavedra, Manoel", "titulo": "Memorias do Exilio", "ano": "2022", "editora": "Nelca"}, {"CDD": "", "autor": "Samis, Alexandre", "titulo": "Sindicalismo e Movimentos Sociais", "ano": "2010", "editora": "Faisca; Sindscope; Sinasefe"}, {"CDD": "", "autor": "Santini, Daniel; Santarem, Paique; Albergaria, Rafaela (Orgs.)", "titulo": "Mobilidade Antirracista Mobilidade Antirracista", "ano": "2021", "editora": "Autonomia Literaria"}, {"CDD": "", "autor": "Santos, Adolfo.", "titulo": "Palestina Historia de uma Colonizacao Palestina: Historia de uma Colonizacao", "ano": "2017", "editora": "Edicoes Combate Socialista"}, {"CDD": "", "autor": "Serge, Victor", "titulo": "O Que Todo Revolucionario Deve Saber Sobre a Repressao", "ano": "", "editora": "Terra Sem Amos - Tsa"}, {"CDD": "", "autor": "Silveira, Enio", "titulo": "Encontros Com a Civilizacao Brasileira", "ano": "", "editora": ""}, {"CDD": "", "autor": "Silveira, Enio e Outros", "titulo": "Encontros Com a Civilizacao Brasileira", "ano": "", "editora": "Moacyr Felix"}, {"CDD": "", "autor": "Silveira, Enio e Outros", "titulo": "Encontros Com a Civilizacao Brasileira", "ano": "1979", "editora": "Moacyr Felix"}, {"CDD": "", "autor": "Silverio, Beatriz Et Al", "titulo": "Infatigavel Guerrilheira Margarita Ortega Valdes na Revolucao Mexicana Infatigavel Guerrilheira. Margarita Ortega Valdes na Revolucao Mexicana Tenda de Livros", "ano": "2022", "editora": ""}, {"CDD": "", "autor": "Sous Commandant Insurge Marcos", "titulo": "Le Recit Du Vieil Antonio Ou Comment Les Indiens Du Mexique Racontent La Belle Et Indispensable Diversite Du Monde", "ano": "2011", "editora": "Oskar Editeur"}, {"CDD": "", "autor": "Sous Commandant Insurge Marcos", "titulo": "Mexique, Calendrier de La Resistance Suivi de Chiapas La Treizieme Stele", "ano": "2007", "editora": "Rue Des Cascades"}, {"CDD": "", "autor": "Souza, Clei", "titulo": "A Asa Esquerda Que Brada", "ano": "2015", "editora": "Clei Souza"}, {"CDD": "", "autor": "Souza, Clei", "titulo": "Ultimo Desejo Ultimo Desejo", "ano": "2015", "editora": "Clei Souza"}, {"CDD": "", "autor": "Souza, Denise Governo do Estado do para", "titulo": "Pesquisa Historico-bibliografica Editora Universitaria Ufpa", "ano": "1986", "editora": "Lucio Flavio Pinto"}, {"CDD": "", "autor": "Spargo, Tamsim", "titulo": "Foucault e a Teoria Queer", "ano": "1999", "editora": "Ufjf"}, {"CDD": "", "autor": "Stein, Jeff", "titulo": "Marxismo a Negacao do Comunismo Marxismo - a Negacao do Comunismo", "ano": "1994", "editora": "Achiame"}, {"CDD": "", "autor": "Steinbecks's, John", "titulo": "Viva Zapata! Viva Zapata!", "ano": "1953", "editora": ""}, {"CDD": "", "autor": "Stirner, Max", "titulo": "O Falso Principio da Nossa Educacao", "ano": "2001", "editora": "Imaginario"}, {"CDD": "", "autor": "Townsend, Stuart", "titulo": "Batalha em Seattle", "ano": "", "editora": "California Filmes"}, {"CDD": "", "autor": "Tragtenberg, Mauricio", "titulo": "Sobre Educacao Politica e Sindicalismo", "ano": "1982", "editora": "Helen Diniz"}, {"CDD": "", "autor": "Truda, Dielo", "titulo": "A Plataforma Organizacional Grupo de Anarquistas Russos no Estrangeiro a Plataforma Organizacional: Grupo de Anarquistas Russos no Estrangeiro", "ano": "2017", "editora": "Faisca"}, {"CDD": "", "autor": "Ufpa - Centro de Filosofia e Ciencias Humanas", "titulo": "Cadernos Cadernos Ufpa", "ano": "1990", "editora": "Aurileia Abelem"}, {"CDD": "", "autor": "Universidade Popular do Rio de Janeiro e Movimento dos Trabalhadores Desempregados do Rio de Janeiro", "titulo": "Capitalismo, Anticapitalismo e Organizacao Popular", "ano": "", "editora": "El Brujo"}, {"CDD": "", "autor": "Vadala, Walter", "titulo": "Zumbi dos Palmares por uma Educacao Antirracista", "ano": "2020", "editora": "Monstro dos Mares"}, {"CDD": "", "autor": "Valadares, Nanci", "titulo": "Autogestao o Governo Pela Autonomia Autogestao: o Governo Pela Autonomia", "ano": "1983", "editora": ""}, {"CDD": "", "autor": "Varios Autores", "titulo": "A Revolucao Ignorada Liberacao da Mulher, Democracia Direta e Pluralismo Radical no Oriente Medio", "ano": "2016", "editora": "Caue Ameni"}, {"CDD": "", "autor": "Vasco, Neno", "titulo": "Greve de Inquilinos Faca em Primeiro Ato Entre Mares", "ano": "10/2018", "editora": ""}, {"CDD": "", "autor": "Velho, Valo", "titulo": "My Way a Periferia de Moicano My Way", "ano": "2017", "editora": "Selo Povo"}, {"CDD": "", "autor": "Vella, Randolfo", "titulo": "Pre-anarquia Sugestoes Praticas a Organizacao da Sociedade Futura Pre-anarquia: Sugestoes Praticas a Organizacao da Sociedade Futura Nucleo de Estudos Libertario Carlo Aldegheri", "ano": "2019", "editora": "Nelca"}, {"CDD": "", "autor": "Viana, Rafael", "titulo": "Elementos Inflamaveis Organizacoes e Militancia Anarquista no Rio de Janeiro e Sao Paulo Elementos Inflamaveis: Organizacoes e Militancia Anarquista no Rio de Janeiro e Sao Paulo 1", "ano": "2017", "editora": "Prismas"}, {"CDD": "", "autor": "Walter, Nicolas", "titulo": "Sobre o Anarquismo o Que Anarquistas Acreditam, o Que Anarquistas Diferem, o Que Anarquistas Querem, o Que Anarquistas Fazem Sobre o Anarquismo: o Que Anarquistas Acreditam, o Que Anarquistas Diferem, o Que Anarquistas Querem, o Que Anarquistas Fazem Biblioteca Terra Livre, Centro de Cultura Social, Nelca", "ano": "2022", "editora": "Andrew Arthur Martins Leite"}, {"CDD": "", "autor": "Zaramella, Micael", "titulo": "No Gramado em Que a Luta o Aguarda Antifascismo e a Disputa Pela Democracia no Palmeiras", "ano": "2022", "editora": "Autonomia Literaria"}, {"CDD": "", "autor": "Zenoni, Federico", "titulo": "Procurando Monstro! Procurando Monstro!", "ano": "2016", "editora": "Biblioteca Terra Livre"}, {"CDD": "", "autor": "", "titulo": "Bolo Bolo Bolo Bolo 1ª Bolo Bolo", "ano": "2006", "editora": "Deriva"}, {"CDD": "", "autor": "", "titulo": "Cleo e Daniel Global", "ano": "", "editora": ""}, {"CDD": "", "autor": "", "titulo": "Ferramentas para Autonomia Cultive Resistencia", "ano": "2020", "editora": ""}, {"CDD": "", "autor": "", "titulo": "Motins Politicos Ou Historia dos Principais Acontecimentos Politicos da Provincia do para Desde o Ano de 1821 Ate 1835 Motins Politicos: Ou Historia dos Principais Acontecimentos Politicos da Provincia do para Desde o Ano de 1821 Ate 1835 Editora Universitaria Ufpa", "ano": "1970", "editora": ""}, {"CDD": "", "autor": "", "titulo": "Textos de Ricardo Flores Magon Y El Plm", "ano": "2019", "editora": "Espartako&crixos"}, {"CDD": "", "autor": "", "titulo": "Viver a Utopia Cinco Ilhas de um Arquipelago Disperso", "ano": "2021", "editora": "Barricada Livros"}];
+let sortKey = 'autor';
+let sortDir = 'asc';
+
+const tbody = document.getElementById('tbody');
+const search = document.getElementById('search');
+const authorFilter = document.getElementById('authorFilter');
+const yearFilter = document.getElementById('yearFilter');
+const publisherFilter = document.getElementById('publisherFilter');
+const totalPill = document.getElementById('totalPill');
+const visiblePill = document.getElementById('visiblePill');
+const empty = document.getElementById('empty');
+
+totalPill.textContent = `Total: ${rows.length}`;
+
+function uniqueValues(key) {
+  return [...new Set(rows.map(r => (r[key] || '').trim()).filter(Boolean))].sort((a,b) => a.localeCompare(b, 'pt-BR'));
+}
+
+function fillSelect(select, values) {
+  for (const value of values) {
+    const opt = document.createElement('option');
+    opt.value = value;
+    opt.textContent = value;
+    select.appendChild(opt);
+  }
+}
+
+fillSelect(authorFilter, uniqueValues('autor'));
+fillSelect(yearFilter, uniqueValues('ano'));
+fillSelect(publisherFilter, uniqueValues('editora'));
+
+function normalize(s) {
+  return (s || '')
+    .toString()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .trim();
+}
+
+function currentRows() {
+  const q = normalize(search.value);
+  const a = authorFilter.value;
+  const y = yearFilter.value;
+  const p = publisherFilter.value;
+
+  let filtered = rows.filter(r => {
+    const matchesSearch = !q || ['CDD','autor','titulo','ano','editora']
+      .some(k => normalize(r[k]).includes(q));
+    const matchesAuthor = !a || r.autor === a;
+    const matchesYear = !y || r.ano === y;
+    const matchesPublisher = !p || r.editora === p;
+    return matchesSearch && matchesAuthor && matchesYear && matchesPublisher;
+  });
+
+  filtered.sort((x,y) => {
+    const ax = normalize(x[sortKey]);
+    const ay = normalize(y[sortKey]);
+    const cmp = ax.localeCompare(ay, 'pt-BR', { numeric: true });
+    return sortDir === 'asc' ? cmp : -cmp;
+  });
+
+  return filtered;
+}
+
+function render() {
+  const filtered = currentRows();
+  tbody.innerHTML = '';
+  visiblePill.textContent = `Exibidos: ${filtered.length}`;
+  empty.hidden = filtered.length !== 0;
+
+  for (const r of filtered) {
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td class="col-cdd">${r.CDD || '<span class="muted">—</span>'}</td>
+      <td>${r.autor || '<span class="muted">—</span>'}</td>
+      <td>${r.titulo || '<span class="muted">—</span>'}</td>
+      <td class="col-ano">${r.ano || '<span class="muted">—</span>'}</td>
+      <td>${r.editora || '<span class="muted">—</span>'}</td>
+    `;
+    tbody.appendChild(tr);
+  }
+}
+
+for (const el of [search, authorFilter, yearFilter, publisherFilter]) {
+  el.addEventListener('input', render);
+  el.addEventListener('change', render);
+}
+
+document.getElementById('clearBtn').addEventListener('click', () => {
+  search.value = '';
+  authorFilter.value = '';
+  yearFilter.value = '';
+  publisherFilter.value = '';
+  render();
+});
+
+document.querySelectorAll('th[data-key]').forEach(th => {
+  th.addEventListener('click', () => {
+    const key = th.dataset.key;
+    if (sortKey === key) {
+      sortDir = sortDir === 'asc' ? 'desc' : 'asc';
+    } else {
+      sortKey = key;
+      sortDir = key === 'ano' ? 'desc' : 'asc';
+    }
+    render();
+  });
+});
+
+render();
+</script>
+</body>
+</html>
