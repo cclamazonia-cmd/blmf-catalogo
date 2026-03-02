@@ -82,6 +82,33 @@ a { color: inherit; }
   border: none;
   font-weight: 700;
 }
+
+.button.secondary {
+  background: rgba(18,18,18,.96);
+  border: 1px solid rgba(255,255,255,.14);
+  font-weight: 600;
+}
+.button.secondary:hover {
+  border-color: rgba(225,29,47,.55);
+}
+.action-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+  border-radius: 12px;
+  border: 1px solid rgba(255,255,255,.10);
+  background: rgba(18,18,18,.65);
+  text-decoration: none;
+  font-size: .86rem;
+  color: var(--muted);
+  box-shadow: var(--shadow);
+}
+.action-link:hover {
+  color: #fff;
+  border-color: rgba(225,29,47,.55);
+}
+
 .stats {
   display: flex;
   flex-wrap: wrap;
@@ -219,8 +246,8 @@ body {
     <select id="publisherFilter" class="select">
       <option value="">Todas as editoras</option>
     </select>
-    <button id="clearBtn" class="button">Limpar filtros</button>
-    <button id="exportBtn" class="button" type="button">Exportar CSV</button>
+    <button id="clearBtn" class="button secondary" type="button">Limpar filtros</button>
+    <button id="pdfBtn" class="button" type="button">Exportar PDF</button>
   </section>
 
   <div class="stats">
@@ -231,8 +258,11 @@ body {
 
   <section class="sheet">
     <div class="sheet-head">
-      <div class="title">BLMF · Catálogo consultável</div>
-      <div class="small">Clique no cabeçalho para ordenar</div>
+      <div>
+        <div class="title">BLMF · Catálogo consultável</div>
+        <div class="small">Clique no cabeçalho para ordenar · <a id="csvAdvancedLink" class="action-link" href="#" role="button">Exportar CSV (avançado)</a></div>
+      </div>
+      <div class="small"><a class="action-link" href="catalog/pdfs/latest.pdf" target="_blank" rel="noopener">Abrir catálogo (PDF)</a></div>
     </div>
     <div class="table-wrap">
       <table>
@@ -344,6 +374,71 @@ for (const el of [search, authorFilter, yearFilter, publisherFilter]) {
 
 
 
+
+function escapeHTML(s) {
+  return (s ?? '').toString().replace(/[&<>"']/g, (m) => ({
+    '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'
+  }[m]));
+}
+
+function exportPDF() {
+  const filtered = currentRows();
+  const pad = (n) => String(n).padStart(2,'0');
+  const d = new Date();
+  const stamp = `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
+  const title = 'Catálogo da BLMF';
+  const subtitle = `Exportado em ${stamp} · ${filtered.length} item(ns)`;
+
+  const rowsHtml = filtered.map(r => {
+    const autor = (r.autor || '—');
+    const titulo = (r.titulo || '—');
+    const ano = (r.ano || '—');
+    const editora = (r.editora || '—');
+    return `<tr>
+      <td>${escapeHTML(autor)}</td>
+      <td>${escapeHTML(titulo)}</td>
+      <td>${escapeHTML(ano)}</td>
+      <td>${escapeHTML(editora)}</td>
+    </tr>`;
+  }).join('');
+
+  const w = window.open('', '_blank');
+  if (!w) {
+    alert('O navegador bloqueou a janela de impressão. Autorize pop-ups para exportar em PDF.');
+    return;
+  }
+
+  w.document.write(`<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>${title} — PDF</title>
+<style>
+  body { font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; padding: 28px; color: #111; }
+  h1 { font-size: 18px; margin: 0 0 6px; }
+  .meta { font-size: 12px; color: #444; margin-bottom: 14px; }
+  table { width: 100%; border-collapse: collapse; }
+  th, td { border: 1px solid #ddd; padding: 6px 8px; font-size: 12px; vertical-align: top; }
+  th { background: #f4f4f4; text-transform: uppercase; letter-spacing: .04em; font-size: 11px; }
+  @page { size: A4; margin: 12mm; }
+</style>
+</head>
+<body>
+  <h1>${title}</h1>
+  <div class="meta">${subtitle}</div>
+  <table>
+    <thead><tr><th>autor</th><th>título</th><th>ano</th><th>editora</th></tr></thead>
+    <tbody>${rowsHtml}</tbody>
+  </table>
+  <script>
+    window.onload = () => { window.focus(); window.print(); };
+  </script>
+</body>
+</html>`);
+  w.document.close();
+}
+
 function toCSV(rowsToExport) {
   const cols = ['autor','titulo','ano','editora'];
   const esc = (v) => {
@@ -386,7 +481,9 @@ document.getElementById('clearBtn').addEventListener('click', () => {
 
 
 
-document.getElementById('exportBtn').addEventListener('click', exportCSV);
+document.getElementById('csvAdvancedLink').addEventListener('click', (e) => { e.preventDefault(); exportCSV(); });
+document.getElementById('pdfBtn').addEventListener('click', exportPDF);
+
 document.querySelectorAll('th[data-key]').forEach(th => {
   th.addEventListener('click', () => {
     const key = th.dataset.key;
