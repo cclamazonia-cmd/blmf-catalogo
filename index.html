@@ -313,13 +313,14 @@ body {
 <script>
 // Supabase config
 // Cole aqui o URL do projeto e a ANON KEY (Settings → API)
-const SUPABASE_URL = "https://asptfmokzykwzlshsncw.supabase.co";
-const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFzcHRmbW9renlrd3psc2hzbmN3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzI1MzcxNzcsImV4cCI6MjA4ODExMzE3N30.JkMLHPCV2AH5ELZV_1RfcoW250QEofLGvnDKSDpkcn0";
+const SUPABASE_URL = "";
+const SUPABASE_ANON_KEY = "";
 const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 let rows = [];
 
 async function loadRowsFromSupabase() {
+    statusPill.textContent = 'Supabase: carregando…';
   if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
     console.error("Supabase não configurado: preencha SUPABASE_URL e SUPABASE_ANON_KEY no index.html");
     alert("Supabase não configurado: preencha SUPABASE_URL e SUPABASE_ANON_KEY no index.html.");
@@ -335,13 +336,17 @@ async function loadRowsFromSupabase() {
     .order('autor', { ascending: true })
     .order('titulo', { ascending: true });
 
-  if (error) {
+  console.log('SUPABASE data length:', (data||[]).length);
+    console.log('SUPABASE error:', error);
+
+    if (error) {
     console.error(error);
     alert("Erro ao carregar o catálogo (Supabase). Abra o console para detalhes.");
     return [];
   }
 
-  return (data || []).map(r => ({
+  statusPill.textContent = 'Supabase: OK (' + ((data||[]).length) + ')';
+    return (data || []).map(r => ({
     bib_ref: r.bib_ref ?? '',
     autor: r.autor ?? '',
     titulo: r.titulo ?? '',
@@ -361,6 +366,7 @@ const authorFilter = document.getElementById('authorFilter');
 const yearFilter = document.getElementById('yearFilter');
 const publisherFilter = document.getElementById('publisherFilter');
 const totalPill = document.getElementById('totalPill');
+  const statusPill = document.getElementById('statusPill');
 const visiblePill = document.getElementById('visiblePill');
 const empty = document.getElementById('empty');
 
