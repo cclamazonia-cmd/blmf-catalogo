@@ -354,31 +354,6 @@ async function loadRowsFromSupabase() {
       return [];
     }
   }
-
-  // Espera-se que a tabela public.books tenha as colunas:
-  // bib_ref, autor, titulo, ano, editora
-  // (Se você ainda usa author/title/year/publisher, ajuste o select aqui ou renomeie as colunas no SQL.)
-  const { data, error } = await supabase
-    .from('books')
-    .select('bib_ref,autor,titulo,ano,editora')
-    .order('autor', { ascending: true })
-    .order('titulo', { ascending: true });
-
-  if (error) {
-    console.error(error);
-    alert("Erro ao carregar o catálogo (Supabase). Abra o console para detalhes.");
-    return [];
-  }
-
-  return (data || []).map(r => ({
-    bib_ref: r.bib_ref ?? '',
-    autor: r.autor ?? '',
-    titulo: r.titulo ?? '',
-    ano: r.ano ?? '',
-    editora: r.editora ?? ''
-  }));
-}
-
 // (O catálogo em JSON foi removido: agora a lista vem do Supabase.)
 
 let sortKey = 'autor';
@@ -403,25 +378,19 @@ const visiblePill = document.getElementById('visiblePill');
 const empty = document.getElementById('empty');
 
 (async function init() {
-  (async function init() {
-    rows = await loadRowsFromSupabase();
-    totalPill.textContent = `Total: ${rows.length}`;
+  rows = await loadRowsFromSupabase();
+  totalPill.textContent = `Total: ${rows.length}`;
 
-    // Reset selects
-    authorFilter.innerHTML = '<option value="">Todos os autores</option>';
-    yearFilter.innerHTML = '<option value="">Todos os anos</option>';
-    publisherFilter.innerHTML = '<option value="">Todas as editoras</option>';
+  authorFilter.innerHTML = '<option value="">Todos os autores</option>';
+  yearFilter.innerHTML = '<option value="">Todos os anos</option>';
+  publisherFilter.innerHTML = '<option value="">Todas as editoras</option>';
 
-    fillSelect(authorFilter, uniqueValues('autor'));
-    fillSelect(yearFilter, uniqueValues('ano'));
-    fillSelect(publisherFilter, uniqueValues('editora'));
+  fillSelect(authorFilter, uniqueValues('autor'));
+  fillSelect(yearFilter, uniqueValues('ano'));
+  fillSelect(publisherFilter, uniqueValues('editora'));
 
-    render();
-  })();
-
+  render();
 })();
-
-
 function uniqueValues(key) {
   return [...new Set(rows.map(r => (r[key] || '').trim()).filter(Boolean))].sort((a,b) => a.localeCompare(b, 'pt-BR'));
 }
