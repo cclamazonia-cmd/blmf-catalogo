@@ -403,18 +403,22 @@ const visiblePill = document.getElementById('visiblePill');
 const empty = document.getElementById('empty');
 
 (async function init() {
-  rows = await loadRowsFromSupabase();
-  totalPill.textContent = `Total: ${rows.length}`;
+  (async function init() {
+    rows = await loadRowsFromSupabase();
+    totalPill.textContent = `Total: ${rows.length}`;
 
-  // Preenche filtros a partir dos dados carregados
-  authorFilter.innerHTML = '<option value="">Todos os autores</option>';
-  yearFilter.innerHTML = '<option value="">Todos os anos</option>';
-  publisherFilter.innerHTML = '<option value="">Todas as editoras</option>';
-  fillSelect(authorFilter, uniqueValues('autor'));
-  fillSelect(yearFilter, uniqueValues('ano'));
-  fillSelect(publisherFilter, uniqueValues('editora'));
+    // Reset selects
+    authorFilter.innerHTML = '<option value="">Todos os autores</option>';
+    yearFilter.innerHTML = '<option value="">Todos os anos</option>';
+    publisherFilter.innerHTML = '<option value="">Todas as editoras</option>';
 
-  render();
+    fillSelect(authorFilter, uniqueValues('autor'));
+    fillSelect(yearFilter, uniqueValues('ano'));
+    fillSelect(publisherFilter, uniqueValues('editora'));
+
+    render();
+  })();
+
 })();
 
 
