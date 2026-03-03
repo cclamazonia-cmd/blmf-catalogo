@@ -278,6 +278,7 @@ body {
 
   <div class="stats">
     <div class="pill" id="totalPill">Total: 0</div>
+    <div class="pill" id="statusPill">Supabase: …</div>
     <div class="pill" id="visiblePill">Exibidos: 0</div>
     <div class="pill">Colunas: autor · título · ano · editora</div>
   </div>
@@ -335,8 +336,7 @@ async function loadRowsFromSupabase() {
     .select('bib_ref,autor,titulo,ano,editora')
     .order('autor', { ascending: true })
     .order('titulo', { ascending: true });
-
-  console.log('SUPABASE data length:', (data||[]).length);
+    console.log('SUPABASE data length:', (data||[]).length);
     console.log('SUPABASE error:', error);
 
     if (error) {
