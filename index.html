@@ -251,7 +251,6 @@ body {
 </style>
 </head>
 <body>
-<div id="sbStatus" style="position:fixed;top:10px;right:10px;z-index:999999;background:#111;color:#fff;padding:8px 10px;border-radius:999px;font:12px/1.2 system-ui,sans-serif;box-shadow:0 6px 18px rgba(0,0,0,.35);">Supabase: …</div>
 <div class="wrap">
   <section class="hero">
     <div class="titlebar-with-logo" style="display:flex; align-items:center; justify-content:space-between; gap:16px; flex-wrap:wrap;"><div><h1>Catálogo da BLMF</h1><div class="note" style="margin-top:12px; display:flex; gap:12px; flex-wrap:wrap;">
@@ -319,10 +318,7 @@ let rows = [];
 
 async function loadRowsFromSupabase() {
     // Carrega via REST (PostgREST) para evitar dependência do supabase-js
-    try {
-      statusPill.textContent = 'Supabase: carregando…';
-
-      const url = `${SUPABASE_URL}/rest/v1/books?select=bib_ref,autor,titulo,ano,editora&order=autor.asc,titulo.asc`;
+    try {      const url = `${SUPABASE_URL}/rest/v1/books?select=bib_ref,autor,titulo,ano,editora&order=autor.asc,titulo.asc`;
       const res = await fetch(url, {
         headers: {
           apikey: SUPABASE_ANON_KEY,
@@ -331,26 +327,18 @@ async function loadRowsFromSupabase() {
       });
 
       const text = await res.text();
-      if (!res.ok) {
-        statusPill.textContent = `Supabase: ERRO (${res.status})`;
-        statusPill.title = text;
-        alert('Erro Supabase: ' + res.status + ' — ' + text);
+      if (!res.ok) {        alert('Erro Supabase: ' + res.status + ' — ' + text);
         return [];
       }
 
-      const data = text ? JSON.parse(text) : [];
-      statusPill.textContent = `Supabase: OK (${data.length})`;
-      return (data || []).map(r => ({
+      const data = text ? JSON.parse(text) : [];      return (data || []).map(r => ({
         bib_ref: r.bib_ref ?? "",
         autor: r.autor ?? "",
         titulo: r.titulo ?? "",
         ano: r.ano ?? "",
         editora: r.editora ?? ""
       }));
-    } catch (e) {
-      statusPill.textContent = 'Supabase: ERRO';
-      statusPill.title = (e && e.stack) ? e.stack : String(e);
-      alert('Erro Supabase: ' + (e?.message || String(e)));
+    } catch (e) {      alert('Erro Supabase: ' + (e?.message || String(e)));
       return [];
     }
   }
@@ -365,15 +353,6 @@ const authorFilter = document.getElementById('authorFilter');
 const yearFilter = document.getElementById('yearFilter');
 const publisherFilter = document.getElementById('publisherFilter');
 const totalPill = document.getElementById('totalPill');
-  // Status badge (fixo)
-  let statusPill = document.getElementById('sbStatus');
-  if (!statusPill) {
-    statusPill = document.createElement('div');
-    statusPill.id = 'sbStatus';
-    statusPill.style.cssText = 'position:fixed;top:10px;right:10px;z-index:999999;background:#111;color:#fff;padding:8px 10px;border-radius:999px;font:12px/1.2 system-ui,sans-serif;box-shadow:0 6px 18px rgba(0,0,0,.35);';
-    statusPill.textContent = 'Supabase: …';
-    document.addEventListener('DOMContentLoaded', () => document.body.appendChild(statusPill));
-  }
 const visiblePill = document.getElementById('visiblePill');
 const empty = document.getElementById('empty');
 
