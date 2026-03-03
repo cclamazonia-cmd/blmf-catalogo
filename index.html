@@ -251,6 +251,7 @@ body {
 </style>
 </head>
 <body>
+<div id="sbStatus" style="position:fixed;top:10px;right:10px;z-index:999999;background:#111;color:#fff;padding:8px 10px;border-radius:999px;font:12px/1.2 system-ui,sans-serif;box-shadow:0 6px 18px rgba(0,0,0,.35);">Supabase: …</div>
 <div class="wrap">
   <section class="hero">
     <div class="titlebar-with-logo" style="display:flex; align-items:center; justify-content:space-between; gap:16px; flex-wrap:wrap;"><div><h1>Catálogo da BLMF</h1><div class="note" style="margin-top:12px; display:flex; gap:12px; flex-wrap:wrap;">
@@ -279,7 +280,7 @@ body {
   <div class="stats">
     <div class="pill" id="totalPill">Total: 0</div>
     <div class="pill" id="visiblePill">Exibidos: 0</div>
-    <div class="pill">Colunas: autor · título · ano · editora</div>
+    <div class="pill">Colunas: ref · autor · título · ano · editora</div>
   </div>
 
   <section class="sheet">
@@ -389,6 +390,15 @@ const authorFilter = document.getElementById('authorFilter');
 const yearFilter = document.getElementById('yearFilter');
 const publisherFilter = document.getElementById('publisherFilter');
 const totalPill = document.getElementById('totalPill');
+  // Status badge (fixo)
+  let statusPill = document.getElementById('sbStatus');
+  if (!statusPill) {
+    statusPill = document.createElement('div');
+    statusPill.id = 'sbStatus';
+    statusPill.style.cssText = 'position:fixed;top:10px;right:10px;z-index:999999;background:#111;color:#fff;padding:8px 10px;border-radius:999px;font:12px/1.2 system-ui,sans-serif;box-shadow:0 6px 18px rgba(0,0,0,.35);';
+    statusPill.textContent = 'Supabase: …';
+    document.addEventListener('DOMContentLoaded', () => document.body.appendChild(statusPill));
+  }
 const visiblePill = document.getElementById('visiblePill');
 const empty = document.getElementById('empty');
 
