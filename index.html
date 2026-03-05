@@ -250,6 +250,16 @@ body {
   background-repeat: no-repeat;
 }
 
+
+.book-link{
+  color: var(--text);
+  text-decoration: none;
+  border-bottom: 1px solid transparent;
+}
+.book-link:hover{
+  border-bottom-color: rgba(255,255,255,.35);
+}
+
 </style>
 </head>
 <body>
@@ -611,12 +621,13 @@ function render() {
     const refHtml = ref ? highlightHTML(ref, terms) : '<span class="muted">—</span>';
     const autorHtml = r.autor ? highlightHTML(r.autor, terms) : '<span class="muted">—</span>';
     const tituloHtml = r.titulo ? highlightHTML(r.titulo, terms) : '<span class="muted">—</span>';
+    const tituloLinkHtml = ref ? `<a class="book-link" href="livro.html?ref=${encodeURIComponent(ref)}">${tituloHtml}</a>` : tituloHtml;
     const anoHtml = r.ano ? highlightHTML(r.ano, terms) : '<span class="muted">—</span>';
     const editoraHtml = r.editora ? highlightHTML(r.editora, terms) : '<span class="muted">—</span>';
 
     tr.innerHTML = `      <td class="col-ref">${refHtml}</td>
       <td>${autorHtml}</td>
-      <td>${tituloHtml}</td>
+      <td>${tituloLinkHtml}</td>
       <td class="col-ano">${anoHtml}</td>
       <td><div class="cell-flex"><span>${editoraHtml}</span><button class="btn-inline copyRefBtn" type="button" data-ref="${encodeURIComponent(ref)}">Copiar referência</button></div></td>
     `;
