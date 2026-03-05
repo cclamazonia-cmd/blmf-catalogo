@@ -263,18 +263,11 @@ body {
   </section>
 
   <section class="toolbar">
-    <input id="search" class="input" type="search" list="searchSuggestions" placeholder="Buscar por autor, título ou editora…"
+    <input id="search" class="input" type="search" autocomplete="off" placeholder="Buscar por autor, título ou editora…"
       title="Dica: você pode digitar vários termos (ex.: bakunin 2011).">
-    <datalist id="searchSuggestions"></datalist>
-    <select id="authorFilter" class="select">
-      <option value="">Todos os autores</option>
-    </select>
-    <select id="yearFilter" class="select">
-      <option value="">Todos os anos</option>
-    </select>
-    <select id="publisherFilter" class="select">
-      <option value="">Todas as editoras</option>
-    </select>
+<input id="authorFilter" class="input" type="search" placeholder="Filtrar por autor(a)…" autocomplete="off">
+    <input id="yearFilter" class="input" type="search" placeholder="Filtrar por ano… (ex.: 1984 ou 1917-1921)" autocomplete="off">
+    <input id="publisherFilter" class="input" type="search" placeholder="Filtrar por editora…" autocomplete="off">
     <button id="clearBtn" class="button secondary" type="button">Limpar filtros</button>
     <button id="pdfBtn" class="button" type="button">Exportar PDF</button>
     <a id="blogBtn" class="button secondary" href="https://cclamazonia.noblogs.org/catalogo-da-biblioteca-libertaria-maxwell-ferreira/">Voltar ao blogue</a>
@@ -365,31 +358,9 @@ const empty = document.getElementById('empty');
 (async function init() {
   rows = await loadRowsFromSupabase();
   prepareRows();
-  fillSearchSuggestions();
   totalPill.textContent = `Total: ${rows.length}`;
-
-  authorFilter.innerHTML = '<option value="">Todos os autores</option>';
-  yearFilter.innerHTML = '<option value="">Todos os anos</option>';
-  publisherFilter.innerHTML = '<option value="">Todas as editoras</option>';
-
-  fillSelect(authorFilter, uniqueValues('autor'));
-  fillSelect(yearFilter, uniqueValues('ano'));
-  fillSelect(publisherFilter, uniqueValues('editora'));
-
   render();
 })();
-function uniqueValues(key) {
-  return [...new Set(rows.map(r => (r[key] || '').trim()).filter(Boolean))].sort((a,b) => a.localeCompare(b, 'pt-BR'));
-}
-
-function fillSelect(select, values) {
-  for (const value of values) {
-    const opt = document.createElement('option');
-    opt.value = value;
-    opt.textContent = value;
-    select.appendChild(opt);
-  }
-}
 
 
 function normalize(s) {
@@ -399,6 +370,37 @@ function normalize(s) {
     .replace(/[\u0300-\u036f]/g, '')
     .toLowerCase()
     .trim();
+}
+
+function matchText(fieldValue, needle) {
+  if (!needle) return true;
+  const hay = normalize(fieldValue);
+  return hay.includes(needle);
+}
+
+function matchYearField(fieldValue, raw) {
+  const s = (raw || '').toString().trim();
+  if (!s) return true;
+  const y = (fieldValue ?? '').toString().trim();
+  if (!y) return false;
+
+  // intervalo: 1917-1921
+  const m = s.match(/^\s*(\d{1,4})\s*-\s*(\d{1,4})\s*$/);
+  if (m) {
+    const a = parseInt(m[1], 10);
+    const b = parseInt(m[2], 10);
+    const yy = parseInt(y, 10);
+    if (Number.isNaN(a) || Number.isNaN(b) || Number.isNaN(yy)) return false;
+    const lo = Math.min(a, b);
+    const hi = Math.max(a, b);
+    return yy >= lo && yy <= hi;
+  }
+
+  // número: 1984 (exato) | 19 (prefixo)
+  const digitsOnly = s.replace(/[^0-9]/g, '');
+  if (!digitsOnly) return true;
+  if (digitsOnly.length >= 4) return y === digitsOnly.slice(0, 4);
+  return y.startsWith(digitsOnly);
 }
 
 // Pré-processa as linhas para busca rápida (sem mexer no Supabase)
@@ -415,27 +417,6 @@ function prepareRows() {
   }
 }
 
-function fillSearchSuggestions() {
-  const dl = document.getElementById('searchSuggestions');
-  if (!dl) return;
-  dl.innerHTML = '';
-  const seen = new Set();
-  const push = (v) => {
-    const s = (v || '').toString().trim();
-    if (!s) return;
-    const k = normalize(s);
-    if (!k || seen.has(k)) return;
-    seen.add(k);
-    const opt = document.createElement('option');
-    opt.value = s;
-    dl.appendChild(opt);
-  };
-  // Sugestões: títulos + autores (limitadas para não pesar)
-  for (const r of rows) {
-    push(r.titulo);
-    push(r.autor);
-  }
-}
 
 // Query: suporta vários termos (AND) e frases entre aspas: "..."
 function parseQuery(raw) {
@@ -567,17 +548,16 @@ function currentRows() {
   const q = parseQuery(qRaw);
   lastQuery = q;
 
-  const a = authorFilter.value;
-  const y = yearFilter.value;
-  const p = publisherFilter.value;
-
-  const hasQuery = (q.tokens.length > 0 || q.phrases.length > 0);
+  const a = normalize(authorFilter.value);
+  const y = (yearFilter.value || '').toString().trim();
+  const p = normalize(publisherFilter.value);
+const hasQuery = (q.tokens.length > 0 || q.phrases.length > 0);
   const filtered = [];
 
   for (const r of rows) {
-    const matchesAuthor = !a || r.autor === a;
-    const matchesYear = !y || r.ano === y;
-    const matchesPublisher = !p || r.editora === p;
+    const matchesAuthor = !a || matchText(r.autor, a);
+    const matchesYear = matchYearField(r.ano, y);
+    const matchesPublisher = !p || matchText(r.editora, p);
     if (!matchesAuthor || !matchesYear || !matchesPublisher) continue;
 
     if (!hasQuery) {
@@ -661,9 +641,9 @@ search.addEventListener('input', () => {
 });
 
 // Filtros: aplica na hora
-authorFilter.addEventListener('change', render);
-yearFilter.addEventListener('change', render);
-publisherFilter.addEventListener('change', render);
+authorFilter.addEventListener('input', render);
+yearFilter.addEventListener('input', render);
+publisherFilter.addEventListener('input', render);
 
 
 
