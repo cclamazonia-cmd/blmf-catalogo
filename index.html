@@ -4,6 +4,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>BLMF — Catálogo</title>
+
   <style>
     :root{
       --panel:rgba(18,18,18,.96);
@@ -22,10 +23,12 @@
       background-size:cover; background-position:center; background-attachment:fixed; background-repeat:no-repeat;
     }
     a, a:visited{color:inherit}
+
     .wrap{max-width:1320px;margin:0 auto;padding:24px}
     .topbar{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:14px}
     .brand{display:flex;align-items:center;gap:12px}
     .logo{height:64px;width:auto;max-width:140px;object-fit:contain;display:block;flex-shrink:0;filter:drop-shadow(0 8px 18px rgba(0,0,0,.35))}
+
     .btn{
       border:1px solid var(--line); background:rgba(18,18,18,.92);
       color:var(--text); border-radius:14px; padding:10px 12px;
@@ -34,6 +37,7 @@
     }
     .btn.primary{border:none;background:linear-gradient(135deg,var(--red2),var(--red))}
     .btn:hover{border-color:rgba(255,255,255,.22)}
+
     .hero{
       border:1px solid rgba(255,255,255,.08);
       background:linear-gradient(135deg, rgba(179,0,24,.95), rgba(90,0,12,.96));
@@ -41,6 +45,7 @@
     }
     .hero h1{margin:0 0 6px;font-size:1.55rem}
     .hero p{margin:0;color:rgba(255,255,255,.92)}
+
     .toolbar{
       display:grid;
       grid-template-columns: 1.2fr .8fr .8fr auto auto auto;
@@ -49,6 +54,7 @@
     }
     @media (max-width:980px){.toolbar{grid-template-columns:1fr 1fr}}
     @media (max-width:640px){.toolbar{grid-template-columns:1fr}}
+
     .input, .select{
       width:100%;
       border:1px solid rgba(255,255,255,.10);
@@ -60,19 +66,22 @@
       box-shadow: var(--shadow);
     }
     .input:focus, .select:focus{border-color:rgba(225,29,47,.85); box-shadow:0 0 0 3px rgba(225,29,47,.18)}
+
     .card{border:1px solid rgba(255,255,255,.08); background:var(--panel); border-radius:22px; padding:0; box-shadow:var(--shadow); overflow:hidden}
     .tableWrap{overflow:auto;max-height:72vh}
     table{width:100%;border-collapse:separate;border-spacing:0;min-width:1060px;background:rgba(10,10,10,.35)}
     thead th{
       position:sticky;top:0;z-index:2;text-align:left;padding:12px 14px;
       background:linear-gradient(180deg,#26060a,#160407);color:#fff;border-bottom:1px solid rgba(255,255,255,.08);
-      font-size:.86rem;text-transform:uppercase;letter-spacing:.05em;cursor:pointer
+      font-size:.86rem;text-transform:uppercase;letter-spacing:.05em;
     }
     tbody td{padding:12px 14px;border-bottom:1px solid rgba(255,255,255,.06);vertical-align:top}
     tbody tr:hover td{background:rgba(179,0,24,.08)}
+
     .muted{color:var(--muted)}
     .status{margin-top:10px;font-size:.92rem}
     .status.ok{color:var(--ok)} .status.warn{color:var(--warn)} .status.bad{color:var(--bad)}
+
     .btnMini{
       border:1px solid rgba(255,255,255,.12);
       background:rgba(18,18,18,.92);
@@ -86,7 +95,18 @@
       white-space:nowrap;
     }
     .btnMini:hover{border-color:rgba(255,255,255,.22)}
+
+    .book-link{
+      color:var(--text);
+      text-decoration:none;
+      font-weight:900;
+      border-bottom:1px solid transparent;
+    }
+    .book-link:hover{border-bottom-color:rgba(255,255,255,.35)}
+    .book-link:visited{color:var(--text)}
+
     mark{background: rgba(225,29,47,.35); color:#fff; padding:0 2px; border-radius:4px;}
+
     @media print{
       body{background:#fff;color:#000}
       .topbar,.hero,.toolbar,.status{display:none !important}
@@ -97,68 +117,74 @@
   </style>
 </head>
 <body>
-  <div class="wrap">
-    <div class="topbar">
-      <div class="brand">
-        <img class="logo" src="logo-blmf.png" alt="BLMF" onerror="this.style.display='none'; document.getElementById('logoFallback').style.display='block';" />
-        <div id="logoFallback" style="display:none">
-          <div style="font-weight:900;letter-spacing:.04em">BLMF</div>
-          <div class="muted" style="font-size:.86rem">Biblioteca Libertária Maxwell Ferreira</div>
-        </div>
-      </div>
-      <div style="display:flex;gap:10px;flex-wrap:wrap">
-        <button class="btn" id="btnBlog" type="button">Voltar ao blogue</button>
-        <button class="btn" id="btnConta" type="button">Minha conta</button>
-        <button class="btn primary" id="btnEntrar" type="button">Entrar</button>
-      </div>
-    </div>
-
-    <div class="hero">
-      <h1>Catálogo da BLMF</h1>
-      <p>Busca, filtro e acesso às fichas. Para reservar, entra na tua conta.</p>
-    </div>
-
-    <div class="toolbar">
-      <input class="input" id="q" placeholder="Buscar por título, autor, editora, referência…" />
-      <select class="select" id="sort">
-        <option value="title_asc">Ordenar: Título (A→Z)</option>
-        <option value="title_desc">Ordenar: Título (Z→A)</option>
-        <option value="author_asc">Ordenar: Autor (A→Z)</option>
-        <option value="author_desc">Ordenar: Autor (Z→A)</option>
-        <option value="year_desc">Ordenar: Ano (novo→antigo)</option>
-        <option value="year_asc">Ordenar: Ano (antigo→novo)</option>
-      </select>
-      <input class="input" id="ref" placeholder="Filtrar por ref (ex.: 0000124)" />
-      <button class="btn" id="btnLimpar" type="button">Limpar</button>
-      <button class="btn" id="btnExportPdf" type="button">Exportar PDF</button>
-      <button class="btn" id="btnRecarregar" type="button">Recarregar</button>
-    </div>
-
-    <div class="card">
-      <div class="tableWrap">
-        <table>
-          <thead>
-            <tr>
-              <th data-k="bib_ref">Ref</th>
-              <th data-k="title">Título</th>
-              <th data-k="author">Autor</th>
-              <th data-k="year">Ano</th>
-              <th data-k="publisher">Editora</th>
-              <th>Ações</th>
-            </tr>
-          </thead>
-          <tbody id="tbody">
-            <tr><td colspan="6" class="muted">Carregando…</td></tr>
-          </tbody>
-        </table>
-      </div>
-    </div>
-
-    <div class="status" id="status"></div>
-  </div>
 
   <script type="module">
     import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+
+    // ⚠️ Anti-parasite: on réécrit le body dès le chargement du module.
+    // Ça élimine n'importe quel texte/tableau collé par erreur dans le body.
+    document.body.innerHTML = `
+      <div class="wrap" id="app">
+        <div class="topbar">
+          <div class="brand">
+            <img class="logo" src="logo-blmf.png" alt="BLMF"
+              onerror="this.style.display='none'; const f=document.getElementById('logoFallback'); if(f) f.style.display='block';" />
+            <div id="logoFallback" style="display:none">
+              <div style="font-weight:900;letter-spacing:.04em">BLMF</div>
+              <div class="muted" style="font-size:.86rem">Biblioteca Libertária Maxwell Ferreira</div>
+            </div>
+          </div>
+          <div style="display:flex;gap:10px;flex-wrap:wrap">
+            <button class="btn" id="btnBlog" type="button">Voltar ao blogue</button>
+            <button class="btn" id="btnConta" type="button">Minha conta</button>
+            <button class="btn primary" id="btnEntrar" type="button">Entrar</button>
+          </div>
+        </div>
+
+        <div class="hero">
+          <h1>Catálogo da BLMF</h1>
+          <p>Busca, filtro e acesso às fichas. Para reservar, entra na tua conta.</p>
+        </div>
+
+        <div class="toolbar">
+          <input class="input" id="q" placeholder="Buscar por título, autor, editora, referência…" />
+          <select class="select" id="sort">
+            <option value="title_asc">Ordenar: Título (A→Z)</option>
+            <option value="title_desc">Ordenar: Título (Z→A)</option>
+            <option value="author_asc">Ordenar: Autor (A→Z)</option>
+            <option value="author_desc">Ordenar: Autor (Z→A)</option>
+            <option value="year_desc">Ordenar: Ano (novo→antigo)</option>
+            <option value="year_asc">Ordenar: Ano (antigo→novo)</option>
+          </select>
+          <input class="input" id="ref" placeholder="Filtrar por ref (ex.: 0000124)" />
+          <button class="btn" id="btnLimpar" type="button">Limpar</button>
+          <button class="btn" id="btnExportPdf" type="button">Exportar PDF</button>
+          <button class="btn" id="btnRecarregar" type="button">Recarregar</button>
+        </div>
+
+        <div class="card">
+          <div class="tableWrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Ref</th>
+                  <th>Título</th>
+                  <th>Autor</th>
+                  <th>Ano</th>
+                  <th>Editora</th>
+                  <th>Ações</th>
+                </tr>
+              </thead>
+              <tbody id="tbody">
+                <tr><td colspan="6" class="muted">Carregando…</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="status" id="status"></div>
+      </div>
+    `;
 
     const ROUTES = {
       BLOG_HOME: "https://cclamazonia.noblogs.org/",
@@ -182,6 +208,9 @@
       el.textContent = msg || "";
     };
 
+    // petits marqueurs pour vérifier que tu as bien la bonne version déployée
+    console.log("BLMF CATALOGO — index.html v2026-03-05-clean");
+
     $("btnBlog").addEventListener("click", () => location.assign(ROUTES.BLOG_HOME));
     $("btnConta").addEventListener("click", () => location.assign(ROUTES.CONTA));
     $("btnEntrar").addEventListener("click", () => location.assign(ROUTES.CADASTRO));
@@ -204,7 +233,7 @@
     if (!booksTable) setStatus("Tabela de livros não encontrada.", "bad");
 
     let rows = [];
-    function norm(s){ return String(s||"").toLowerCase(); }
+    const norm = (s) => String(s||"").toLowerCase();
 
     function highlight(text, q){
       const t = String(text||"");
@@ -250,9 +279,12 @@
       let list = rows.slice();
       if (q){
         const qq = norm(q);
-        list = list.filter(r => {
-          return norm(r.title).includes(qq) || norm(r.author).includes(qq) || norm(r.publisher).includes(qq) || norm(r.bib_ref).includes(qq);
-        });
+        list = list.filter(r =>
+          norm(r.title).includes(qq) ||
+          norm(r.author).includes(qq) ||
+          norm(r.publisher).includes(qq) ||
+          norm(r.bib_ref).includes(qq)
+        );
       }
       if (ref){
         list = list.filter(r => String(r.bib_ref||"").includes(ref));
@@ -268,28 +300,25 @@
 
       tbody.innerHTML = list.map(r => {
         const bib_ref = r.bib_ref || "—";
-        const title = highlight(r.title || "—", q);
+        const titleHtml = highlight(r.title || "—", q);
         const author = highlight(r.author || "—", q);
         const year = r.year || "—";
         const publisher = highlight(r.publisher || "—", q);
+
+        const href = `${ROUTES.LIVRO}?ref=${encodeURIComponent(bib_ref)}`;
+
         return `<tr>
           <td>${bib_ref}</td>
-          <td>${title}</td>
+          <td><a class="book-link" href="${href}">${titleHtml}</a></td>
           <td>${author}</td>
           <td>${year}</td>
           <td>${publisher}</td>
           <td>
-            <button class="btnMini" data-open="${bib_ref}" type="button">Abrir ficha</button>
             <button class="btnMini" data-copy="${bib_ref}" type="button">Copiar ref</button>
             <button class="btnMini" data-reserve="${bib_ref}" type="button">Reservar</button>
           </td>
         </tr>`;
       }).join("");
-
-      tbody.querySelectorAll("button[data-open]").forEach(b => b.addEventListener("click", () => {
-        const ref = b.getAttribute("data-open");
-        location.assign(`${ROUTES.LIVRO}?ref=${encodeURIComponent(ref)}`);
-      }));
 
       tbody.querySelectorAll("button[data-copy]").forEach(b => b.addEventListener("click", async () => {
         const ref = b.getAttribute("data-copy");
@@ -312,7 +341,6 @@
       setStatus("", "");
       $("tbody").innerHTML = `<tr><td colspan="6" class="muted">Carregando…</td></tr>`;
 
-      // adapte aqui se teus campos tiverem outros nomes
       const { data, error } = await supabase
         .from(booksTable)
         .select("bib_ref,title,autor,author,ano,year,editora,publisher")
