@@ -177,6 +177,8 @@ tbody tr:hover td { background: rgba(179,0,24,.08); }
 .col-ref { width: 10%; white-space: nowrap; font-variant-numeric: tabular-nums; }
 .col-ano { width: 10%; white-space: nowrap; }
 .muted { color: var(--muted); }
+
+mark{background: rgba(225,29,47,.35); color:#fff; padding:0 2px; border-radius:4px;}
 .footer {
   margin-top: 16px;
   color: var(--muted);
@@ -261,7 +263,9 @@ body {
   </section>
 
   <section class="toolbar">
-    <input id="search" class="input" type="search" placeholder="Buscar por autor, título ou editora…">
+    <input id="search" class="input" type="search" list="searchSuggestions" placeholder="Buscar por autor, título ou editora…"
+      title="Dica: você pode digitar vários termos (ex.: bakunin 2011).">
+    <datalist id="searchSuggestions"></datalist>
     <select id="authorFilter" class="select">
       <option value="">Todos os autores</option>
     </select>
@@ -346,6 +350,8 @@ async function loadRowsFromSupabase() {
 
 let sortKey = 'autor';
 let sortDir = 'asc';
+let userSorted = false;
+let lastQuery = { tokens: [], phrases: [] };
 
 const tbody = document.getElementById('tbody');
 const search = document.getElementById('search');
@@ -358,6 +364,8 @@ const empty = document.getElementById('empty');
 
 (async function init() {
   rows = await loadRowsFromSupabase();
+  prepareRows();
+  fillSearchSuggestions();
   totalPill.textContent = `Total: ${rows.length}`;
 
   authorFilter.innerHTML = '<option value="">Todos os autores</option>';
@@ -393,27 +401,219 @@ function normalize(s) {
     .trim();
 }
 
+// Pré-processa as linhas para busca rápida (sem mexer no Supabase)
+function prepareRows() {
+  for (const r of rows) {
+    const na = normalize(r.autor);
+    const nt = normalize(r.titulo);
+    const ne = normalize(r.editora);
+    const ny = normalize(r.ano);
+    const nr = normalize(r.bib_ref);
+    r._n = { autor: na, titulo: nt, editora: ne, ano: ny, bib_ref: nr };
+    r._all = [nr, na, nt, ny, ne].filter(Boolean).join(' ').trim();
+    r._words = r._all ? r._all.split(/\s+/).filter(Boolean) : [];
+  }
+}
+
+function fillSearchSuggestions() {
+  const dl = document.getElementById('searchSuggestions');
+  if (!dl) return;
+  dl.innerHTML = '';
+  const seen = new Set();
+  const push = (v) => {
+    const s = (v || '').toString().trim();
+    if (!s) return;
+    const k = normalize(s);
+    if (!k || seen.has(k)) return;
+    seen.add(k);
+    const opt = document.createElement('option');
+    opt.value = s;
+    dl.appendChild(opt);
+  };
+  // Sugestões: títulos + autores (limitadas para não pesar)
+  for (const r of rows) {
+    push(r.titulo);
+    push(r.autor);
+  }
+}
+
+// Query: suporta vários termos (AND) e frases entre aspas: "..."
+function parseQuery(raw) {
+  const out = { tokens: [], phrases: [] };
+  const s = (raw || '').toString().trim();
+  if (!s) return out;
+
+  const re = /"([^"]+)"|(\S+)/g;
+  let m;
+  while ((m = re.exec(s))) {
+    const phrase = m[1];
+    const word = m[2];
+    if (phrase) {
+      const p = normalize(phrase);
+      if (p) out.phrases.push(p);
+    } else if (word) {
+      const t = normalize(word);
+      if (t) out.tokens.push(t);
+    }
+  }
+  // Remove duplicados
+  out.tokens = [...new Set(out.tokens)];
+  out.phrases = [...new Set(out.phrases)];
+  return out;
+}
+
+function bigrams(str) {
+  const s = str || '';
+  const map = new Map();
+  for (let i = 0; i < s.length - 1; i++) {
+    const bg = s.slice(i, i + 2);
+    map.set(bg, (map.get(bg) || 0) + 1);
+  }
+  return map;
+}
+
+function diceCoefficient(a, b) {
+  if (!a || !b) return 0;
+  if (a === b) return 1;
+  if (a.length < 2 || b.length < 2) return 0;
+
+  const aMap = bigrams(a);
+  let intersection = 0;
+  for (let i = 0; i < b.length - 1; i++) {
+    const bg = b.slice(i, i + 2);
+    const count = aMap.get(bg) || 0;
+    if (count > 0) {
+      aMap.set(bg, count - 1);
+      intersection++;
+    }
+  }
+  return (2 * intersection) / ((a.length - 1) + (b.length - 1));
+}
+
+function scoreRow(r, q) {
+  // Frases entre aspas precisam bater “literalmente” (sem acentos)
+  for (const ph of q.phrases) {
+    if (!r._all.includes(ph)) return { ok: false, score: 0, hits: [] };
+  }
+
+  const hits = [];
+  let score = 0;
+
+  // Para cada termo: aceita match direto OU match “parecido” (typo)
+  for (const t of q.tokens) {
+    if (!t) continue;
+
+    // match direto no texto todo
+    if (r._all.includes(t)) {
+      score += 10;
+      hits.push(t);
+      continue;
+    }
+
+    // match por “parecido” (Dice em bigramas) contra palavras do registro
+    let best = 0;
+    const first = t[0];
+
+    for (const w of r._words) {
+      if (!w || w[0] !== first) continue; // corta o custo e evita ruído
+      const dl = Math.abs(w.length - t.length);
+      if (dl > 3) continue;
+      const d = diceCoefficient(t, w);
+      if (d > best) best = d;
+      if (best >= 0.92) break; // suficientemente bom
+    }
+
+    if (best >= 0.78) {
+      score += 4 + best * 6;
+      hits.push(t);
+      continue;
+    }
+
+    // sem match desse termo → descarta (AND)
+    return { ok: false, score: 0, hits: [] };
+  }
+
+  // Pequeno bônus para “começa com” em autor/título (melhora relevância)
+  const raw = q.tokens.join(' ');
+  if (raw) {
+    if (r._n.titulo.startsWith(q.tokens[0])) score += 2;
+    if (r._n.autor.startsWith(q.tokens[0])) score += 2;
+  }
+
+  return { ok: true, score, hits };
+}
+
+function escapeRegExp(s) {
+  return (s || '').replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&');
+}
+
+function highlightHTML(text, terms) {
+  const safe = escapeHTML(text || '');
+  if (!terms || !terms.length) return safe;
+
+  // termos maiores primeiro (evita highlight “dentro”)
+  const uniq = [...new Set(terms.filter(t => (t || '').length >= 2))].sort((a,b) => b.length - a.length);
+  let out = safe;
+  for (const t of uniq) {
+    const re = new RegExp(escapeRegExp(t), 'ig');
+    out = out.replace(re, (m) => `<mark>${m}</mark>`);
+  }
+  return out;
+}
+
+
 function currentRows() {
-  const q = normalize(search.value);
+  const qRaw = (search.value || '').toString();
+  const q = parseQuery(qRaw);
+  lastQuery = q;
+
   const a = authorFilter.value;
   const y = yearFilter.value;
   const p = publisherFilter.value;
 
-  let filtered = rows.filter(r => {
-    const matchesSearch = !q || ['autor','titulo','ano','editora']
-      .some(k => normalize(r[k]).includes(q));
+  const hasQuery = (q.tokens.length > 0 || q.phrases.length > 0);
+  const filtered = [];
+
+  for (const r of rows) {
     const matchesAuthor = !a || r.autor === a;
     const matchesYear = !y || r.ano === y;
     const matchesPublisher = !p || r.editora === p;
-    return matchesSearch && matchesAuthor && matchesYear && matchesPublisher;
-  });
+    if (!matchesAuthor || !matchesYear || !matchesPublisher) continue;
 
-  filtered.sort((x,y) => {
-    const ax = normalize(x[sortKey]);
-    const ay = normalize(y[sortKey]);
-    const cmp = ax.localeCompare(ay, 'pt-BR', { numeric: true });
-    return sortDir === 'asc' ? cmp : -cmp;
-  });
+    if (!hasQuery) {
+      r._score = 0;
+      r._hits = [];
+      filtered.push(r);
+      continue;
+    }
+
+    const res = scoreRow(r, q);
+    if (!res.ok) continue;
+    r._score = res.score;
+    r._hits = res.hits;
+    filtered.push(r);
+  }
+
+  // Ordenação:
+  // - Se há busca digitada e o usuário ainda não ordenou manualmente: relevância
+  // - Caso contrário: respeita a coluna escolhida
+  if (hasQuery && !userSorted) {
+    filtered.sort((x, y) => {
+      const sx = (x._score || 0);
+      const sy = (y._score || 0);
+      if (sy !== sx) return sy - sx;
+      const tx = normalize(x.titulo);
+      const ty = normalize(y.titulo);
+      return tx.localeCompare(ty, 'pt-BR', { numeric: true });
+    });
+  } else {
+    filtered.sort((x, y) => {
+      const ax = normalize(x[sortKey]);
+      const ay = normalize(y[sortKey]);
+      const cmp = ax.localeCompare(ay, 'pt-BR', { numeric: true });
+      return sortDir === 'asc' ? cmp : -cmp;
+    });
+  }
 
   return filtered;
 }
@@ -427,21 +627,43 @@ function render() {
   for (const r of filtered) {
     const tr = document.createElement('tr');
     const ref = (r.bib_ref || '');
+    const terms = [...(lastQuery.phrases || []), ...(lastQuery.tokens || [])];
+    const refHtml = ref ? highlightHTML(ref, terms) : '<span class="muted">—</span>';
+    const autorHtml = r.autor ? highlightHTML(r.autor, terms) : '<span class="muted">—</span>';
+    const tituloHtml = r.titulo ? highlightHTML(r.titulo, terms) : '<span class="muted">—</span>';
+    const anoHtml = r.ano ? highlightHTML(r.ano, terms) : '<span class="muted">—</span>';
+    const editoraHtml = r.editora ? highlightHTML(r.editora, terms) : '<span class="muted">—</span>';
 
-    tr.innerHTML = `      <td class="col-ref">${escapeHTML(r.bib_ref || '—')}</td>
-      <td>${r.autor || '<span class="muted">—</span>'}</td>
-      <td>${r.titulo || '<span class="muted">—</span>'}</td>
-      <td class="col-ano">${r.ano || '<span class="muted">—</span>'}</td>
-      <td><div class="cell-flex"><span>${r.editora || '<span class="muted">—</span>'}</span><button class="btn-inline copyRefBtn" type="button" data-ref="${encodeURIComponent((r.bib_ref || ''))}">Copiar referência</button></div></td>
+    tr.innerHTML = `      <td class="col-ref">${refHtml}</td>
+      <td>${autorHtml}</td>
+      <td>${tituloHtml}</td>
+      <td class="col-ano">${anoHtml}</td>
+      <td><div class="cell-flex"><span>${editoraHtml}</span><button class="btn-inline copyRefBtn" type="button" data-ref="${encodeURIComponent(ref)}">Copiar referência</button></div></td>
     `;
     tbody.appendChild(tr);
   }
 }
 
-for (const el of [search, authorFilter, yearFilter, publisherFilter]) {
-  el.addEventListener('input', render);
-  el.addEventListener('change', render);
+function debounce(fn, ms) {
+  let t;
+  return (...args) => {
+    clearTimeout(t);
+    t = setTimeout(() => fn(...args), ms);
+  };
 }
+
+const debouncedRender = debounce(render, 140);
+
+// Busca: debounce + volta para “relevância”
+search.addEventListener('input', () => {
+  userSorted = false;
+  debouncedRender();
+});
+
+// Filtros: aplica na hora
+authorFilter.addEventListener('change', render);
+yearFilter.addEventListener('change', render);
+publisherFilter.addEventListener('change', render);
 
 
 
@@ -552,7 +774,11 @@ document.getElementById('clearBtn').addEventListener('click', () => {
   authorFilter.value = '';
   yearFilter.value = '';
   publisherFilter.value = '';
+  sortKey = 'autor';
+  sortDir = 'asc';
+  userSorted = false;
   render();
+  search.focus();
 });
 
 
@@ -592,6 +818,7 @@ tbody.addEventListener('click', async (e) => {
 document.querySelectorAll('th[data-key]').forEach(th => {
   th.addEventListener('click', () => {
     const key = th.dataset.key;
+    userSorted = true;
     if (sortKey === key) {
       sortDir = sortDir === 'asc' ? 'desc' : 'asc';
     } else {
@@ -601,6 +828,22 @@ document.querySelectorAll('th[data-key]').forEach(th => {
     render();
   });
 });
+
+// Atalhos de teclado
+document.addEventListener('keydown', (e) => {
+  // "/" foca na busca
+  if (e.key === '/' && document.activeElement !== search && !e.ctrlKey && !e.metaKey && !e.altKey) {
+    e.preventDefault();
+    search.focus();
+  }
+  // ESC limpa a busca (se o foco estiver na caixa)
+  if (e.key === 'Escape' && document.activeElement === search) {
+    search.value = '';
+    userSorted = false;
+    debouncedRender();
+  }
+});
+
 
 render();
 </script>
