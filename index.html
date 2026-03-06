@@ -4,11 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>BLMF | Catálogo</title>
-  <link rel="icon" type="image/png" href="https://cclamazonia.noblogs.org/files/2026/03/logo_detoure_BLMF.png">
-  <link rel="shortcut icon" href="https://cclamazonia.noblogs.org/files/2026/03/logo_detoure_BLMF.png">
-  <link rel="apple-touch-icon" href="https://cclamazonia.noblogs.org/files/2026/03/logo_detoure_BLMF.png">
-
-  <style>
+<style>
 :root {
   --bg: #0b0b0b;
   --panel: #121212;
@@ -28,7 +24,7 @@ html, body { margin: 0; padding: 0; background:
   font-family: Inter, Segoe UI, Arial, sans-serif;
 }
 a { color: inherit; }
-.wrap { max-width: 1500px; margin: 0 auto; padding: 24px; }
+.wrap { max-width: 1320px; margin: 0 auto; padding: 24px; }
 .hero {
   background: linear-gradient(135deg, rgba(179,0,24,.95), rgba(90,0,12,.96));
   border: 1px solid rgba(255,255,255,.08);
@@ -54,45 +50,26 @@ a { color: inherit; }
   color: rgba(255,255,255,.9);
 }
 .toolbar {
-  margin-bottom: 18px;
-}
-.filters-grid {
   display: grid;
-  grid-template-columns: minmax(280px, 1.5fr) minmax(180px, .95fr) minmax(170px, .75fr) minmax(210px, .95fr) minmax(120px, .6fr) minmax(190px, .95fr) auto auto;
+  grid-template-columns: minmax(320px, 1.5fr) minmax(220px, 1fr) minmax(220px, 1fr) minmax(260px, 1.1fr);
   gap: 12px;
+  margin-bottom: 18px;
   align-items: end;
 }
-.field {
+.toolbar-actions {
+  grid-column: 1 / -1;
   display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-.field-label {
-  font-size: .88rem;
-  color: rgba(255,255,255,.92);
-  font-weight: 700;
-}
-.field-actions {
-  align-self: end;
-}
-.actions-group {
-  display:flex;
-  gap:12px;
-  flex-wrap:wrap;
-  align-items:center;
-  justify-content:flex-end;
-}
-@media (max-width: 1320px) {
-  .filters-grid { grid-template-columns: repeat(4, minmax(180px, 1fr)); }
-  .field-actions { grid-column: span 2; }
+  gap: 12px;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-start;
 }
 @media (max-width: 980px) {
-  .filters-grid { grid-template-columns: repeat(2, minmax(220px, 1fr)); }
-  .field-actions { grid-column: span 2; }
+  .toolbar { grid-template-columns: 1fr 1fr; }
 }
 @media (max-width: 640px) {
-  .filters-grid { grid-template-columns: 1fr; }
-  .field-actions { grid-column: auto; }
+  .toolbar { grid-template-columns: 1fr; }
+  .toolbar-actions { justify-content: flex-start; }
 }
 .input, .select, .button {
   width: 100%;
@@ -183,8 +160,7 @@ table {
   width: 100%;
   border-collapse: separate;
   border-spacing: 0;
-  min-width: 1300px;
-  table-layout: fixed;
+  min-width: 920px;
 }
 thead th {
   position: sticky;
@@ -208,30 +184,9 @@ tbody td {
 }
 tbody tr:nth-child(odd) td { background: rgba(255,255,255,.01); }
 tbody tr:hover td { background: rgba(179,0,24,.08); }
-.col-ref { width: 9%; white-space: nowrap; font-variant-numeric: tabular-nums; }
-.col-status { width: 14%; }
-.col-autor { width: 17%; white-space: normal; line-height: 1.35; word-break: break-word; }
-.col-titulo { width: 32%; white-space: normal; line-height: 1.35; word-break: break-word; }
-.col-ano { width: 8%; white-space: nowrap; }
-.col-editora { width: 20%; white-space: normal; line-height: 1.35; word-break: break-word; }
+.col-ref { width: 10%; white-space: nowrap; font-variant-numeric: tabular-nums; }
+.col-ano { width: 10%; white-space: nowrap; }
 .muted { color: var(--muted); }
-.status-badge {
-  display:inline-flex;
-  align-items:center;
-  justify-content:center;
-  min-height: 30px;
-  padding: 6px 10px;
-  border-radius: 999px;
-  font-size: .82rem;
-  font-weight: 700;
-  line-height: 1.2;
-  border: 1px solid rgba(255,255,255,.14);
-  white-space: normal;
-}
-.status-disponivel { background: rgba(34,197,94,.18); color: #c7f9d3; border-color: rgba(34,197,94,.35); }
-.status-consulta { background: rgba(96,165,250,.16); color: #d8ecff; border-color: rgba(96,165,250,.35); }
-.status-indisponivel { background: rgba(251,191,36,.18); color: #fff0c2; border-color: rgba(251,191,36,.35); }
-.sort-indicator { margin-left: 6px; opacity: .85; }
 
 mark{background: rgba(225,29,47,.35); color:#fff; padding:0 2px; border-radius:4px;}
 .footer {
@@ -318,55 +273,23 @@ body {
   </section>
 
   <section class="toolbar">
-    <div class="filters-grid">
-      <label class="field">
-        <span class="field-label">Buscar</span>
-        <input id="search" class="input" type="search" autocomplete="off" placeholder="Autor, título, editora, referência…" title="Dica: você pode digitar vários termos (ex.: bakunin 2011).">
-      </label>
-      <label class="field">
-        <span class="field-label">Autor(a)</span>
-        <input id="authorFilter" class="input" type="search" placeholder="Filtrar por autor(a)" autocomplete="off">
-      </label>
-      <label class="field">
-        <span class="field-label">Ano</span>
-        <input id="yearFilter" class="input" type="search" placeholder="Ex.: 1984 ou 1917-1921" autocomplete="off">
-      </label>
-      <label class="field">
-        <span class="field-label">Editora</span>
-        <input id="publisherFilter" class="input" type="search" placeholder="Filtrar por editora" autocomplete="off">
-      </label>
-      <label class="field">
-        <span class="field-label">CDD</span>
-        <input id="cddFilter" class="input" type="search" placeholder="Ex.: 335" autocomplete="off">
-      </label>
-      <label class="field">
-        <span class="field-label">Disponibilidade</span>
-        <select id="availabilityFilter" class="select">
-          <option value="">Todas</option>
-          <option value="disponivel">Disponível agora</option>
-          <option value="consulta">Somente consulta local</option>
-          <option value="indisponivel">Indisponível no momento</option>
-        </select>
-      </label>
-      <div class="field field-actions">
-        <button id="clearBtn" class="button secondary" type="button">Limpar filtros</button>
-      </div>
-      <div class="field field-actions">
-        <button id="pdfBtn" class="button" type="button">Exportar PDF</button>
-      </div>
-      <div class="field field-actions" style="grid-column: 1 / -1;">
-        <div class="actions-group">
-          <button id="contaBtn" class="button secondary" type="button" style="width:auto;">Minha conta</button>
-          <a id="blogBtn" class="button secondary" href="https://cclamazonia.noblogs.org/" style="width:auto;">Voltar ao blogue</a>
-        </div>
-      </div>
+    <input id="search" class="input" type="search" autocomplete="off" placeholder="Buscar por autor, título ou editora…"
+      title="Dica: você pode digitar vários termos (ex.: bakunin 2011).">
+    <input id="authorFilter" class="input" type="search" placeholder="Filtrar por autor(a)…" autocomplete="off">
+    <input id="yearFilter" class="input" type="search" placeholder="Filtrar por ano… (ex.: 1984 ou 1917-1921)" autocomplete="off">
+    <input id="publisherFilter" class="input" type="search" placeholder="Filtrar por editora…" autocomplete="off">
+    <div class="toolbar-actions">
+      <button id="clearBtn" class="button secondary" type="button" style="width:auto;">Limpar filtros</button>
+      <button id="pdfBtn" class="button" type="button" style="width:auto;">Exportar PDF</button>
+      <button id="contaBtn" class="button secondary" type="button" style="width:auto;">Minha conta</button>
+      <a id="blogBtn" class="button secondary" href="https://cclamazonia.noblogs.org/" style="width:auto;">Voltar ao blogue</a>
     </div>
   </section>
 
   <div class="stats">
     <div class="pill" id="totalPill">Total: 0</div>
     <div class="pill" id="visiblePill">Exibidos: 0</div>
-    <div class="pill">Colunas: ref · status · autor · título · ano · editora</div>
+    <div class="pill">Colunas: ref · autor · título · ano · editora</div>
   </div>
 
   <section class="sheet">
@@ -380,12 +303,11 @@ body {
       <table>
         <thead>
           <tr>
-<th class="col-ref" data-key="bib_ref">ref</th>
-<th class="col-status" data-key="status_label">status</th>
-<th class="col-autor" data-key="autor">autor</th>
-<th class="col-titulo" data-key="titulo">título</th>
-<th class="col-ano" data-key="ano">ano</th>
-<th class="col-editora" data-key="editora">editora</th>
+<th data-key="bib_ref">ref</th>
+<th data-key="autor">autor</th>
+            <th data-key="titulo">título</th>
+            <th data-key="ano">ano</th>
+            <th data-key="editora">editora</th>
           </tr>
         </thead>
         <tbody id="tbody"></tbody>
@@ -464,7 +386,7 @@ let rows = [];
 
 async function loadRowsFromSupabase() {
     // Carrega via REST (PostgREST) para evitar dependência do supabase-js
-    try {      const url = `${SUPABASE_URL}/rest/v1/v_books_public?select=bib_ref,autor,titulo,ano,editora,cdd,loanable,available_count&order=autor.asc,titulo.asc`;
+    try {      const url = `${SUPABASE_URL}/rest/v1/books?select=bib_ref,autor,titulo,ano,editora&order=autor.asc,titulo.asc`;
       const res = await fetch(url, {
         headers: {
           apikey: SUPABASE_ANON_KEY,
@@ -482,10 +404,7 @@ async function loadRowsFromSupabase() {
         autor: r.autor ?? "",
         titulo: r.titulo ?? "",
         ano: r.ano ?? "",
-        editora: r.editora ?? "",
-        cdd: r.cdd ?? "",
-        loanable: r.loanable,
-        available_count: Number(r.available_count ?? 0)
+        editora: r.editora ?? ""
       }));
     } catch (e) {      alert('Erro Supabase: ' + (e?.message || String(e)));
       return [];
@@ -503,8 +422,6 @@ const search = document.getElementById('search');
 const authorFilter = document.getElementById('authorFilter');
 const yearFilter = document.getElementById('yearFilter');
 const publisherFilter = document.getElementById('publisherFilter');
-const cddFilter = document.getElementById('cddFilter');
-const availabilityFilter = document.getElementById('availabilityFilter');
 const totalPill = document.getElementById('totalPill');
 const visiblePill = document.getElementById('visiblePill');
 const empty = document.getElementById('empty');
@@ -567,12 +484,6 @@ function matchYearField(fieldValue, raw) {
   return y.startsWith(digitsOnly);
 }
 
-function deriveStatus(row) {
-  if (row.loanable === false) return { key: 'consulta', label: 'Somente consulta local', cls: 'status-consulta' };
-  if (Number(row.available_count || 0) > 0) return { key: 'disponivel', label: 'Disponível agora', cls: 'status-disponivel' };
-  return { key: 'indisponivel', label: 'Indisponível no momento', cls: 'status-indisponivel' };
-}
-
 // Pré-processa as linhas para busca rápida (sem mexer no Supabase)
 function prepareRows() {
   for (const r of rows) {
@@ -581,13 +492,8 @@ function prepareRows() {
     const ne = normalize(r.editora);
     const ny = normalize(r.ano);
     const nr = normalize(r.bib_ref);
-    const nc = normalize(r.cdd);
-    const st = deriveStatus(r);
-    r.status_key = st.key;
-    r.status_label = st.label;
-    r.status_class = st.cls;
-    r._n = { autor: na, titulo: nt, editora: ne, ano: ny, bib_ref: nr, cdd: nc, status_label: normalize(st.label) };
-    r._all = [nr, na, nt, ny, ne, nc, normalize(st.label)].filter(Boolean).join(' ').trim();
+    r._n = { autor: na, titulo: nt, editora: ne, ano: ny, bib_ref: nr };
+    r._all = [nr, na, nt, ny, ne].filter(Boolean).join(' ').trim();
     r._words = r._all ? r._all.split(/\s+/).filter(Boolean) : [];
   }
 }
@@ -726,8 +632,6 @@ function currentRows() {
   const a = normalize(authorFilter.value);
   const y = (yearFilter.value || '').toString().trim();
   const p = normalize(publisherFilter.value);
-  const c = normalize(cddFilter.value);
-  const av = (availabilityFilter.value || '').toString().trim();
 const hasQuery = (q.tokens.length > 0 || q.phrases.length > 0);
   const filtered = [];
 
@@ -735,9 +639,7 @@ const hasQuery = (q.tokens.length > 0 || q.phrases.length > 0);
     const matchesAuthor = !a || matchText(r.autor, a);
     const matchesYear = matchYearField(r.ano, y);
     const matchesPublisher = !p || matchText(r.editora, p);
-    const matchesCDD = !c || matchText(r.cdd, c);
-    const matchesAvailability = !av || r.status_key === av;
-    if (!matchesAuthor || !matchesYear || !matchesPublisher || !matchesCDD || !matchesAvailability) continue;
+    if (!matchesAuthor || !matchesYear || !matchesPublisher) continue;
 
     if (!hasQuery) {
       r._score = 0;
@@ -767,18 +669,9 @@ const hasQuery = (q.tokens.length > 0 || q.phrases.length > 0);
     });
   } else {
     filtered.sort((x, y) => {
-      let cmp = 0;
-      if (sortKey === 'ano') {
-        const ax = parseInt((x.ano || '').toString().replace(/[^0-9]/g, ''), 10);
-        const ay = parseInt((y.ano || '').toString().replace(/[^0-9]/g, ''), 10);
-        const vx = Number.isNaN(ax) ? -Infinity : ax;
-        const vy = Number.isNaN(ay) ? -Infinity : ay;
-        cmp = vx === vy ? 0 : (vx < vy ? -1 : 1);
-      } else {
-        const ax = normalize(x[sortKey]);
-        const ay = normalize(y[sortKey]);
-        cmp = ax.localeCompare(ay, 'pt-BR', { numeric: true });
-      }
+      const ax = normalize(x[sortKey]);
+      const ay = normalize(y[sortKey]);
+      const cmp = ax.localeCompare(ay, 'pt-BR', { numeric: true });
       return sortDir === 'asc' ? cmp : -cmp;
     });
   }
@@ -791,7 +684,6 @@ function render() {
   tbody.innerHTML = '';
   visiblePill.textContent = `Exibidos: ${filtered.length}`;
   empty.hidden = filtered.length !== 0;
-  updateSortHeaders();
 
   for (const r of filtered) {
     const tr = document.createElement('tr');
@@ -802,18 +694,16 @@ function render() {
     const tituloHtml = r.titulo ? highlightHTML(r.titulo, terms) : '<span class="muted">—</span>';
     const anoHtml = r.ano ? highlightHTML(r.ano, terms) : '<span class="muted">—</span>';
     const editoraHtml = r.editora ? highlightHTML(r.editora, terms) : '<span class="muted">—</span>';
-    const statusHtml = `<span class="status-badge ${r.status_class}">${escapeHTML(r.status_label)}</span>`;
 
     const livroUrl = ref ? ('livro.html?ref=' + encodeURIComponent(ref)) : '';
     const tituloCell = ref ? (`<a href="${livroUrl}" style="text-decoration:none;">${tituloHtml}</a>`) : tituloHtml;
 
 
     tr.innerHTML = `      <td class="col-ref">${refHtml}</td>
-      <td class="col-status">${statusHtml}</td>
-      <td class="col-autor">${autorHtml}</td>
-      <td class="col-titulo">${tituloCell}</td>
+      <td>${autorHtml}</td>
+      <td>${tituloCell}</td>
       <td class="col-ano">${anoHtml}</td>
-      <td class="col-editora"><div class="cell-flex"><span>${editoraHtml}</span><button class="btn-inline copyRefBtn" type="button" data-ref="${encodeURIComponent(ref)}">Copiar referência</button></div></td>
+      <td><div class="cell-flex"><span>${editoraHtml}</span><button class="btn-inline copyRefBtn" type="button" data-ref="${encodeURIComponent(ref)}">Copiar referência</button></div></td>
     `;
     tbody.appendChild(tr);
   }
@@ -839,8 +729,6 @@ search.addEventListener('input', () => {
 authorFilter.addEventListener('input', render);
 yearFilter.addEventListener('input', render);
 publisherFilter.addEventListener('input', render);
-cddFilter.addEventListener('input', render);
-availabilityFilter.addEventListener('change', render);
 
 
 
@@ -951,8 +839,6 @@ document.getElementById('clearBtn').addEventListener('click', () => {
   authorFilter.value = '';
   yearFilter.value = '';
   publisherFilter.value = '';
-  cddFilter.value = '';
-  availabilityFilter.value = '';
   sortKey = 'autor';
   sortDir = 'asc';
   userSorted = false;
@@ -993,15 +879,6 @@ tbody.addEventListener('click', async (e) => {
   }
 });
 
-
-function updateSortHeaders() {
-  document.querySelectorAll('th[data-key]').forEach(th => {
-    const base = th.dataset.label || th.textContent.replace(/[↑↓]\s*$/,'').trim();
-    th.dataset.label = base;
-    const indicator = (th.dataset.key === sortKey) ? (sortDir === 'asc' ? ' ↑' : ' ↓') : '';
-    th.innerHTML = `${escapeHTML(base)}<span class="sort-indicator">${indicator.trim()}</span>`;
-  });
-}
 
 document.querySelectorAll('th[data-key]').forEach(th => {
   th.addEventListener('click', () => {
