@@ -73,9 +73,9 @@ a { color: inherit; }
   color: rgba(255,255,255,.92);
 }
 .topbar-logo {
-  height: 78px;
+  height: 117px;
   width: auto;
-  max-width: 150px;
+  max-width: 225px;
   object-fit: contain;
   display: block;
   flex-shrink: 0;
@@ -108,11 +108,12 @@ a { color: inherit; }
 }
 .filters-grid {
   display:grid;
-  grid-template-columns: 1.35fr .95fr .9fr .9fr .7fr .7fr auto auto;
+  grid-template-columns: repeat(4, minmax(250px, 1fr));
   gap: 12px;
+  align-items:end;
 }
 @media (max-width: 1200px) {
-  .filters-grid { grid-template-columns: repeat(4, 1fr); }
+  .filters-grid { grid-template-columns: repeat(2, minmax(250px, 1fr)); }
 }
 @media (max-width: 860px) {
   .filters-grid { grid-template-columns: repeat(2, 1fr); }
@@ -153,6 +154,11 @@ a { color: inherit; }
 .button.secondary:hover,
 .button:hover {
   border-color: rgba(225,29,47,.55);
+}
+.button.small-advanced {
+  padding: 10px 12px;
+  font-size: .82rem;
+  line-height: 1.1;
 }
 .button.ghost {
   background: rgba(179,0,24,.12);
@@ -308,7 +314,7 @@ mark {
   font-size: .9rem;
 }
 @media (max-width: 700px) {
-  .topbar-logo { height: 54px; max-width: 108px; }
+  .topbar-logo { height: 81px; max-width: 162px; }
   .cell-flex { flex-direction:column; align-items:flex-start; }
 }
 </style>
@@ -320,12 +326,11 @@ mark {
       <div class="hero-copy">
         <h1>Catálogo da BLMF</h1>
         <p>Biblioteca Libertária Maxwell Ferreira · CCLA</p>
-        <div class="note">Busca mais tolerante, filtros visíveis e navegação direta para a ficha do livro.</div>
-        <div class="toolbar-actions">
+                <div class="toolbar-actions">
           <button id="contaBtn" class="button secondary" type="button" style="width:auto;">Minha conta</button>
           <a id="blogBtn" class="button secondary" href="https://cclamazonia.noblogs.org" style="width:auto; text-decoration:none;">Voltar ao blogue</a>
           <button id="pdfBtn" class="button secondary" type="button" style="width:auto;">Exportar PDF</button>
-          <a id="csvAdvancedLink" class="button secondary" href="#" role="button" style="width:auto; text-decoration:none;">Exportar CSV</a>
+          <a id="csvAdvancedLink" class="button secondary small-advanced" href="#" role="button" style="width:auto; text-decoration:none;">CSV avançado</a>
         </div>
       </div>
       <img src="https://cclamazonia.noblogs.org/files/2026/03/logo_detoure_BLMF.png" alt="Logotipo da Biblioteca Libertária Maxwell Ferreira" class="topbar-logo">
@@ -338,23 +343,23 @@ mark {
         <div class="title" style="font-weight:700; margin-bottom:4px;">Pesquisa e filtros</div>
         <div class="small">Você pode combinar busca livre, filtros e ordenação. Clique em autor(a) ou CDD para refinar rapidamente.</div>
       </div>
-      <div class="small" id="dataSourceHint">Fonte: catálogo público</div>
+      <div class="small" id="dataSourceHint" hidden></div>
     </div>
 
     <div class="filters-grid">
       <label class="field">
         <span class="label">Buscar</span>
-        <input id="search" class="input" type="search" autocomplete="off" list="searchSuggestions" placeholder="Autor, título, editora, referência…">
+        <input id="search" class="input" type="search" autocomplete="off" placeholder="Autor, título, editora, referência…">
       </label>
 
       <label class="field">
         <span class="label">Autor(a)</span>
-        <input id="authorFilter" class="input" type="search" autocomplete="off" list="authorSuggestions" placeholder="Filtrar por autor(a)">
+        <input id="authorFilter" class="input" type="search" autocomplete="off" placeholder="Filtrar por autor(a)">
       </label>
 
       <label class="field">
         <span class="label">Editora</span>
-        <input id="publisherFilter" class="input" type="search" autocomplete="off" list="publisherSuggestions" placeholder="Filtrar por editora">
+        <input id="publisherFilter" class="input" type="search" autocomplete="off" placeholder="Filtrar por editora">
       </label>
 
       <label class="field">
@@ -364,7 +369,7 @@ mark {
 
       <label class="field">
         <span class="label">CDD</span>
-        <input id="cddFilter" class="input" type="search" autocomplete="off" list="cddSuggestions" placeholder="Ex.: 335">
+        <input id="cddFilter" class="input" type="search" autocomplete="off" placeholder="Ex.: 335">
       </label>
 
       <label class="field">
@@ -393,12 +398,6 @@ mark {
     </div>
 
     <div class="chips" id="activeChips"></div>
-    <div class="legend">
-      <div class="pill">Disponível agora</div>
-      <div class="pill">Somente consulta local</div>
-      <div class="pill">Indisponível no momento</div>
-    </div>
-    <div class="notice-inline" id="softNotice">Assunto, idioma e localização ainda não aparecem porque esses dados não estão expostos na vista pública atual.</div>
     <div class="msg" id="loadMsg"></div>
 
     <datalist id="searchSuggestions"></datalist>
@@ -900,7 +899,7 @@ function render() {
       <td>
         <div class="cell-flex">
           <button class="btn-inline copyRefBtn" type="button" data-ref="${encodeURIComponent(ref)}">Copiar referência</button>
-          ${ref ? `<a class="btn-inline" href="${livroUrl}" style="text-decoration:none;">Abrir ficha</a>` : ''}
+          
         </div>
       </td>`;
     tbody.appendChild(tr);
