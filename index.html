@@ -151,6 +151,7 @@ table {
   border-collapse: separate;
   border-spacing: 0;
   min-width: 920px;
+  table-layout: fixed;
 }
 thead th {
   position: sticky;
@@ -174,8 +175,15 @@ tbody td {
 }
 tbody tr:nth-child(odd) td { background: rgba(255,255,255,.01); }
 tbody tr:hover td { background: rgba(179,0,24,.08); }
-.col-ref { width: 10%; white-space: nowrap; font-variant-numeric: tabular-nums; }
-.col-ano { width: 10%; white-space: nowrap; }
+.col-ref { width: 9%; white-space: nowrap; font-variant-numeric: tabular-nums; }
+.col-autor { width: 17%; }
+.col-titulo { width: 28%; }
+.col-ano { width: 8%; white-space: nowrap; }
+.col-editora { width: 17%; }
+.col-cdd { width: 8%; }
+.col-status { width: 8%; }
+.col-acao { width: 13%; }
+.col-autor, .col-titulo, .col-editora, .col-cdd, .col-status, .col-acao { word-break: break-word; }
 .muted { color: var(--muted); }
 
 mark{background: rgba(225,29,47,.35); color:#fff; padding:0 2px; border-radius:4px;}
@@ -404,6 +412,8 @@ th.sortable { cursor: pointer; }
         <option value="ano_asc">Ano (mais antigo)</option>
         <option value="editora">Editora</option>
         <option value="cdd">CDD</option>
+        <option value="bib_ref">Referência</option>
+        <option value="status">Status</option>
       </select>
     </div>
     <div class="field field-availability">
@@ -416,7 +426,7 @@ th.sortable { cursor: pointer; }
       </select>
     </div>
     <div class="actions-strip">
-      <button id="clearBtn" class="button secondary small" type="button">Limpeza</button>
+      <button id="clearBtn" class="button secondary small" type="button">Limpar filtros</button>
       <button id="pdfBtn" class="button small" type="button">Exportar PDF</button>
       <a id="csvAdvancedLink" class="action-link tiny" href="#" role="button">CSV (avançado)</a>
       <button id="contaBtn" class="button secondary small" type="button">Minha conta</button>
@@ -441,13 +451,13 @@ th.sortable { cursor: pointer; }
       <table>
         <thead>
           <tr>
-            <th>ref</th>
-            <th>autor</th>
-            <th>título</th>
-            <th>ano</th>
-            <th>editora</th>
-            <th>CDD</th>
-            <th>status</th>
+            <th class="sortable" data-sort="bib_ref">ref</th>
+            <th class="sortable" data-sort="autor">autor</th>
+            <th class="sortable" data-sort="titulo">título</th>
+            <th class="sortable" data-sort="ano">ano</th>
+            <th class="sortable" data-sort="editora">editora</th>
+            <th class="sortable" data-sort="cdd">CDD</th>
+            <th class="sortable" data-sort="status">status</th>
             <th>ação</th>
           </tr>
         </thead>
@@ -530,6 +540,7 @@ async function getCurrentUserAndRole() {
 
 let rows = [];
 let lastQuery = { tokens: [], phrases: [] };
+let activeHeaderSort = null;
 
 const tbody = document.getElementById('tbody');
 const search = document.getElementById('search');
@@ -547,6 +558,7 @@ const contaBtn = document.getElementById('contaBtn');
 const clearBtn = document.getElementById('clearBtn');
 const pdfBtn = document.getElementById('pdfBtn');
 const csvAdvancedLink = document.getElementById('csvAdvancedLink');
+const sortableHeaders = Array.from(document.querySelectorAll('thead th.sortable'));
 
 function normalize(s) {
   return (s || '').toString().normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().trim();
@@ -726,6 +738,50 @@ async function loadRowsFromSupabase() {
   }
 }
 
+function getEffectiveSortMode(hasQuery) {
+  if (activeHeaderSort && activeHeaderSort.key) return activeHeaderSort.key;
+  const selected = sortSelect.value;
+  if (selected === 'relevance' && !hasQuery) return 'titulo';
+  return selected;
+}
+
+function applyHeaderSort(key) {
+  const map = {
+    bib_ref: 'bib_ref',
+    autor: 'autor',
+    titulo: 'titulo',
+    editora: 'editora',
+    cdd: 'cdd',
+    status: 'status'
+  };
+  if (key === 'ano') {
+    if (activeHeaderSort?.key === 'ano_desc') activeHeaderSort = { key: 'ano_asc' };
+    else activeHeaderSort = { key: 'ano_desc' };
+  } else {
+    activeHeaderSort = { key: map[key] || key };
+  }
+  if (sortSelect.querySelector(`option[value="${activeHeaderSort.key}"]`)) {
+    sortSelect.value = activeHeaderSort.key;
+  }
+  render();
+}
+
+function updateHeaderSortUI() {
+  const current = activeHeaderSort?.key || sortSelect.value;
+  sortableHeaders.forEach((th) => {
+    const base = th.dataset.sort;
+    let arrow = '';
+    if (base === 'ano') {
+      if (current === 'ano_desc') arrow = ' ↓';
+      else if (current === 'ano_asc') arrow = ' ↑';
+    } else if (current === base) {
+      arrow = ' ↑';
+    }
+    th.textContent = (th.dataset.label || th.textContent.replace(/[ ↑↓]+$/,'')).replace(/[ ↑↓]+$/,'') + arrow;
+    th.setAttribute('aria-sort', arrow ? (arrow.includes('↓') ? 'descending' : 'ascending') : 'none');
+  });
+}
+
 function currentRows() {
   const q = parseQuery(search.value || '');
   lastQuery = q;
@@ -755,7 +811,7 @@ function currentRows() {
     filtered.push(r);
   }
 
-  const mode = sortSelect.value;
+  const mode = getEffectiveSortMode(hasQuery);
   filtered.sort((a, b) => {
     if (mode === 'relevance') {
       if (hasQuery) {
@@ -764,10 +820,12 @@ function currentRows() {
       }
       return a._n.titulo.localeCompare(b._n.titulo, 'pt-BR', { numeric: true });
     }
+    if (mode === 'bib_ref') return a._n.bib_ref.localeCompare(b._n.bib_ref, 'pt-BR', { numeric: true });
     if (mode === 'titulo') return a._n.titulo.localeCompare(b._n.titulo, 'pt-BR', { numeric: true });
     if (mode === 'autor') return a._n.autor.localeCompare(b._n.autor, 'pt-BR', { numeric: true });
     if (mode === 'editora') return a._n.editora.localeCompare(b._n.editora, 'pt-BR', { numeric: true });
     if (mode === 'cdd') return a._n.cdd.localeCompare(b._n.cdd, 'pt-BR', { numeric: true });
+    if (mode === 'status') return a._status.label.localeCompare(b._status.label, 'pt-BR', { numeric: true });
     if (mode === 'ano_asc') return a._n.ano.localeCompare(b._n.ano, 'pt-BR', { numeric: true });
     if (mode === 'ano_desc') return b._n.ano.localeCompare(a._n.ano, 'pt-BR', { numeric: true });
     return a._n.titulo.localeCompare(b._n.titulo, 'pt-BR', { numeric: true });
@@ -787,6 +845,7 @@ function render() {
   const filtered = currentRows();
   tbody.innerHTML = '';
   updateStats(filtered);
+  updateHeaderSortUI();
   empty.hidden = filtered.length !== 0;
 
   for (const r of filtered) {
@@ -809,13 +868,13 @@ function render() {
     const status = r._status;
     tr.innerHTML = `
       <td class="col-ref"><div class="ref-stack"><span class="ref-main">${refHtml}</span></div></td>
-      <td>${autorHtml}</td>
-      <td>${tituloCell}</td>
+      <td class="col-autor">${autorHtml}</td>
+      <td class="col-titulo">${tituloCell}</td>
       <td class="col-ano">${anoHtml}</td>
-      <td>${editoraHtml}</td>
-      <td>${cddHtml}</td>
-      <td><span class="status-badge ${status.cls}">${status.label}</span></td>
-      <td><button class="btn-inline copyRefBtn" type="button" data-ref="${encodeURIComponent(ref)}">Copiar referência</button></td>
+      <td class="col-editora">${editoraHtml}</td>
+      <td class="col-cdd">${cddHtml}</td>
+      <td class="col-status"><span class="status-badge ${status.cls}">${status.label}</span></td>
+      <td class="col-acao"><button class="btn-inline copyRefBtn" type="button" data-ref="${encodeURIComponent(ref)}">Copiar referência</button></td>
     `;
     tbody.appendChild(tr);
   }
@@ -889,6 +948,7 @@ function clearFilters() {
   cddFilter.value = '';
   availabilityFilter.value = 'all';
   sortSelect.value = 'relevance';
+  activeHeaderSort = null;
   render();
   search.focus();
 }
@@ -908,11 +968,16 @@ publisherFilter.addEventListener('input', render);
 yearFilter.addEventListener('input', render);
 cddFilter.addEventListener('input', render);
 availabilityFilter.addEventListener('change', render);
-sortSelect.addEventListener('change', render);
+sortSelect.addEventListener('change', () => { activeHeaderSort = null; render(); });
 clearBtn.addEventListener('click', clearFilters);
 pdfBtn.addEventListener('click', exportPDF);
 csvAdvancedLink.addEventListener('click', (e) => { e.preventDefault(); exportCSV(); });
 contaBtn.addEventListener('click', handleContaClick);
+
+sortableHeaders.forEach((th) => {
+  th.dataset.label = th.textContent.trim();
+  th.addEventListener('click', () => applyHeaderSort(th.dataset.sort));
+});
 
 tbody.addEventListener('click', async (e) => {
   const copyBtn = e.target.closest('.copyRefBtn');
