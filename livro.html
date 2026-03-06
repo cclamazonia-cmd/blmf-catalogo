@@ -53,7 +53,7 @@
     }
     .btn.primary{border:none;background:linear-gradient(135deg,var(--red2),var(--red))}
     .btn:hover{border-color:rgba(255,255,255,.22)}
-    .btn[aria-disabled="true"]{opacity:.55;cursor:default}
+    .btn.disabled, .btn[aria-disabled="true"]{opacity:.55;cursor:not-allowed;pointer-events:none}
     .card{
       border:1px solid rgba(255,255,255,.08);
       background:var(--panel);
@@ -175,17 +175,29 @@
     }
 
     async function setupContaButton() {
-      const btn = $("btnConta");
+      const btnConta = $("btnConta");
+      const btnEntrar = $("btnEntrar");
       const { data: { session } } = await supabase.auth.getSession();
 
       if (session?.user?.id) {
-        btn.setAttribute("aria-disabled", "false");
-        btn.title = "Abrir minha conta";
-        btn.addEventListener("click", () => location.assign(ROUTES.CONTA));
+        btnConta.setAttribute("aria-disabled", "false");
+        btnConta.title = "Abrir minha conta";
+        btnConta.addEventListener("click", () => location.assign(ROUTES.CONTA));
+
+        btnEntrar.setAttribute("aria-disabled", "true");
+        btnEntrar.classList.add("disabled");
+        btnEntrar.title = "Você já está logado(a/e).";
+        btnEntrar.removeAttribute("href");
+        btnEntrar.addEventListener("click", (e) => e.preventDefault());
       } else {
-        btn.setAttribute("aria-disabled", "true");
-        btn.title = "Disponível apenas quando logado(a/e).";
-        btn.addEventListener("click", (e) => e.preventDefault());
+        btnConta.setAttribute("aria-disabled", "true");
+        btnConta.title = "Disponível apenas quando logado(a/e).";
+        btnConta.addEventListener("click", (e) => e.preventDefault());
+
+        btnEntrar.setAttribute("aria-disabled", "false");
+        btnEntrar.classList.remove("disabled");
+        btnEntrar.title = "Entrar";
+        btnEntrar.href = ROUTES.CADASTRO;
       }
     }
 
