@@ -266,7 +266,7 @@ body {
     <input id="search" class="input" type="search" autocomplete="off" placeholder="Buscar por autor, título ou editora…"
       title="Dica: você pode digitar vários termos (ex.: bakunin 2011).">
 <input id="authorFilter" class="input" type="search" placeholder="Autor(a)" autocomplete="off">
-    <input id="yearFilter" class="input" type="search" placeholder="Ano(s) (1984 ou 1917-1921)" autocomplete="off">
+    <input id="yearFilter" class="input" type="search" placeholder="Ano(s)" autocomplete="off">
     <input id="publisherFilter" class="input" type="search" placeholder="Editora" autocomplete="off">
     <button id="clearBtn" class="button secondary" type="button">Limpar filtros</button>
     <button id="pdfBtn" class="button" type="button">Exportar PDF</button>
@@ -317,8 +317,9 @@ const SUPABASE_ANON_KEY = "sb_publishable_38cFV9vsGhmqMp-Z5gmV4w_HY6ReWSF";
 
 // Rotas (conta/leitor)
 const BLOG_HOME = "https://cclamazonia.noblogs.org/";
-const CONTA_URL = "https://cclamazonia.github.io/blmf-conta/conta.html";
-const CADASTRO_URL = "https://cclamazonia.github.io/blmf-conta/cadastro.html";
+const GH_BASE = location.origin;
+const CONTA_URL = `${GH_BASE}/blmf-conta/conta.html`;
+const CADASTRO_URL = `${GH_BASE}/blmf-conta/cadastro.html`;
 const SUPABASE_PROJECT_REF = "asptfmokzykwzlshsncw";
 
 function getSupabaseSessionFromStorage() {
@@ -375,8 +376,41 @@ async function hasValidSession() {
 let rows = [];
 
 async function loadRowsFromSupabase() {
-    // Carrega via REST (PostgREST) para evitar dependência do supabase-js
-    try {      const url = `${SUPABASE_URL}/rest/v1/books?select=bib_ref,autor,titulo,ano,editora&order=autor.asc,titulo.asc`;
+  const sources = ["books_public", "v_books_public", "books"];
+
+  const normalizeLite = (s) => (s || '')
+    .toString()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .trim();
+
+  const badValue = (v) => {
+    const s = normalizeLite(v);
+    return !s ||
+      s === '—' ||
+      s === '-' ||
+      s === '–' ||
+      s === 'null' ||
+      s === 'n/a' ||
+      s === 'na' ||
+      s === 'nao se aplica' ||
+      s === 'não se aplica' ||
+      s === 'nao aplicavel' ||
+      s === 'não aplicável' ||
+      s === 's/n' ||
+      s === 'sn';
+  };
+
+  const cleanYear = (v) => {
+    const s = (v || '').toString();
+    const m = s.match(/(1[0-9]{3}|20[0-9]{2})/);
+    return m ? m[1] : '';
+  };
+
+  try {
+    for (const source of sources) {
+      const url = `${SUPABASE_URL}/rest/v1/${source}?select=bib_ref,autor,titulo,ano,editora&order=autor.asc,titulo.asc`;
       const res = await fetch(url, {
         headers: {
           apikey: SUPABASE_ANON_KEY,
@@ -384,22 +418,35 @@ async function loadRowsFromSupabase() {
         }
       });
 
-      const text = await res.text();
-      if (!res.ok) {        alert('Erro Supabase: ' + res.status + ' — ' + text);
-        return [];
-      }
+      if (!res.ok) continue;
 
-      const data = text ? JSON.parse(text) : [];      return (data || []).map(r => ({
-        bib_ref: r.bib_ref ?? "",
-        autor: r.autor ?? "",
-        titulo: r.titulo ?? "",
-        ano: r.ano ?? "",
-        editora: r.editora ?? ""
-      }));
-    } catch (e) {      alert('Erro Supabase: ' + (e?.message || String(e)));
-      return [];
+      const rawText = await res.text();
+      const data = rawText ? JSON.parse(rawText) : [];
+
+      const cleaned = (data || []).map(r => ({
+        bib_ref: (r.bib_ref ?? '').toString().trim(),
+        autor: (r.autor ?? '').toString().trim(),
+        titulo: (r.titulo ?? '').toString().trim(),
+        ano: cleanYear(r.ano),
+        editora: (r.editora ?? '').toString().trim()
+      })).filter(r =>
+        !badValue(r.autor) &&
+        !badValue(r.titulo) &&
+        !badValue(r.editora) &&
+        !badValue(r.ano)
+      );
+
+      return cleaned;
     }
+
+    alert('Erro Supabase: não foi possível carregar uma fonte válida do catálogo.');
+    return [];
+  } catch (e) {
+    alert('Erro Supabase: ' + (e?.message || String(e)));
+    return [];
   }
+}
+
 // (O catálogo em JSON foi removido: agora a lista vem do Supabase.)
 
 let sortKey = 'autor';
