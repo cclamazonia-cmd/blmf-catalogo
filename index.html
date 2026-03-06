@@ -151,7 +151,6 @@ table {
   border-collapse: separate;
   border-spacing: 0;
   min-width: 920px;
-  table-layout: fixed;
 }
 thead th {
   position: sticky;
@@ -166,6 +165,15 @@ thead th {
   text-transform: uppercase;
   letter-spacing: .04em;
   cursor: pointer;
+  user-select: none;
+}
+thead th.sort-active {
+  color: #fff;
+}
+thead th .sort-arrow {
+  opacity: .92;
+  margin-left: 6px;
+  font-size: .95em;
 }
 tbody td {
   padding: 12px 16px;
@@ -175,15 +183,13 @@ tbody td {
 }
 tbody tr:nth-child(odd) td { background: rgba(255,255,255,.01); }
 tbody tr:hover td { background: rgba(179,0,24,.08); }
-.col-ref { width: 9%; white-space: nowrap; font-variant-numeric: tabular-nums; }
-.col-autor { width: 17%; }
-.col-titulo { width: 28%; }
-.col-ano { width: 8%; white-space: nowrap; }
-.col-editora { width: 17%; }
-.col-cdd { width: 8%; }
-.col-status { width: 8%; }
-.col-acao { width: 13%; }
-.col-autor, .col-titulo, .col-editora, .col-cdd, .col-status, .col-acao { word-break: break-word; }
+.col-ref { width: 10%; white-space: nowrap; font-variant-numeric: tabular-nums; }
+.col-autor { width: 22%; }
+.col-titulo { width: 30%; }
+.col-ano { width: 10%; white-space: nowrap; }
+.col-editora { width: 28%; }
+.wrap-cell { white-space: normal; overflow-wrap: anywhere; word-break: break-word; line-height: 1.35; }
+.book-link { display: inline-block; white-space: normal; overflow-wrap: anywhere; word-break: break-word; line-height: 1.35; font-weight: 700; text-decoration: none; }
 .muted { color: var(--muted); }
 
 mark{background: rgba(225,29,47,.35); color:#fff; padding:0 2px; border-radius:4px;}
@@ -202,6 +208,14 @@ mark{background: rgba(225,29,47,.35); color:#fff; padding:0 2px; border-radius:4
   gap:10px;
   align-items:flex-start;
   justify-content:space-between;
+}
+.cell-flex > span{
+  min-width:0;
+  flex:1 1 auto;
+  white-space: normal;
+  overflow-wrap:anywhere;
+  word-break: break-word;
+  line-height:1.35;
 }
 .btn-inline{
   width:auto;
@@ -258,116 +272,6 @@ body {
   background-repeat: no-repeat;
 }
 
-
-/* OPAC refresh */
-.topbar-logo,
-.header-logo,
-.titlebar-logo {
-  height: 111px;
-  max-width: 210px;
-}
-@media (max-width: 700px) {
-  .topbar-logo,
-  .header-logo,
-  .titlebar-logo {
-    height: 78px;
-    max-width: 150px;
-  }
-}
-.toolbar-opac {
-  display: grid;
-  grid-template-columns: repeat(12, minmax(0, 1fr));
-  gap: 12px;
-  margin-bottom: 18px;
-}
-.field {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-.field label {
-  font-size: .88rem;
-  color: var(--muted);
-  font-weight: 700;
-  letter-spacing: .01em;
-}
-.field-search { grid-column: span 4; }
-.field-author { grid-column: span 2; }
-.field-publisher { grid-column: span 2; }
-.field-year { grid-column: span 2; }
-.field-cdd { grid-column: span 2; }
-.field-sort { grid-column: span 3; }
-.field-availability { grid-column: span 3; }
-.actions-strip {
-  grid-column: span 6;
-  display: flex;
-  align-items: end;
-  justify-content: flex-end;
-  gap: 10px;
-  flex-wrap: wrap;
-}
-.button.small, .action-link.small {
-  width: auto;
-  padding: 10px 12px;
-  font-size: .88rem;
-}
-.button.tiny, .action-link.tiny {
-  width: auto;
-  padding: 8px 10px;
-  font-size: .82rem;
-}
-.sheet-head .small { color: var(--muted); }
-.muted-inline { color: var(--muted); }
-.tag-link {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 5px 9px;
-  border-radius: 999px;
-  border: 1px solid rgba(255,255,255,.12);
-  background: rgba(26,26,26,.95);
-  color: var(--text);
-  text-decoration: none;
-  cursor: pointer;
-  font-size: .82rem;
-  white-space: nowrap;
-}
-.tag-link:hover { border-color: rgba(225,29,47,.55); color: #fff; }
-.status-badge {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  padding: 6px 10px;
-  border-radius: 999px;
-  font-size: .8rem;
-  font-weight: 700;
-  border: 1px solid rgba(255,255,255,.10);
-  white-space: nowrap;
-}
-.status-available { background: rgba(7,71,35,.55); color: #c9ffd8; border-color: rgba(95,211,140,.35); }
-.status-local { background: rgba(104,28,28,.48); color: #ffd0d0; border-color: rgba(225,29,47,.38); }
-.status-unavailable { background: rgba(55,55,55,.85); color: #f0f0f0; border-color: rgba(255,255,255,.12); }
-.ref-stack {
-  display:flex;
-  flex-direction:column;
-  gap:8px;
-}
-.ref-main { font-weight:700; }
-.cell-flex.wrap { flex-wrap: wrap; gap: 8px; align-items: center; }
-th.sortable { cursor: pointer; }
-@media (max-width: 1180px) {
-  .field-search { grid-column: span 12; }
-  .field-author, .field-publisher, .field-year, .field-cdd { grid-column: span 6; }
-  .field-sort, .field-availability { grid-column: span 6; }
-  .actions-strip { grid-column: span 12; justify-content: flex-start; }
-}
-@media (max-width: 720px) {
-  .field-author, .field-publisher, .field-year, .field-cdd,
-  .field-sort, .field-availability, .field-search { grid-column: span 12; }
-  .table-wrap { max-height: none; }
-  table { min-width: 920px; }
-}
-
 </style>
 </head>
 <body>
@@ -380,85 +284,42 @@ th.sortable { cursor: pointer; }
     <p class="note"></p>
   </section>
 
-  <section class="toolbar-opac">
-    <div class="field field-search">
-      <label for="search">Buscar</label>
-      <input id="search" class="input" type="search" autocomplete="off" placeholder="Autor, título, editora, referência…" title="Dica: você pode digitar vários termos (ex.: bakunin 2011).">
-    </div>
-    <div class="field field-author">
-      <label for="authorFilter">Autor(a)</label>
-      <input id="authorFilter" class="input" type="search" placeholder="Filtrar por autor(a)" autocomplete="off">
-    </div>
-    <div class="field field-publisher">
-      <label for="publisherFilter">Editora</label>
-      <input id="publisherFilter" class="input" type="search" placeholder="Filtrar por editora" autocomplete="off">
-    </div>
-    <div class="field field-year">
-      <label for="yearFilter">Ano</label>
-      <input id="yearFilter" class="input" type="search" placeholder="Ex.: 1984 ou 1917-1921" autocomplete="off">
-    </div>
-    <div class="field field-cdd">
-      <label for="cddFilter">CDD</label>
-      <input id="cddFilter" class="input" type="search" placeholder="Ex.: 335" autocomplete="off">
-    </div>
-
-    <div class="field field-sort">
-      <label for="sortSelect">Ordenar por</label>
-      <select id="sortSelect" class="select">
-        <option value="relevance">Relevância</option>
-        <option value="titulo">Título</option>
-        <option value="autor">Autor(a)</option>
-        <option value="ano_desc">Ano (mais recente)</option>
-        <option value="ano_asc">Ano (mais antigo)</option>
-        <option value="editora">Editora</option>
-        <option value="cdd">CDD</option>
-        <option value="bib_ref">Referência</option>
-        <option value="status">Status</option>
-      </select>
-    </div>
-    <div class="field field-availability">
-      <label for="availabilityFilter">Disponibilidade</label>
-      <select id="availabilityFilter" class="select">
-        <option value="all">Tudo</option>
-        <option value="available">Mostrar só “Disponível agora”</option>
-        <option value="local">Somente consulta local</option>
-        <option value="unavailable">Indisponível no momento</option>
-      </select>
-    </div>
-    <div class="actions-strip">
-      <button id="clearBtn" class="button secondary small" type="button">Limpar filtros</button>
-      <button id="pdfBtn" class="button small" type="button">Exportar PDF</button>
-      <a id="csvAdvancedLink" class="action-link tiny" href="#" role="button">CSV (avançado)</a>
-      <button id="contaBtn" class="button secondary small" type="button">Minha conta</button>
-      <a id="blogBtn" class="button secondary small" href="https://cclamazonia.noblogs.org" style="width:auto;">Voltar ao blogue</a>
+  <section class="toolbar">
+    <input id="search" class="input" type="search" autocomplete="off" placeholder="Buscar por autor, título ou editora…"
+      title="Dica: você pode digitar vários termos (ex.: bakunin 2011).">
+<input id="authorFilter" class="input" type="search" placeholder="Filtrar por autor(a)…" autocomplete="off">
+    <input id="yearFilter" class="input" type="search" placeholder="Filtrar por ano… (ex.: 1984 ou 1917-1921)" autocomplete="off">
+    <input id="publisherFilter" class="input" type="search" placeholder="Filtrar por editora…" autocomplete="off">
+    <button id="clearBtn" class="button secondary" type="button">Limpar filtros</button>
+    <button id="pdfBtn" class="button" type="button">Exportar PDF</button>
+    <div style="display:flex; gap:12px; flex-wrap:wrap; align-items:center; justify-content:flex-end;">
+      <button id="contaBtn" class="button secondary" type="button" style="width:auto;">Minha conta</button>
+      <a id="blogBtn" class="button secondary" href="https://cclamazonia.noblogs.org/" style="width:auto;">Voltar ao blogue</a>
     </div>
   </section>
 
   <div class="stats">
     <div class="pill" id="totalPill">Total: 0</div>
     <div class="pill" id="visiblePill">Exibidos: 0</div>
-    <div class="pill" id="statusPill">Disponíveis agora: 0</div>
-    <div class="pill">Clique em autor(a) ou CDD para filtrar.</div>
+    <div class="pill">Colunas: ref · autor · título · ano · editora</div>
   </div>
 
   <section class="sheet">
     <div class="sheet-head">
       <div>
         <div class="title">BLMF · Catálogo consultável</div>
+        <div class="small">Clique no cabeçalho para ordenar · <a id="csvAdvancedLink" class="action-link" href="#" role="button">Exportar CSV (avançado)</a></div>
       </div>
-    </div>
+</div>
     <div class="table-wrap">
       <table>
         <thead>
           <tr>
-            <th class="sortable" data-sort="bib_ref">ref</th>
-            <th class="sortable" data-sort="autor">autor</th>
-            <th class="sortable" data-sort="titulo">título</th>
-            <th class="sortable" data-sort="ano">ano</th>
-            <th class="sortable" data-sort="editora">editora</th>
-            <th class="sortable" data-sort="cdd">CDD</th>
-            <th class="sortable" data-sort="status">status</th>
-            <th>ação</th>
+<th data-key="bib_ref">ref</th>
+<th data-key="autor">autor</th>
+            <th data-key="titulo">título</th>
+            <th data-key="ano">ano</th>
+            <th data-key="editora">editora</th>
           </tr>
         </thead>
         <tbody id="tbody"></tbody>
@@ -471,14 +332,15 @@ th.sortable { cursor: pointer; }
 </div>
 
 <script>
+// Supabase config
+// Cole aqui o URL do projeto e a ANON KEY (Settings → API)
 const SUPABASE_URL = "https://asptfmokzykwzlshsncw.supabase.co";
 const SUPABASE_ANON_KEY = "sb_publishable_38cFV9vsGhmqMp-Z5gmV4w_HY6ReWSF";
 
-const BLOG_HOME = "https://cclamazonia.noblogs.org";
-const CONTA_URL = "https://cclamazonia-cmd.github.io/blmf-conta/conta.html";
-const PAINEL_URL = "https://cclamazonia-cmd.github.io/blmf-conta/painel.html";
-const CADASTRO_URL = "https://cclamazonia-cmd.github.io/blmf-conta/cadastro.html";
-const LIVRO_URL = "livro.html";
+// Rotas (conta/leitor)
+const BLOG_HOME = "https://cclamazonia.noblogs.org/";
+const CONTA_URL = "https://cclamazonia.github.io/blmf-conta/conta.html";
+const CADASTRO_URL = "https://cclamazonia.github.io/blmf-conta/cadastro.html";
 const SUPABASE_PROJECT_REF = "asptfmokzykwzlshsncw";
 
 function getSupabaseSessionFromStorage() {
@@ -490,118 +352,171 @@ function getSupabaseSessionFromStorage() {
       if (k.startsWith('sb-') && k.includes(SUPABASE_PROJECT_REF) && k.endsWith('-auth-token')) keys.push(k);
     }
   } catch (e) {}
+  // fallback (formato mais comum)
   keys.push(`sb-${SUPABASE_PROJECT_REF}-auth-token`);
+
   for (const k of keys) {
     let raw = null;
     try { raw = localStorage.getItem(k); } catch (e) { raw = null; }
     if (!raw) continue;
+
     try {
       const obj = JSON.parse(raw);
       if (obj?.access_token) return obj;
       if (obj?.currentSession?.access_token) return obj.currentSession;
       if (obj?.data?.session?.access_token) return obj.data.session;
-    } catch (e) {}
+    } catch (e) {
+      // ignore
+    }
   }
   return null;
 }
 
-async function getCurrentUserAndRole() {
+async function hasValidSession() {
   const s = getSupabaseSessionFromStorage();
-  if (!s || !s.access_token) return { session: null, user: null, isLibrarian: false };
-  if (s.expires_at && (Date.now() / 1000) > (Number(s.expires_at) - 30)) return { session: null, user: null, isLibrarian: false };
+  if (!s || !s.access_token) return false;
+  // expiração (segundos UNIX)
+  if (s.expires_at && (Date.now() / 1000) > (Number(s.expires_at) - 30)) return false;
 
+  // valida “de verdade” quando possível
   try {
-    const userRes = await fetch(`${SUPABASE_URL}/auth/v1/user`, {
-      headers: { apikey: SUPABASE_ANON_KEY, Authorization: `Bearer ${s.access_token}` }
-    });
-    if (!userRes.ok) return { session: null, user: null, isLibrarian: false };
-    const user = await userRes.json();
-
-    let isLibrarian = false;
-    try {
-      const profileRes = await fetch(`${SUPABASE_URL}/rest/v1/profiles?select=is_librarian&id=eq.${encodeURIComponent(user.id)}`, {
-        headers: {
-          apikey: SUPABASE_ANON_KEY,
-          Authorization: `Bearer ${s.access_token}`,
-          Accept: 'application/json'
-        }
-      });
-      if (profileRes.ok) {
-        const arr = await profileRes.json();
-        isLibrarian = !!(Array.isArray(arr) && arr[0] && arr[0].is_librarian);
+    const res = await fetch(`${SUPABASE_URL}/auth/v1/user`, {
+      headers: {
+        apikey: SUPABASE_ANON_KEY,
+        Authorization: `Bearer ${s.access_token}`,
       }
-    } catch (e) {}
-
-    return { session: s, user, isLibrarian };
+    });
+    if (res.ok) return true;
+    return false;
   } catch (e) {
-    return { session: s, user: null, isLibrarian: false };
+    // sem rede / bloqueio → assume logado e deixa a página conta lidar com isso
+    return true;
   }
 }
 
 let rows = [];
+
+async function loadRowsFromSupabase() {
+    // Carrega via REST (PostgREST) para evitar dependência do supabase-js
+    try {      const url = `${SUPABASE_URL}/rest/v1/books?select=bib_ref,autor,titulo,ano,editora&order=autor.asc,titulo.asc`;
+      const res = await fetch(url, {
+        headers: {
+          apikey: SUPABASE_ANON_KEY,
+          Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
+        }
+      });
+
+      const text = await res.text();
+      if (!res.ok) {        alert('Erro Supabase: ' + res.status + ' — ' + text);
+        return [];
+      }
+
+      const data = text ? JSON.parse(text) : [];      return (data || []).map(r => ({
+        bib_ref: r.bib_ref ?? "",
+        autor: r.autor ?? "",
+        titulo: r.titulo ?? "",
+        ano: r.ano ?? "",
+        editora: r.editora ?? ""
+      }));
+    } catch (e) {      alert('Erro Supabase: ' + (e?.message || String(e)));
+      return [];
+    }
+  }
+// (O catálogo em JSON foi removido: agora a lista vem do Supabase.)
+
+let sortKey = 'autor';
+let sortDir = 'asc';
+let userSorted = false;
 let lastQuery = { tokens: [], phrases: [] };
-let activeHeaderSort = null;
 
 const tbody = document.getElementById('tbody');
 const search = document.getElementById('search');
 const authorFilter = document.getElementById('authorFilter');
-const publisherFilter = document.getElementById('publisherFilter');
 const yearFilter = document.getElementById('yearFilter');
-const cddFilter = document.getElementById('cddFilter');
-const sortSelect = document.getElementById('sortSelect');
-const availabilityFilter = document.getElementById('availabilityFilter');
+const publisherFilter = document.getElementById('publisherFilter');
 const totalPill = document.getElementById('totalPill');
 const visiblePill = document.getElementById('visiblePill');
-const statusPill = document.getElementById('statusPill');
 const empty = document.getElementById('empty');
+
+// Botão "Minha conta" (se logado → conta.html; senão → cadastro.html)
 const contaBtn = document.getElementById('contaBtn');
-const clearBtn = document.getElementById('clearBtn');
-const pdfBtn = document.getElementById('pdfBtn');
-const csvAdvancedLink = document.getElementById('csvAdvancedLink');
-const sortableHeaders = Array.from(document.querySelectorAll('thead th.sortable'));
+if (contaBtn) {
+  contaBtn.addEventListener('click', async () => {
+    const ok = await hasValidSession();
+    window.location.href = ok ? CONTA_URL : CADASTRO_URL;
+  });
+}
+
+
+(async function init() {
+  rows = await loadRowsFromSupabase();
+  prepareRows();
+  totalPill.textContent = `Total: ${rows.length}`;
+  render();
+})();
+
 
 function normalize(s) {
-  return (s || '').toString().normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().trim();
-}
-function escapeHTML(s) {
-  return (s ?? '').toString().replace(/[&<>"']/g, (m) => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;' }[m]));
-}
-function escapeRegExp(s) {
-  return (s || '').replace(/[-\/\^$*+?.()|[\]{}]/g, '\$&');
-}
-function bigrams(str) {
-  const s = str || '';
-  const map = new Map();
-  for (let i = 0; i < s.length - 1; i++) {
-    const bg = s.slice(i, i + 2);
-    map.set(bg, (map.get(bg) || 0) + 1);
-  }
-  return map;
-}
-function diceCoefficient(a, b) {
-  if (!a || !b) return 0;
-  if (a === b) return 1;
-  if (a.length < 2 || b.length < 2) return 0;
-  const A = bigrams(a);
-  const B = bigrams(b);
-  let overlap = 0;
-  for (const [bg, countA] of A) {
-    const countB = B.get(bg) || 0;
-    overlap += Math.min(countA, countB);
-  }
-  return (2 * overlap) / ((a.length - 1) + (b.length - 1));
+  return (s || '')
+    .toString()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .trim();
 }
 
-function getStatusInfo(r) {
-  if (r.loanable === false) return { key: 'local', label: 'Somente consulta local', cls: 'status-local' };
-  if (Number(r.available_count || 0) > 0) return { key: 'available', label: 'Disponível agora', cls: 'status-available' };
-  return { key: 'unavailable', label: 'Indisponível no momento', cls: 'status-unavailable' };
+function matchText(fieldValue, needle) {
+  if (!needle) return true;
+  const hay = normalize(fieldValue);
+  return hay.includes(needle);
 }
 
+function matchYearField(fieldValue, raw) {
+  const s = (raw || '').toString().trim();
+  if (!s) return true;
+  const y = (fieldValue ?? '').toString().trim();
+  if (!y) return false;
+
+  // intervalo: 1917-1921
+  const m = s.match(/^\s*(\d{1,4})\s*-\s*(\d{1,4})\s*$/);
+  if (m) {
+    const a = parseInt(m[1], 10);
+    const b = parseInt(m[2], 10);
+    const yy = parseInt(y, 10);
+    if (Number.isNaN(a) || Number.isNaN(b) || Number.isNaN(yy)) return false;
+    const lo = Math.min(a, b);
+    const hi = Math.max(a, b);
+    return yy >= lo && yy <= hi;
+  }
+
+  // número: 1984 (exato) | 19 (prefixo)
+  const digitsOnly = s.replace(/[^0-9]/g, '');
+  if (!digitsOnly) return true;
+  if (digitsOnly.length >= 4) return y === digitsOnly.slice(0, 4);
+  return y.startsWith(digitsOnly);
+}
+
+// Pré-processa as linhas para busca rápida (sem mexer no Supabase)
+function prepareRows() {
+  for (const r of rows) {
+    const na = normalize(r.autor);
+    const nt = normalize(r.titulo);
+    const ne = normalize(r.editora);
+    const ny = normalize(r.ano);
+    const nr = normalize(r.bib_ref);
+    r._n = { autor: na, titulo: nt, editora: ne, ano: ny, bib_ref: nr };
+    r._all = [nr, na, nt, ny, ne].filter(Boolean).join(' ').trim();
+    r._words = r._all ? r._all.split(/\s+/).filter(Boolean) : [];
+  }
+}
+
+
+// Query: suporta vários termos (AND) e frases entre aspas: "..."
 function parseQuery(raw) {
   const out = { tokens: [], phrases: [] };
   const s = (raw || '').toString().trim();
   if (!s) return out;
+
   const re = /"([^"]+)"|(\S+)/g;
   let m;
   while ((m = re.exec(s))) {
@@ -615,47 +530,102 @@ function parseQuery(raw) {
       if (t) out.tokens.push(t);
     }
   }
+  // Remove duplicados
   out.tokens = [...new Set(out.tokens)];
   out.phrases = [...new Set(out.phrases)];
   return out;
 }
 
-function scoreRow(r, q) {
-  for (const ph of q.phrases) {
-    if (!r._all.includes(ph)) return { ok: false, score: 0 };
+function bigrams(str) {
+  const s = str || '';
+  const map = new Map();
+  for (let i = 0; i < s.length - 1; i++) {
+    const bg = s.slice(i, i + 2);
+    map.set(bg, (map.get(bg) || 0) + 1);
   }
+  return map;
+}
+
+function diceCoefficient(a, b) {
+  if (!a || !b) return 0;
+  if (a === b) return 1;
+  if (a.length < 2 || b.length < 2) return 0;
+
+  const aMap = bigrams(a);
+  let intersection = 0;
+  for (let i = 0; i < b.length - 1; i++) {
+    const bg = b.slice(i, i + 2);
+    const count = aMap.get(bg) || 0;
+    if (count > 0) {
+      aMap.set(bg, count - 1);
+      intersection++;
+    }
+  }
+  return (2 * intersection) / ((a.length - 1) + (b.length - 1));
+}
+
+function scoreRow(r, q) {
+  // Frases entre aspas precisam bater “literalmente” (sem acentos)
+  for (const ph of q.phrases) {
+    if (!r._all.includes(ph)) return { ok: false, score: 0, hits: [] };
+  }
+
+  const hits = [];
   let score = 0;
+
+  // Para cada termo: aceita match direto OU match “parecido” (typo)
   for (const t of q.tokens) {
     if (!t) continue;
+
+    // match direto no texto todo
     if (r._all.includes(t)) {
       score += 10;
+      hits.push(t);
       continue;
     }
+
+    // match por “parecido” (Dice em bigramas) contra palavras do registro
     let best = 0;
     const first = t[0];
+
     for (const w of r._words) {
-      if (!w || w[0] !== first) continue;
-      if (Math.abs(w.length - t.length) > 3) continue;
+      if (!w || w[0] !== first) continue; // corta o custo e evita ruído
+      const dl = Math.abs(w.length - t.length);
+      if (dl > 3) continue;
       const d = diceCoefficient(t, w);
       if (d > best) best = d;
-      if (best >= 0.92) break;
+      if (best >= 0.92) break; // suficientemente bom
     }
+
     if (best >= 0.78) {
       score += 4 + best * 6;
+      hits.push(t);
       continue;
     }
-    return { ok: false, score: 0 };
+
+    // sem match desse termo → descarta (AND)
+    return { ok: false, score: 0, hits: [] };
   }
-  if (q.tokens[0]) {
+
+  // Pequeno bônus para “começa com” em autor/título (melhora relevância)
+  const raw = q.tokens.join(' ');
+  if (raw) {
     if (r._n.titulo.startsWith(q.tokens[0])) score += 2;
     if (r._n.autor.startsWith(q.tokens[0])) score += 2;
   }
-  return { ok: true, score };
+
+  return { ok: true, score, hits };
+}
+
+function escapeRegExp(s) {
+  return (s || '').replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&');
 }
 
 function highlightHTML(text, terms) {
   const safe = escapeHTML(text || '');
   if (!terms || !terms.length) return safe;
+
+  // termos maiores primeiro (evita highlight “dentro”)
   const uniq = [...new Set(terms.filter(t => (t || '').length >= 2))].sort((a,b) => b.length - a.length);
   let out = safe;
   for (const t of uniq) {
@@ -665,216 +635,99 @@ function highlightHTML(text, terms) {
   return out;
 }
 
-function matchYearField(fieldValue, raw) {
-  const s = (raw || '').toString().trim();
-  if (!s) return true;
-  const y = (fieldValue ?? '').toString().trim();
-  if (!y) return false;
-  const m = s.match(/^\s*(\d{1,4})\s*-\s*(\d{1,4})\s*$/);
-  if (m) {
-    const a = parseInt(m[1], 10);
-    const b = parseInt(m[2], 10);
-    const yy = parseInt(y, 10);
-    if (Number.isNaN(a) || Number.isNaN(b) || Number.isNaN(yy)) return false;
-    return yy >= Math.min(a,b) && yy <= Math.max(a,b);
-  }
-  const digitsOnly = s.replace(/[^0-9]/g, '');
-  if (!digitsOnly) return true;
-  if (digitsOnly.length >= 4) return y === digitsOnly.slice(0,4);
-  return y.startsWith(digitsOnly);
-}
-
-function prepareRows() {
-  for (const r of rows) {
-    const status = getStatusInfo(r);
-    r._status = status;
-    const data = {
-      bib_ref: normalize(r.bib_ref),
-      autor: normalize(r.autor),
-      titulo: normalize(r.titulo),
-      ano: normalize(r.ano),
-      editora: normalize(r.editora),
-      cdd: normalize(r.cdd),
-      status: normalize(status.label)
-    };
-    r._n = data;
-    r._all = [data.bib_ref, data.autor, data.titulo, data.ano, data.editora, data.cdd, data.status].filter(Boolean).join(' ');
-    r._words = r._all ? r._all.split(/\s+/).filter(Boolean) : [];
-  }
-}
-
-async function loadRowsFromSupabase() {
-  try {
-    const select = 'id,bib_ref,autor,titulo,ano,editora,cdd,loanable,available_count,created_at';
-    const url = `${SUPABASE_URL}/rest/v1/v_books_public?select=${encodeURIComponent(select)}&order=titulo.asc`;
-    const res = await fetch(url, {
-      headers: {
-        apikey: SUPABASE_ANON_KEY,
-        Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
-        Accept: 'application/json'
-      }
-    });
-    const text = await res.text();
-    if (!res.ok) {
-      alert('Erro ao carregar catálogo: ' + res.status + ' — ' + text);
-      return [];
-    }
-    const data = text ? JSON.parse(text) : [];
-    return (data || []).map(r => ({
-      id: r.id ?? null,
-      bib_ref: r.bib_ref ?? '',
-      autor: r.autor ?? '',
-      titulo: r.titulo ?? '',
-      ano: r.ano ?? '',
-      editora: r.editora ?? '',
-      cdd: r.cdd ?? '',
-      loanable: r.loanable === false ? false : true,
-      available_count: Number(r.available_count ?? 0) || 0,
-      created_at: r.created_at ?? null
-    }));
-  } catch (e) {
-    alert('Erro ao carregar catálogo: ' + (e?.message || String(e)));
-    return [];
-  }
-}
-
-function getEffectiveSortMode(hasQuery) {
-  if (activeHeaderSort && activeHeaderSort.key) return activeHeaderSort.key;
-  const selected = sortSelect.value;
-  if (selected === 'relevance' && !hasQuery) return 'titulo';
-  return selected;
-}
-
-function applyHeaderSort(key) {
-  const map = {
-    bib_ref: 'bib_ref',
-    autor: 'autor',
-    titulo: 'titulo',
-    editora: 'editora',
-    cdd: 'cdd',
-    status: 'status'
-  };
-  if (key === 'ano') {
-    if (activeHeaderSort?.key === 'ano_desc') activeHeaderSort = { key: 'ano_asc' };
-    else activeHeaderSort = { key: 'ano_desc' };
-  } else {
-    activeHeaderSort = { key: map[key] || key };
-  }
-  if (sortSelect.querySelector(`option[value="${activeHeaderSort.key}"]`)) {
-    sortSelect.value = activeHeaderSort.key;
-  }
-  render();
-}
-
-function updateHeaderSortUI() {
-  const current = activeHeaderSort?.key || sortSelect.value;
-  sortableHeaders.forEach((th) => {
-    const base = th.dataset.sort;
-    let arrow = '';
-    if (base === 'ano') {
-      if (current === 'ano_desc') arrow = ' ↓';
-      else if (current === 'ano_asc') arrow = ' ↑';
-    } else if (current === base) {
-      arrow = ' ↑';
-    }
-    th.textContent = (th.dataset.label || th.textContent.replace(/[ ↑↓]+$/,'')).replace(/[ ↑↓]+$/,'') + arrow;
-    th.setAttribute('aria-sort', arrow ? (arrow.includes('↓') ? 'descending' : 'ascending') : 'none');
-  });
-}
 
 function currentRows() {
-  const q = parseQuery(search.value || '');
+  const qRaw = (search.value || '').toString();
+  const q = parseQuery(qRaw);
   lastQuery = q;
-  const author = normalize(authorFilter.value);
-  const publisher = normalize(publisherFilter.value);
-  const year = (yearFilter.value || '').toString().trim();
-  const cdd = normalize(cddFilter.value);
-  const availability = availabilityFilter.value;
-  const hasQuery = q.tokens.length > 0 || q.phrases.length > 0;
 
+  const a = normalize(authorFilter.value);
+  const y = (yearFilter.value || '').toString().trim();
+  const p = normalize(publisherFilter.value);
+const hasQuery = (q.tokens.length > 0 || q.phrases.length > 0);
   const filtered = [];
+
   for (const r of rows) {
-    if (author && !r._n.autor.includes(author)) continue;
-    if (publisher && !r._n.editora.includes(publisher)) continue;
-    if (!matchYearField(r.ano, year)) continue;
-    if (cdd && !r._n.cdd.includes(cdd)) continue;
-    if (availability !== 'all' && r._status.key !== availability) continue;
+    const matchesAuthor = !a || matchText(r.autor, a);
+    const matchesYear = matchYearField(r.ano, y);
+    const matchesPublisher = !p || matchText(r.editora, p);
+    if (!matchesAuthor || !matchesYear || !matchesPublisher) continue;
 
     if (!hasQuery) {
       r._score = 0;
+      r._hits = [];
       filtered.push(r);
       continue;
     }
+
     const res = scoreRow(r, q);
     if (!res.ok) continue;
     r._score = res.score;
+    r._hits = res.hits;
     filtered.push(r);
   }
 
-  const mode = getEffectiveSortMode(hasQuery);
-  filtered.sort((a, b) => {
-    if (mode === 'relevance') {
-      if (hasQuery) {
-        const diff = (b._score || 0) - (a._score || 0);
-        if (diff) return diff;
-      }
-      return a._n.titulo.localeCompare(b._n.titulo, 'pt-BR', { numeric: true });
-    }
-    if (mode === 'bib_ref') return a._n.bib_ref.localeCompare(b._n.bib_ref, 'pt-BR', { numeric: true });
-    if (mode === 'titulo') return a._n.titulo.localeCompare(b._n.titulo, 'pt-BR', { numeric: true });
-    if (mode === 'autor') return a._n.autor.localeCompare(b._n.autor, 'pt-BR', { numeric: true });
-    if (mode === 'editora') return a._n.editora.localeCompare(b._n.editora, 'pt-BR', { numeric: true });
-    if (mode === 'cdd') return a._n.cdd.localeCompare(b._n.cdd, 'pt-BR', { numeric: true });
-    if (mode === 'status') return a._status.label.localeCompare(b._status.label, 'pt-BR', { numeric: true });
-    if (mode === 'ano_asc') return a._n.ano.localeCompare(b._n.ano, 'pt-BR', { numeric: true });
-    if (mode === 'ano_desc') return b._n.ano.localeCompare(a._n.ano, 'pt-BR', { numeric: true });
-    return a._n.titulo.localeCompare(b._n.titulo, 'pt-BR', { numeric: true });
-  });
+  // Ordenação:
+  // - Se há busca digitada e o usuário ainda não ordenou manualmente: relevância
+  // - Caso contrário: respeita a coluna escolhida
+  if (hasQuery && !userSorted) {
+    filtered.sort((x, y) => {
+      const sx = (x._score || 0);
+      const sy = (y._score || 0);
+      if (sy !== sx) return sy - sx;
+      const tx = normalize(x.titulo);
+      const ty = normalize(y.titulo);
+      return tx.localeCompare(ty, 'pt-BR', { numeric: true });
+    });
+  } else {
+    filtered.sort((x, y) => {
+      const ax = normalize(x[sortKey]);
+      const ay = normalize(y[sortKey]);
+      const cmp = ax.localeCompare(ay, 'pt-BR', { numeric: true });
+      return sortDir === 'asc' ? cmp : -cmp;
+    });
+  }
 
   return filtered;
 }
 
-function updateStats(filtered) {
-  totalPill.textContent = `Total: ${rows.length}`;
-  visiblePill.textContent = `Exibidos: ${filtered.length}`;
-  const availableNow = filtered.filter(r => r._status.key === 'available').length;
-  statusPill.textContent = `Disponíveis agora: ${availableNow}`;
+function updateSortHeaders() {
+  document.querySelectorAll('th[data-key]').forEach(th => {
+    if (!th.dataset.label) th.dataset.label = th.textContent.trim();
+    const active = th.dataset.key === sortKey;
+    const arrow = active ? (sortDir === 'asc' ? ' ↑' : ' ↓') : '';
+    th.innerHTML = `${th.dataset.label}<span class="sort-arrow">${arrow.trim()}</span>`;
+    th.classList.toggle('sort-active', active);
+    th.setAttribute('aria-sort', active ? (sortDir === 'asc' ? 'ascending' : 'descending') : 'none');
+  });
 }
 
 function render() {
   const filtered = currentRows();
   tbody.innerHTML = '';
-  updateStats(filtered);
-  updateHeaderSortUI();
+  visiblePill.textContent = `Exibidos: ${filtered.length}`;
   empty.hidden = filtered.length !== 0;
+  updateSortHeaders();
 
   for (const r of filtered) {
     const tr = document.createElement('tr');
-    const ref = r.bib_ref || '';
+    const ref = (r.bib_ref || '');
     const terms = [...(lastQuery.phrases || []), ...(lastQuery.tokens || [])];
     const refHtml = ref ? highlightHTML(ref, terms) : '<span class="muted">—</span>';
-    const autorText = r.autor || '—';
-    const autorHtml = r.autor
-      ? `<button class="tag-link author-chip" type="button" data-author="${escapeHTML(r.autor)}">${highlightHTML(r.autor, terms)}</button>`
-      : '<span class="muted">—</span>';
-    const livroUrl = ref ? `${LIVRO_URL}?ref=${encodeURIComponent(ref)}` : '#';
+    const autorHtml = r.autor ? highlightHTML(r.autor, terms) : '<span class="muted">—</span>';
     const tituloHtml = r.titulo ? highlightHTML(r.titulo, terms) : '<span class="muted">—</span>';
-    const tituloCell = ref ? `<a href="${livroUrl}" style="text-decoration:none; font-weight:700;">${tituloHtml}</a>` : tituloHtml;
     const anoHtml = r.ano ? highlightHTML(r.ano, terms) : '<span class="muted">—</span>';
     const editoraHtml = r.editora ? highlightHTML(r.editora, terms) : '<span class="muted">—</span>';
-    const cddHtml = r.cdd
-      ? `<button class="tag-link cdd-chip" type="button" data-cdd="${escapeHTML(r.cdd)}">${highlightHTML(r.cdd, terms)}</button>`
-      : '<span class="muted">—</span>';
-    const status = r._status;
-    tr.innerHTML = `
-      <td class="col-ref"><div class="ref-stack"><span class="ref-main">${refHtml}</span></div></td>
-      <td class="col-autor">${autorHtml}</td>
-      <td class="col-titulo">${tituloCell}</td>
+
+    const livroUrl = ref ? ('livro.html?ref=' + encodeURIComponent(ref)) : '';
+    const tituloCell = ref ? (`<a class="book-link" href="${livroUrl}">${tituloHtml}</a>`) : `<span class="wrap-cell">${tituloHtml}</span>`;
+
+
+    tr.innerHTML = `      <td class="col-ref">${refHtml}</td>
+      <td class="col-autor wrap-cell">${autorHtml}</td>
+      <td class="col-titulo wrap-cell">${tituloCell}</td>
       <td class="col-ano">${anoHtml}</td>
-      <td class="col-editora">${editoraHtml}</td>
-      <td class="col-cdd">${cddHtml}</td>
-      <td class="col-status"><span class="status-badge ${status.cls}">${status.label}</span></td>
-      <td class="col-acao"><button class="btn-inline copyRefBtn" type="button" data-ref="${encodeURIComponent(ref)}">Copiar referência</button></td>
+      <td class="col-editora"><div class="cell-flex"><span>${editoraHtml}</span><button class="btn-inline copyRefBtn" type="button" data-ref="${encodeURIComponent(ref)}">Copiar referência</button></div></td>
     `;
     tbody.appendChild(tr);
   }
@@ -887,29 +740,116 @@ function debounce(fn, ms) {
     t = setTimeout(() => fn(...args), ms);
   };
 }
-const debouncedRender = debounce(render, 120);
+
+const debouncedRender = debounce(render, 140);
+
+// Busca: debounce + volta para “relevância”
+search.addEventListener('input', () => {
+  userSorted = false;
+  debouncedRender();
+});
+
+// Filtros: aplica na hora
+authorFilter.addEventListener('input', render);
+yearFilter.addEventListener('input', render);
+publisherFilter.addEventListener('input', render);
+
+
+
+
+function escapeHTML(s) {
+  return (s ?? '').toString().replace(/[&<>"']/g, (m) => ({
+    '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'
+  }[m]));
+}
+
+function exportPDF() {
+  const filtered = currentRows();
+  const pad = (n) => String(n).padStart(2,'0');
+  const d = new Date();
+  const stamp = `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
+  const title = 'Catálogo da BLMF';
+  const subtitle = `Exportado em ${stamp} · ${filtered.length} item(ns)`;
+
+  const rowsHtml = filtered.map(r => {
+    const autor = (r.autor || '—');
+    const titulo = (r.titulo || '—');
+    const ano = (r.ano || '—');
+    const editora = (r.editora || '—');
+    return `<tr>
+      <td>${escapeHTML(autor)}</td>
+      <td>${escapeHTML(titulo)}</td>
+      <td>${escapeHTML(ano)}</td>
+      <td>${escapeHTML(editora)}</td>
+    </tr>`;
+  }).join('');
+
+  const w = window.open('', '_blank');
+  if (!w) {
+    alert('O navegador bloqueou a janela de exportação. Autorize pop-ups para exportar em PDF.');
+    return;
+  }
+
+  w.document.write(`<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>${title} — PDF</title>
+<style>
+  body { font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; padding: 28px; color: #111; }
+  h1 { font-size: 18px; margin: 0 0 6px; }
+  .meta { font-size: 12px; color: #444; margin-bottom: 14px; }
+  table { width: 100%; border-collapse: collapse; }
+  th, td { border: 1px solid #ddd; padding: 6px 8px; font-size: 12px; vertical-align: top; }
+  th { background: #f4f4f4; text-transform: uppercase; letter-spacing: .04em; font-size: 11px; }
+  @page { size: A4; margin: 12mm; }
+</style>
+</head>
+<body>
+  <h1>${title}</h1>
+  <div class="meta">${subtitle}</div>
+  <div style="margin: 12px 0 16px;">
+    <button onclick="window.print()" style="padding:8px 10px;border:1px solid #aaa;border-radius:8px;background:#fff;cursor:pointer;">Imprimir / Salvar em PDF</button>
+    <span style="font-size:12px;color:#444;margin-left:10px;">(Escolha “Salvar como PDF” na janela de impressão)</span>
+  </div>
+  <table>
+    <thead><tr><th>autor</th><th>título</th><th>ano</th><th>editora</th></tr></thead>
+    <tbody>${rowsHtml}</tbody>
+  </table>
+  <script>
+    // Clique no botão abaixo para salvar/ imprimir em PDF.
+    // (No computador: escolha "Salvar como PDF" na janela de exportação.)
+  <\/script>
+</body>
+</html>`);
+  w.document.close();
+}
 
 function toCSV(rowsToExport) {
-  const cols = ['bib_ref','autor','titulo','ano','editora','cdd','status'];
-  const labels = { bib_ref:'ref', autor:'autor', titulo:'título', ano:'ano', editora:'editora', cdd:'CDD', status:'status' };
+  const cols = ['autor','titulo','ano','editora'];
   const esc = (v) => {
     const s = (v ?? '').toString().replace(/\r?\n/g, ' ').trim();
+    // Escape quotes and wrap in quotes when needed
     const needs = /[",;]/.test(s);
     const out = s.replace(/"/g, '""');
     return needs ? `"${out}"` : out;
   };
-  const header = cols.map(c => labels[c]).join(';');
-  const lines = rowsToExport.map(r => cols.map(c => esc(c === 'status' ? r._status.label : r[c])).join(';'));
+  const header = cols.map(c => ({autor:'autor', titulo:'título', ano:'ano', editora:'editora'}[c])).join(';');
+  const lines = rowsToExport.map(r => cols.map(c => esc(r[c])).join(';'));
+  // UTF-8 BOM for Excel compatibility
   return '\ufeff' + [header, ...lines].join('\n');
 }
+
 function exportCSV() {
   const filtered = currentRows();
   const csv = toCSV(filtered);
   const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' });
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
+  const pad = (n) => String(n).padStart(2,'0');
   const d = new Date();
-  const stamp = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+  const stamp = `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
   a.href = url;
   a.download = `BLMF-catalogo-${stamp}.csv`;
   document.body.appendChild(a);
@@ -917,121 +857,84 @@ function exportCSV() {
   a.remove();
   URL.revokeObjectURL(url);
 }
-function exportPDF() {
-  const filtered = currentRows();
-  const d = new Date();
-  const stamp = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
-  const rowsHtml = filtered.map(r => `
-    <tr>
-      <td>${escapeHTML(r.bib_ref || '—')}</td>
-      <td>${escapeHTML(r.autor || '—')}</td>
-      <td>${escapeHTML(r.titulo || '—')}</td>
-      <td>${escapeHTML(r.ano || '—')}</td>
-      <td>${escapeHTML(r.editora || '—')}</td>
-      <td>${escapeHTML(r.cdd || '—')}</td>
-      <td>${escapeHTML(r._status.label)}</td>
-    </tr>`).join('');
-  const w = window.open('', '_blank');
-  if (!w) {
-    alert('O navegador bloqueou a janela de exportação. Autorize pop-ups para exportar em PDF.');
-    return;
-  }
-  w.document.write(`<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Catálogo da BLMF — PDF</title><style>body{font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;padding:28px;color:#111}h1{font-size:18px;margin:0 0 6px}.meta{font-size:12px;color:#444;margin-bottom:14px}table{width:100%;border-collapse:collapse}th,td{border:1px solid #ddd;padding:6px 8px;font-size:12px;vertical-align:top}th{background:#f4f4f4;text-transform:uppercase;letter-spacing:.04em;font-size:11px}@page{size:A4;margin:12mm}</style></head><body><h1>Catálogo da BLMF</h1><div class="meta">Exportado em ${stamp} · ${filtered.length} item(ns)</div><div style="margin:12px 0 16px;"><button onclick="window.print()" style="padding:8px 10px;border:1px solid #aaa;border-radius:8px;background:#fff;cursor:pointer;">Imprimir / Salvar em PDF</button><span style="font-size:12px;color:#444;margin-left:10px;">(Escolha “Salvar como PDF” na janela de impressão)</span></div><table><thead><tr><th>ref</th><th>autor</th><th>título</th><th>ano</th><th>editora</th><th>CDD</th><th>status</th></tr></thead><tbody>${rowsHtml}</tbody></table></body></html>`);
-  w.document.close();
-}
 
-function clearFilters() {
+document.getElementById('clearBtn').addEventListener('click', () => {
   search.value = '';
   authorFilter.value = '';
-  publisherFilter.value = '';
   yearFilter.value = '';
-  cddFilter.value = '';
-  availabilityFilter.value = 'all';
-  sortSelect.value = 'relevance';
-  activeHeaderSort = null;
+  publisherFilter.value = '';
+  sortKey = 'autor';
+  sortDir = 'asc';
+  userSorted = false;
   render();
   search.focus();
-}
-
-async function handleContaClick() {
-  const state = await getCurrentUserAndRole();
-  if (!state.user) {
-    location.assign(CADASTRO_URL);
-    return;
-  }
-  location.assign(state.isLibrarian ? PAINEL_URL : CONTA_URL);
-}
-
-search.addEventListener('input', debouncedRender);
-authorFilter.addEventListener('input', render);
-publisherFilter.addEventListener('input', render);
-yearFilter.addEventListener('input', render);
-cddFilter.addEventListener('input', render);
-availabilityFilter.addEventListener('change', render);
-sortSelect.addEventListener('change', () => { activeHeaderSort = null; render(); });
-clearBtn.addEventListener('click', clearFilters);
-pdfBtn.addEventListener('click', exportPDF);
-csvAdvancedLink.addEventListener('click', (e) => { e.preventDefault(); exportCSV(); });
-contaBtn.addEventListener('click', handleContaClick);
-
-sortableHeaders.forEach((th) => {
-  th.dataset.label = th.textContent.trim();
-  th.addEventListener('click', () => applyHeaderSort(th.dataset.sort));
 });
 
+
+
+document.getElementById('csvAdvancedLink').addEventListener('click', (e) => { e.preventDefault(); exportCSV(); });
+document.getElementById('pdfBtn').addEventListener('click', exportPDF);
+
+// Copiar referência (por item)
 tbody.addEventListener('click', async (e) => {
-  const copyBtn = e.target.closest('.copyRefBtn');
-  if (copyBtn) {
-    const txt = decodeURIComponent(copyBtn.dataset.ref || '');
-    try {
-      await navigator.clipboard.writeText(txt);
-    } catch (err) {
-      const ta = document.createElement('textarea');
-      ta.value = txt;
-      ta.style.position = 'fixed';
-      ta.style.left = '-9999px';
-      document.body.appendChild(ta);
-      ta.select();
-      try { document.execCommand('copy'); } catch (e2) {}
-      ta.remove();
-    }
-    const prev = copyBtn.textContent;
-    copyBtn.textContent = 'Copiado!';
-    copyBtn.disabled = true;
-    setTimeout(() => { copyBtn.textContent = prev; copyBtn.disabled = false; }, 900);
-    return;
-  }
-
-  const authorBtn = e.target.closest('.author-chip');
-  if (authorBtn) {
-    authorFilter.value = authorBtn.dataset.author || '';
-    render();
-    return;
-  }
-
-  const cddBtn = e.target.closest('.cdd-chip');
-  if (cddBtn) {
-    cddFilter.value = cddBtn.dataset.cdd || '';
-    render();
+  const btn = e.target.closest('.copyRefBtn');
+  if (!btn) return;
+  const txt = decodeURIComponent(btn.dataset.ref || '');
+  try {
+    await navigator.clipboard.writeText(txt);
+    const prev = btn.textContent;
+    btn.textContent = 'Copiado!';
+    btn.disabled = true;
+    setTimeout(() => { btn.textContent = prev; btn.disabled = false; }, 900);
+  } catch (err) {
+    // Fallback
+    const ta = document.createElement('textarea');
+    ta.value = txt;
+    ta.style.position = 'fixed';
+    ta.style.left = '-9999px';
+    document.body.appendChild(ta);
+    ta.select();
+    try { document.execCommand('copy'); } catch(e2) {}
+    ta.remove();
+    const prev = btn.textContent;
+    btn.textContent = 'Copiado!';
+    btn.disabled = true;
+    setTimeout(() => { btn.textContent = prev; btn.disabled = false; }, 900);
   }
 });
 
+
+document.querySelectorAll('th[data-key]').forEach(th => {
+  th.addEventListener('click', () => {
+    const key = th.dataset.key;
+    userSorted = true;
+    if (sortKey === key) {
+      sortDir = sortDir === 'asc' ? 'desc' : 'asc';
+    } else {
+      sortKey = key;
+      sortDir = key === 'ano' ? 'desc' : 'asc';
+    }
+    render();
+  });
+});
+
+// Atalhos de teclado
 document.addEventListener('keydown', (e) => {
+  // "/" foca na busca
   if (e.key === '/' && document.activeElement !== search && !e.ctrlKey && !e.metaKey && !e.altKey) {
     e.preventDefault();
     search.focus();
   }
+  // ESC limpa a busca (se o foco estiver na caixa)
   if (e.key === 'Escape' && document.activeElement === search) {
     search.value = '';
+    userSorted = false;
     debouncedRender();
   }
 });
 
-(async function init() {
-  rows = await loadRowsFromSupabase();
-  prepareRows();
-  render();
-})();
+
+render();
 </script>
 </body>
 </html>
