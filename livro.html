@@ -20,7 +20,10 @@
       background-image:
         linear-gradient(rgba(0,0,0,0.78), rgba(0,0,0,0.78)),
         url('https://cclamazonia.noblogs.org/files/2024/11/Arte-CCLA-paredao.jpg');
-      background-size:cover; background-position:center; background-attachment:fixed; background-repeat:no-repeat;
+      background-size:cover;
+      background-position:center;
+      background-attachment:fixed;
+      background-repeat:no-repeat;
     }
     a, a:visited{color:inherit}
     .wrap{max-width:1080px;margin:0 auto;padding:24px}
@@ -31,16 +34,30 @@
       filter:drop-shadow(0 8px 18px rgba(0,0,0,.35))
     }
     .btn{
-      border:1px solid var(--line); background:rgba(18,18,18,.92);
-      color:var(--text); border-radius:14px; padding:10px 12px;
-      cursor:pointer; box-shadow: var(--shadow);
-      font-weight:900; font-size:.95rem;
+      border:1px solid var(--line);
+      background:rgba(18,18,18,.92);
+      color:var(--text);
+      border-radius:14px;
+      padding:10px 12px;
+      cursor:pointer;
+      box-shadow: var(--shadow);
+      font-weight:900;
+      font-size:.95rem;
+      text-decoration:none;
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
     }
     .btn.primary{border:none;background:linear-gradient(135deg,var(--red2),var(--red))}
     .btn:hover{border-color:rgba(255,255,255,.22)}
     .btn[aria-disabled="true"]{opacity:.55;cursor:default}
-
-    .card{border:1px solid rgba(255,255,255,.08); background:var(--panel); border-radius:22px; padding:16px; box-shadow:var(--shadow)}
+    .card{
+      border:1px solid rgba(255,255,255,.08);
+      background:var(--panel);
+      border-radius:22px;
+      padding:16px;
+      box-shadow:var(--shadow)
+    }
     .title{margin:0 0 6px;font-size:1.45rem}
     .muted{color:var(--muted)}
     .meta{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px}
@@ -51,21 +68,14 @@
       background:rgba(18,18,18,.65);
       padding:7px 10px;border-radius:999px;
       font-size:.9rem;color:var(--muted);
-      flex-wrap:wrap;
-      overflow-wrap:anywhere;
+      flex-wrap:wrap;overflow-wrap:anywhere;
     }
     .status{margin-top:10px;font-size:.92rem}
     .status.ok{color:var(--ok)} .status.warn{color:var(--warn)} .status.bad{color:var(--bad)}
     .actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:12px}
     .hr{height:1px;background:rgba(255,255,255,.08);margin:14px 0}
-  
-/* red-only override */
-html{ accent-color:#c00000; }
-a:any-link{ color:inherit; }
-.btn:hover, .btn:focus{ border-color:rgba(225,29,47,.55) !important; }
-</style>
+  </style>
 </head>
-
 <body>
   <div class="wrap">
     <div class="topbar">
@@ -76,7 +86,7 @@ a:any-link{ color:inherit; }
       </div>
 
       <div style="display:flex;gap:10px;flex-wrap:wrap">
-        <a class="btn" id="btnBlog" href="https://cclamazonia.noblogs.org" rel="noopener">Voltar ao blogue</a>
+        <a class="btn" href="https://cclamazonia.noblogs.org/" rel="noopener">Voltar ao blogue</a>
         <a class="btn" id="btnCatalogo" href="#" rel="noopener">Voltar ao catálogo</a>
         <button class="btn" id="btnConta" type="button" aria-disabled="true" title="Disponível apenas quando logado(a/e).">Minha conta</button>
         <a class="btn primary" id="btnEntrar" href="#" rel="noopener">Entrar</a>
@@ -89,7 +99,7 @@ a:any-link{ color:inherit; }
 
       <div class="meta" style="margin-top:12px">
         <div class="pill" id="bibRefPill">ref: —</div>
-        <div class="pill" id="tomboPill">rótulo: —</div>
+        <div class="pill" id="rotuloPill">rótulo: —</div>
         <div class="pill" id="yearPill">ano: —</div>
         <div class="pill" id="pubPill">editora: —</div>
         <div class="pill" id="cddPill">CDD: —</div>
@@ -111,15 +121,16 @@ a:any-link{ color:inherit; }
   <script type="module">
     import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
+    const GH_BASE = location.origin;
     const ROUTES = {
-      BLOG_HOME: "https://cclamazonia.noblogs.org",
-      CATALOGO: "https://cclamazonia-cmd.github.io/blmf-catalogo/",
-      CADASTRO: "https://cclamazonia-cmd.github.io/blmf-conta/cadastro.html",
-      CONTA: "https://cclamazonia-cmd.github.io/blmf-conta/conta.html",
-      PAINEL: "https://cclamazonia-cmd.github.io/blmf-conta/painel.html",
+      BLOG_HOME: "https://cclamazonia.noblogs.org/",
+      CATALOGO: `${GH_BASE}/blmf-catalogo/`,
+      CADASTRO: `${GH_BASE}/blmf-conta/cadastro.html`,
+      CONTA: `${GH_BASE}/blmf-conta/conta.html`,
     };
 
     document.getElementById("btnCatalogo").href = ROUTES.CATALOGO;
+    document.getElementById("btnEntrar").href = ROUTES.CADASTRO;
 
     const SUPABASE_URL = "https://asptfmokzykwzlshsncw.supabase.co";
     const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFzcHRmbW9renlrd3psc2hzbmN3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzI1MzcxNzcsImV4cCI6MjA4ODExMzE3N30.JkMLHPCV2AH5ELZV_1RfcoW250QEofLGvnDKSDpkcn0";
@@ -129,153 +140,112 @@ a:any-link{ color:inherit; }
     });
 
     const $ = (id) => document.getElementById(id);
-    const setStatus = (msg, cls) => {
+
+    function setStatus(msg, cls) {
       const el = $("status");
       el.className = "status" + (cls ? " " + cls : "");
       el.textContent = msg || "";
-    };
+    }
 
-    // Normalisation sans accents (título == titulo)
-    const nk = (s) => String(s||"").normalize("NFD").replace(/\p{Diacritic}/gu,"").toLowerCase();
+    function getBibRefFromUrl() {
+      const u = new URL(location.href);
+      return (u.searchParams.get("ref") || u.searchParams.get("bib_ref") || "").trim();
+    }
 
-    function findCol(keys, wanted){
+    const nk = (s) => String(s || "").normalize("NFD").replace(/\p{Diacritic}/gu, "").toLowerCase();
+
+    function findCol(keys, wanted) {
       const map = new Map(keys.map(k => [nk(k), k]));
-      for (const w of wanted){
+      for (const w of wanted) {
         const hit = map.get(nk(w));
         if (hit) return hit;
       }
       return null;
     }
 
-    async function pickFirstExistingTable(candidates){
-      for (const t of candidates){
+    async function pickFirstExistingTable(candidates) {
+      for (const t of candidates) {
         const { error } = await supabase.from(t).select("*").limit(1);
         if (!error) return t;
       }
       return null;
     }
 
-    function getBibRefFromUrl(){
-      const u = new URL(location.href);
-      return (u.searchParams.get("ref") || u.searchParams.get("bib_ref") || "").trim();
-    }
-
-    async function getAccountTargetRoute() {
+    async function setupContaButton() {
+      const btn = $("btnConta");
       const { data: { session } } = await supabase.auth.getSession();
-      if (!session?.user?.id) return null;
 
-      try {
-        const { data, error } = await supabase
-          .from("profiles")
-          .select("is_librarian")
-          .eq("id", session.user.id)
-          .maybeSingle();
-
-        if (!error && data?.is_librarian === true) return ROUTES.PAINEL;
-      } catch {}
-
-      return ROUTES.CONTA;
-    }
-
-    async function wireAccountButtons() {
-      const btnConta = $("btnConta");
-      const btnEntrar = $("btnEntrar");
-      const target = await getAccountTargetRoute();
-
-      if (target) {
-        btnConta.setAttribute("aria-disabled", "false");
-        btnConta.title = "Abrir minha área";
-        btnConta.onclick = () => location.assign(target);
-        btnEntrar.href = target;
-        btnEntrar.onclick = (e) => { e.preventDefault(); location.assign(target); };
-        return;
+      if (session?.user?.id) {
+        btn.setAttribute("aria-disabled", "false");
+        btn.title = "Abrir minha conta";
+        btn.addEventListener("click", () => location.assign(ROUTES.CONTA));
+      } else {
+        btn.setAttribute("aria-disabled", "true");
+        btn.title = "Disponível apenas quando logado(a/e).";
+        btn.addEventListener("click", (e) => e.preventDefault());
       }
-
-      btnConta.setAttribute("aria-disabled", "true");
-      btnConta.title = "Você não está logado(a/e).";
-      btnConta.onclick = (e) => { e.preventDefault(); };
-      btnEntrar.href = ROUTES.CADASTRO;
-      btnEntrar.onclick = (e) => { e.preventDefault(); location.assign(ROUTES.CADASTRO); };
     }
 
-    async function reserve(bib_ref){
+    async function reserve(bib_ref) {
       setStatus("", "");
       const { data: { session } } = await supabase.auth.getSession();
-      if (!session){
+
+      if (!session) {
         setStatus("Para reservar, você precisa entrar.", "warn");
         location.assign(ROUTES.CADASTRO);
         return;
       }
 
       const reservasTable = await pickFirstExistingTable(["reservas"]);
-      if (!reservasTable) return setStatus("Tabela de reservas não encontrada.", "bad");
+      if (!reservasTable) {
+        setStatus("Tabela de reservas não encontrada.", "bad");
+        return;
+      }
 
-      const { error } = await supabase.from(reservasTable).insert({ user_id: session.user.id, bib_ref });
-      if (error) return setStatus("Não foi possível reservar: " + error.message, "warn");
+      const { error } = await supabase
+        .from(reservasTable)
+        .insert({ user_id: session.user.id, bib_ref });
+
+      if (error) {
+        setStatus("Não foi possível reservar: " + error.message, "warn");
+        return;
+      }
+
       setStatus("Reserva registrada.", "ok");
     }
 
-    async function loadRotulosByBibRef(bib_ref){
-      // 1) essayer de lire tombo directement sur le livre si présent
-      // (on le gère déjà via select "*", donc rien à faire ici)
-
-      // 2) sinon, aller chercher dans exemplares/v_exemplares...
-      const exTable = await pickFirstExistingTable(["exemplares_public","v_exemplares_public","exemplares","v_exemplares"]);
-      if (!exTable) return [];
-
-      const { data, error } = await supabase
-        .from(exTable)
-        .select("*")
-        .eq("bib_ref", bib_ref)
-        .limit(50);
-
-      if (error || !data?.length) return [];
-
-      const keys = Object.keys(data[0] || {});
-      const colTombo = findCol(keys, ["tombo","rotulo","rótulo","etiqueta","label"]);
-      if (!colTombo) return [];
-
-      const vals = [];
-      for (const row of data){
-        const v = String(row[colTombo] ?? "").trim();
-        if (v) vals.push(v);
-      }
-      // uniques
-      return Array.from(new Set(vals));
-    }
-
-    async function loadBook(){
+    async function loadBook() {
       const bib_ref = getBibRefFromUrl();
-      if (!bib_ref){
+
+      if (!bib_ref) {
         $("title").textContent = "Livro não encontrado";
         setStatus("Faltou a referência na URL (ex.: livro.html?ref=0000124).", "warn");
         return;
       }
 
-      const booksTable = await pickFirstExistingTable(["books_public","v_books_public","books"]);
-      if (!booksTable){
+      const booksTable = await pickFirstExistingTable(["books_public", "v_books_public", "books"]);
+      if (!booksTable) {
         setStatus("Tabela de livros não encontrada.", "bad");
         return;
       }
 
-      // peek columns
       const peek = await supabase.from(booksTable).select("*").limit(1);
-      if (peek.error){
+      if (peek.error) {
         setStatus("Erro ao inspecionar catálogo: " + peek.error.message, "bad");
         return;
       }
+
       const sample = (peek.data && peek.data[0]) ? peek.data[0] : {};
       const keys = Object.keys(sample);
 
-      const colRef = findCol(keys, ["bib_ref","bibref","ref","referencia","referência"]) || "bib_ref";
-      const colTit = findCol(keys, ["title","titulo","título","nome"]);
-      const colAut = findCol(keys, ["autor","author","autores"]);
-      const colAno = findCol(keys, ["ano","year"]);
-      const colEdi = findCol(keys, ["editora","publisher"]);
-      const colCDD = findCol(keys, ["cdd","classificacao","classificação"]);
-      const colRes = findCol(keys, ["resumo","descricao","descrição","description","obs","observacao","observação"]);
-      const colPdf = findCol(keys, ["pdf_url","url_pdf","pdf","arquivo_pdf","link_pdf","url"]);
-      const colTomboInBook = findCol(keys, ["tombo","rotulo","rótulo","etiqueta","label"]);
+      const colRef = findCol(keys, ["bib_ref", "bibref", "ref", "referencia", "referência"]) || "bib_ref";
+      const colTit = findCol(keys, ["titulo", "título", "title", "nome"]);
+      const colAut = findCol(keys, ["autor", "author", "autores"]);
+      const colAno = findCol(keys, ["ano", "year"]);
+      const colEdi = findCol(keys, ["editora", "publisher"]);
+      const colCDD = findCol(keys, ["cdd", "classificacao", "classificação"]);
+      const colRes = findCol(keys, ["resumo", "descricao", "descrição", "description", "obs", "observacao", "observação"]);
+      const colPdf = findCol(keys, ["pdf_url", "url_pdf", "pdf", "arquivo_pdf", "link_pdf", "url"]);
 
       const { data, error } = await supabase
         .from(booksTable)
@@ -283,23 +253,24 @@ a:any-link{ color:inherit; }
         .eq(colRef, bib_ref)
         .maybeSingle();
 
-      if (error){
+      if (error) {
         setStatus("Erro ao carregar livro: " + error.message, "bad");
         return;
       }
-      if (!data){
+
+      if (!data) {
         $("title").textContent = "Livro não encontrado";
         setStatus("Não encontrei esse livro no catálogo.", "warn");
         return;
       }
 
       const titulo = colTit ? (data[colTit] || "") : "";
-      const autor  = colAut ? (data[colAut] || "") : "";
-      const ano    = colAno ? (data[colAno] || "") : "";
-      const editora= colEdi ? (data[colEdi] || "") : "";
-      const cdd    = colCDD ? (data[colCDD] || "") : "";
+      const autor = colAut ? (data[colAut] || "") : "";
+      const ano = colAno ? (data[colAno] || "") : "";
+      const editora = colEdi ? (data[colEdi] || "") : "";
+      const cdd = colCDD ? (data[colCDD] || "") : "";
       const resumo = colRes ? (data[colRes] || "") : "";
-      const pdf    = colPdf ? (data[colPdf] || "") : "";
+      const pdf = colPdf ? (data[colPdf] || "") : "";
 
       $("title").textContent = titulo || "Sem título";
       $("authorLine").textContent = autor || "—";
@@ -309,18 +280,36 @@ a:any-link{ color:inherit; }
       $("cddPill").textContent = "CDD: " + (cdd || "—");
       $("desc").textContent = resumo || "—";
 
-      // rótulo (tombo)
+      const exTable = await pickFirstExistingTable(["v_exemplares_public"]);
       let rotulos = [];
-      if (colTomboInBook && data[colTomboInBook]) {
-        const v = String(data[colTomboInBook]).trim();
-        if (v) rotulos = [v];
-      }
-      if (!rotulos.length){
-        rotulos = await loadRotulosByBibRef(bib_ref);
-      }
-      $("tomboPill").textContent = "rótulo: " + (rotulos.length ? rotulos.join(", ") : "—");
 
-      if (pdf){
+      if (exTable) {
+        const exactByRef = await supabase
+          .from(exTable)
+          .select("rotulo,tombo,bib_ref,book_id")
+          .eq("bib_ref", bib_ref)
+          .limit(50);
+
+        if (!exactByRef.error && exactByRef.data?.length) {
+          rotulos = Array.from(new Set(exactByRef.data.map(r => String(r.rotulo || r.tombo || "").trim()).filter(Boolean)));
+        }
+
+        if (!rotulos.length && data.id != null) {
+          const fallbackByBookId = await supabase
+            .from(exTable)
+            .select("rotulo,tombo,bib_ref,book_id")
+            .eq("book_id", data.id)
+            .limit(50);
+
+          if (!fallbackByBookId.error && fallbackByBookId.data?.length) {
+            rotulos = Array.from(new Set(fallbackByBookId.data.map(r => String(r.rotulo || r.tombo || "").trim()).filter(Boolean)));
+          }
+        }
+      }
+
+      $("rotuloPill").textContent = "rótulo: " + (rotulos.length ? rotulos.join(", ") : "—");
+
+      if (pdf) {
         $("btnAbrirPdf").style.display = "inline-block";
         $("btnAbrirPdf").addEventListener("click", () => location.assign(pdf));
       }
@@ -328,7 +317,7 @@ a:any-link{ color:inherit; }
       $("btnReservar").addEventListener("click", () => reserve(bib_ref));
     }
 
-    await wireAccountButtons();
+    await setupContaButton();
     await loadBook();
   </script>
 </body>
