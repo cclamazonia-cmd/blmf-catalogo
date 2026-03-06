@@ -99,7 +99,7 @@
 
       <div class="meta" style="margin-top:12px">
         <div class="pill" id="bibRefPill">ref: —</div>
-        <div class="pill" id="rotuloPill">rótulo: —</div>
+        <div class="pill" id="tomboPill">tombo: —</div>
         <div class="pill" id="yearPill">ano: —</div>
         <div class="pill" id="pubPill">editora: —</div>
         <div class="pill" id="cddPill">CDD: —</div>
@@ -280,34 +280,60 @@
       $("cddPill").textContent = "CDD: " + (cdd || "—");
       $("desc").textContent = resumo || "—";
 
-      const exTable = await pickFirstExistingTable(["v_exemplares_public"]);
-      let rotulos = [];
+      async function loadTombosForBook(bookRow, bib_ref) {
+        const inBook = findCol(Object.keys(bookRow || {}), ["tombo", "rotulo", "rótulo", "etiqueta", "label"]);
+        let tombos = [];
 
-      if (exTable) {
-        const exactByRef = await supabase
-          .from(exTable)
-          .select("rotulo,tombo,bib_ref,book_id")
-          .eq("bib_ref", bib_ref)
-          .limit(50);
-
-        if (!exactByRef.error && exactByRef.data?.length) {
-          rotulos = Array.from(new Set(exactByRef.data.map(r => String(r.rotulo || r.tombo || "").trim()).filter(Boolean)));
-        }
-
-        if (!rotulos.length && data.id != null) {
-          const fallbackByBookId = await supabase
-            .from(exTable)
-            .select("rotulo,tombo,bib_ref,book_id")
-            .eq("book_id", data.id)
-            .limit(50);
-
-          if (!fallbackByBookId.error && fallbackByBookId.data?.length) {
-            rotulos = Array.from(new Set(fallbackByBookId.data.map(r => String(r.rotulo || r.tombo || "").trim()).filter(Boolean)));
+        if (inBook && bookRow?.[inBook] != null) {
+          const raw = bookRow[inBook];
+          if (Array.isArray(raw)) {
+            tombos = raw.map(v => String(v || "").trim()).filter(Boolean);
+          } else {
+            const v = String(raw || "").trim();
+            if (v) tombos = [v];
           }
         }
+
+        if (tombos.length) {
+          return Array.from(new Set(tombos));
+        }
+
+        const candidates = ["v_exemplares_public", "exemplares_public", "v_exemplares", "exemplares"];
+
+        for (const table of candidates) {
+          const peekEx = await supabase.from(table).select("*").limit(1);
+          if (peekEx.error) continue;
+
+          const exKeys = Object.keys((peekEx.data && peekEx.data[0]) ? peekEx.data[0] : {});
+          const exTombo = findCol(exKeys, ["tombo", "rotulo", "rótulo", "etiqueta", "label"]);
+          const exBibRef = findCol(exKeys, ["bib_ref", "bibref", "ref", "referencia", "referência"]);
+          const exBookId = findCol(exKeys, ["book_id", "livro_id", "id_livro"]);
+
+          if (!exTombo) continue;
+
+          let rows = [];
+
+          if (exBibRef) {
+            const byRef = await supabase.from(table).select("*").eq(exBibRef, bib_ref).limit(100);
+            if (!byRef.error && byRef.data?.length) rows = byRef.data;
+          }
+
+          if (!rows.length && exBookId && bookRow?.id != null) {
+            const byBookId = await supabase.from(table).select("*").eq(exBookId, bookRow.id).limit(100);
+            if (!byBookId.error && byBookId.data?.length) rows = byBookId.data;
+          }
+
+          if (rows.length) {
+            const vals = rows.map(r => String(r?.[exTombo] || "").trim()).filter(Boolean);
+            if (vals.length) return Array.from(new Set(vals));
+          }
+        }
+
+        return [];
       }
 
-      $("rotuloPill").textContent = "rótulo: " + (rotulos.length ? rotulos.join(", ") : "—");
+      const tombos = await loadTombosForBook(data, bib_ref);
+      $("tomboPill").textContent = "tombo: " + (tombos.length ? tombos.join(", ") : "—");
 
       if (pdf) {
         $("btnAbrirPdf").style.display = "inline-block";
