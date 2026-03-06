@@ -24,11 +24,10 @@
     }
     a, a:visited{color:inherit}
     .wrap{max-width:1080px;margin:0 auto;padding:24px}
-
     .topbar{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:14px}
     .brand{display:flex;align-items:center;gap:12px}
     .logo{
-      height:64px;width:auto;max-width:160px;object-fit:contain;display:block;flex-shrink:0;
+      height:64px;width:auto;max-width:170px;object-fit:contain;display:block;flex-shrink:0;
       filter:drop-shadow(0 8px 18px rgba(0,0,0,.35))
     }
     .btn{
@@ -39,17 +38,22 @@
     }
     .btn.primary{border:none;background:linear-gradient(135deg,var(--red2),var(--red))}
     .btn:hover{border-color:rgba(255,255,255,.22)}
-    .btn[aria-disabled="true"]{
-      opacity:.55;
-      cursor:default;
-    }
+    .btn[aria-disabled="true"]{opacity:.55;cursor:default}
 
     .card{border:1px solid rgba(255,255,255,.08); background:var(--panel); border-radius:22px; padding:16px; box-shadow:var(--shadow)}
     .title{margin:0 0 6px;font-size:1.45rem}
     .muted{color:var(--muted)}
     .meta{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px}
     @media (max-width:720px){.meta{grid-template-columns:1fr}}
-    .pill{display:inline-flex;align-items:center;gap:8px;border:1px solid rgba(255,255,255,.10);background:rgba(18,18,18,.65);padding:7px 10px;border-radius:999px;font-size:.9rem;color:var(--muted)}
+    .pill{
+      display:inline-flex;align-items:center;gap:8px;
+      border:1px solid rgba(255,255,255,.10);
+      background:rgba(18,18,18,.65);
+      padding:7px 10px;border-radius:999px;
+      font-size:.9rem;color:var(--muted);
+      flex-wrap:wrap;
+      overflow-wrap:anywhere;
+    }
     .status{margin-top:10px;font-size:.92rem}
     .status.ok{color:var(--ok)} .status.warn{color:var(--warn)} .status.bad{color:var(--bad)}
     .actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:12px}
@@ -80,6 +84,7 @@
 
       <div class="meta" style="margin-top:12px">
         <div class="pill" id="bibRefPill">ref: —</div>
+        <div class="pill" id="tomboPill">rótulo: —</div>
         <div class="pill" id="yearPill">ano: —</div>
         <div class="pill" id="pubPill">editora: —</div>
         <div class="pill" id="cddPill">CDD: —</div>
@@ -101,20 +106,15 @@
   <script type="module">
     import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
-    // Base GitHub (au cas où tu es sur cclamazonia-cmd.github.io)
-    const GH_BASE = location.origin.includes("cclamazonia-cmd.github.io")
-      ? "https://cclamazonia-cmd.github.io"
-      : "https://cclamazonia.github.io";
+    const GH_BASE = location.origin; // garde cohérence (cclamazonia-cmd.github.io ou autre)
 
     const ROUTES = {
       BLOG_HOME: "https://cclamazonia.noblogs.org/",
-      CATALOGO: `${GH_BASE}/blmf-catalogo/index.html`,
-      LIVRO: `${GH_BASE}/blmf-catalogo/livro.html`,
+      CATALOGO: `${GH_BASE}/blmf-catalogo/`,
       CADASTRO: `${GH_BASE}/blmf-conta/cadastro.html`,
       CONTA: `${GH_BASE}/blmf-conta/conta.html`,
     };
 
-    // Fix liens
     document.getElementById("btnCatalogo").href = ROUTES.CATALOGO;
     document.getElementById("btnEntrar").href = ROUTES.CADASTRO;
 
@@ -132,7 +132,7 @@
       el.textContent = msg || "";
     };
 
-    // Normalisation sans accents
+    // Normalisation sans accents (título == titulo)
     const nk = (s) => String(s||"").normalize("NFD").replace(/\p{Diacritic}/gu,"").toLowerCase();
 
     function findCol(keys, wanted){
@@ -157,7 +157,6 @@
       return (u.searchParams.get("ref") || u.searchParams.get("bib_ref") || "").trim();
     }
 
-    // Minha conta: action UNIQUEMENT si logado, sinon clic dans le vide
     async function setupContaButton(){
       const btn = $("btnConta");
       const { data: { session } } = await supabase.auth.getSession();
@@ -172,13 +171,11 @@
       }
     }
 
-    // Réserver
     async function reserve(bib_ref){
       setStatus("", "");
       const { data: { session } } = await supabase.auth.getSession();
       if (!session){
         setStatus("Para reservar, você precisa entrar.", "warn");
-        // Entrar = conta repo (cadastro)
         location.assign(ROUTES.CADASTRO);
         return;
       }
@@ -187,10 +184,37 @@
       if (!reservasTable) return setStatus("Tabela de reservas não encontrada.", "bad");
 
       const { error } = await supabase.from(reservasTable).insert({ user_id: session.user.id, bib_ref });
-      if (error){
-        return setStatus("Não foi possível reservar: " + error.message, "warn");
-      }
+      if (error) return setStatus("Não foi possível reservar: " + error.message, "warn");
       setStatus("Reserva registrada.", "ok");
+    }
+
+    async function loadRotulosByBibRef(bib_ref){
+      // 1) essayer de lire tombo directement sur le livre si présent
+      // (on le gère déjà via select "*", donc rien à faire ici)
+
+      // 2) sinon, aller chercher dans exemplares/v_exemplares...
+      const exTable = await pickFirstExistingTable(["exemplares_public","v_exemplares_public","exemplares","v_exemplares"]);
+      if (!exTable) return [];
+
+      const { data, error } = await supabase
+        .from(exTable)
+        .select("*")
+        .eq("bib_ref", bib_ref)
+        .limit(50);
+
+      if (error || !data?.length) return [];
+
+      const keys = Object.keys(data[0] || {});
+      const colTombo = findCol(keys, ["tombo","rotulo","rótulo","etiqueta","label"]);
+      if (!colTombo) return [];
+
+      const vals = [];
+      for (const row of data){
+        const v = String(row[colTombo] ?? "").trim();
+        if (v) vals.push(v);
+      }
+      // uniques
+      return Array.from(new Set(vals));
     }
 
     async function loadBook(){
@@ -207,7 +231,7 @@
         return;
       }
 
-      // Inspect 1 ligne pour détecter colonnes
+      // peek columns
       const peek = await supabase.from(booksTable).select("*").limit(1);
       if (peek.error){
         setStatus("Erro ao inspecionar catálogo: " + peek.error.message, "bad");
@@ -216,17 +240,16 @@
       const sample = (peek.data && peek.data[0]) ? peek.data[0] : {};
       const keys = Object.keys(sample);
 
-      // Détecter colonnes “BibLivre-like”
       const colRef = findCol(keys, ["bib_ref","bibref","ref","referencia","referência"]) || "bib_ref";
       const colTit = findCol(keys, ["title","titulo","título","nome"]);
       const colAut = findCol(keys, ["autor","author","autores"]);
       const colAno = findCol(keys, ["ano","year"]);
       const colEdi = findCol(keys, ["editora","publisher"]);
-      const colCDD = findCol(keys, ["cdd","CDD","classificacao","classificação"]);
+      const colCDD = findCol(keys, ["cdd","classificacao","classificação"]);
       const colRes = findCol(keys, ["resumo","descricao","descrição","description","obs","observacao","observação"]);
       const colPdf = findCol(keys, ["pdf_url","url_pdf","pdf","arquivo_pdf","link_pdf","url"]);
+      const colTomboInBook = findCol(keys, ["tombo","rotulo","rótulo","etiqueta","label"]);
 
-      // Charger le livre (select * pour éviter erreurs de colonnes)
       const { data, error } = await supabase
         .from(booksTable)
         .select("*")
@@ -258,6 +281,17 @@
       $("pubPill").textContent = "editora: " + (editora || "—");
       $("cddPill").textContent = "CDD: " + (cdd || "—");
       $("desc").textContent = resumo || "—";
+
+      // rótulo (tombo)
+      let rotulos = [];
+      if (colTomboInBook && data[colTomboInBook]) {
+        const v = String(data[colTomboInBook]).trim();
+        if (v) rotulos = [v];
+      }
+      if (!rotulos.length){
+        rotulos = await loadRotulosByBibRef(bib_ref);
+      }
+      $("tomboPill").textContent = "rótulo: " + (rotulos.length ? rotulos.join(", ") : "—");
 
       if (pdf){
         $("btnAbrirPdf").style.display = "inline-block";
