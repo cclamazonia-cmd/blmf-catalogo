@@ -1,0 +1,2018 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Catalogação | BLMF</title>
+  <style>
+    :root {
+      --bg: #0d1117;
+      --panel: #161b22;
+      --panel-2: #1f2937;
+      --border: #30363d;
+      --text: #e6edf3;
+      --muted: #9da7b3;
+      --red: #b91c1c;
+      --red-2: #dc2626;
+      --green: #15803d;
+      --amber: #b45309;
+      --blue: #1d4ed8;
+      --danger: #991b1b;
+      --shadow: 0 10px 30px rgba(0, 0, 0, 0.25);
+      --radius: 18px;
+    }
+
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: Inter, Arial, sans-serif;
+      background: linear-gradient(180deg, #0b0f14 0%, #121821 100%);
+      color: var(--text);
+    }
+
+    a { color: inherit; }
+
+    .wrap {
+      max-width: 1440px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+
+    .topbar {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 18px;
+    }
+
+    .brand h1 {
+      margin: 0;
+      font-size: 1.5rem;
+    }
+
+    .brand p {
+      margin: 6px 0 0;
+      color: var(--muted);
+      font-size: 0.95rem;
+    }
+
+    .userbox {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 10px;
+      background: rgba(255,255,255,0.03);
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      padding: 10px 14px;
+    }
+
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 12px;
+      border-radius: 999px;
+      font-size: 0.88rem;
+      border: 1px solid rgba(255,255,255,0.08);
+      background: rgba(255,255,255,0.04);
+    }
+
+    .pill.ok { background: rgba(21, 128, 61, 0.16); color: #c9f7d2; }
+    .pill.warn { background: rgba(180, 83, 9, 0.16); color: #fde5b6; }
+    .pill.info { background: rgba(29, 78, 216, 0.16); color: #d8e8ff; }
+    .pill.danger { background: rgba(153, 27, 27, 0.22); color: #ffd8d8; }
+
+    .banner {
+      margin-bottom: 18px;
+      border-radius: var(--radius);
+      border: 1px solid var(--border);
+      background: linear-gradient(135deg, rgba(185, 28, 28, 0.14), rgba(29, 78, 216, 0.12));
+      padding: 16px 18px;
+      box-shadow: var(--shadow);
+    }
+
+    .banner h2 {
+      margin: 0 0 6px;
+      font-size: 1.08rem;
+    }
+
+    .banner p {
+      margin: 0;
+      color: var(--muted);
+      line-height: 1.5;
+    }
+
+    .statusbar {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 12px;
+      margin-bottom: 18px;
+    }
+
+    .stat {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 14px;
+      box-shadow: var(--shadow);
+    }
+
+    .stat .label {
+      color: var(--muted);
+      font-size: 0.88rem;
+      margin-bottom: 8px;
+    }
+
+    .stat .value {
+      font-size: 1.5rem;
+      font-weight: 700;
+    }
+
+    .tabs {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-bottom: 18px;
+    }
+
+    .tab-btn,
+    button,
+    .file-label {
+      appearance: none;
+      border: 1px solid var(--border);
+      background: var(--panel);
+      color: var(--text);
+      border-radius: 12px;
+      padding: 10px 14px;
+      cursor: pointer;
+      transition: 0.18s ease;
+      font-weight: 600;
+    }
+
+    .tab-btn:hover,
+    button:hover,
+    .file-label:hover {
+      transform: translateY(-1px);
+      border-color: #4b5563;
+    }
+
+    .tab-btn.active {
+      background: linear-gradient(135deg, var(--red), var(--red-2));
+      border-color: transparent;
+    }
+
+    button.primary {
+      background: linear-gradient(135deg, var(--red), var(--red-2));
+      border-color: transparent;
+    }
+
+    button.secondary {
+      background: var(--panel-2);
+    }
+
+    button.ghost {
+      background: transparent;
+    }
+
+    button.success {
+      background: linear-gradient(135deg, #166534, #16a34a);
+      border-color: transparent;
+    }
+
+    button.warning {
+      background: linear-gradient(135deg, #92400e, #d97706);
+      border-color: transparent;
+    }
+
+    button.small {
+      padding: 8px 10px;
+      font-size: 0.88rem;
+      border-radius: 10px;
+    }
+
+    button:disabled {
+      opacity: 0.55;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    .panel {
+      display: none;
+      background: rgba(13, 17, 23, 0.72);
+      border: 1px solid var(--border);
+      border-radius: 24px;
+      padding: 18px;
+      box-shadow: var(--shadow);
+      margin-bottom: 18px;
+    }
+
+    .panel.active { display: block; }
+
+    .panel-header {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      gap: 12px;
+      align-items: flex-start;
+      margin-bottom: 18px;
+    }
+
+    .panel-header h3 {
+      margin: 0 0 6px;
+      font-size: 1.2rem;
+    }
+
+    .panel-header p {
+      margin: 0;
+      color: var(--muted);
+    }
+
+    .grid {
+      display: grid;
+      gap: 14px;
+    }
+
+    .grid.cols-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .grid.cols-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    .grid.cols-4 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+
+    .field {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .field label {
+      font-size: 0.9rem;
+      color: #dbe5f0;
+      font-weight: 600;
+    }
+
+    .field small {
+      color: var(--muted);
+      font-size: 0.82rem;
+    }
+
+    input,
+    select,
+    textarea {
+      width: 100%;
+      padding: 11px 12px;
+      border-radius: 12px;
+      border: 1px solid var(--border);
+      background: #0f1720;
+      color: var(--text);
+      font: inherit;
+      outline: none;
+    }
+
+    input:focus,
+    select:focus,
+    textarea:focus {
+      border-color: #60a5fa;
+      box-shadow: 0 0 0 3px rgba(96, 165, 250, 0.15);
+    }
+
+    textarea { min-height: 110px; resize: vertical; }
+
+    .actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      align-items: center;
+      margin-top: 8px;
+    }
+
+    .hint {
+      color: var(--muted);
+      font-size: 0.88rem;
+      line-height: 1.45;
+    }
+
+    .table-wrap {
+      width: 100%;
+      overflow-x: auto;
+      border: 1px solid var(--border);
+      border-radius: 18px;
+      background: rgba(255,255,255,0.02);
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      min-width: 900px;
+    }
+
+    th,
+    td {
+      padding: 12px 12px;
+      text-align: left;
+      border-bottom: 1px solid rgba(255,255,255,0.06);
+      vertical-align: top;
+      font-size: 0.94rem;
+    }
+
+    th {
+      background: rgba(255,255,255,0.04);
+      color: #dce5ef;
+      position: sticky;
+      top: 0;
+      z-index: 1;
+    }
+
+    td.muted { color: var(--muted); }
+
+    .row-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .inline {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+
+    .split {
+      display: grid;
+      grid-template-columns: 340px minmax(0, 1fr);
+      gap: 16px;
+    }
+
+    .card {
+      background: rgba(255,255,255,0.03);
+      border: 1px solid var(--border);
+      border-radius: 18px;
+      padding: 14px;
+    }
+
+    .card h4 {
+      margin: 0 0 10px;
+      font-size: 1rem;
+    }
+
+    .message {
+      display: none;
+      padding: 12px 14px;
+      border-radius: 14px;
+      margin-bottom: 16px;
+      line-height: 1.45;
+    }
+
+    .message.show { display: block; }
+    .message.ok { background: rgba(22, 101, 52, 0.18); border: 1px solid rgba(34, 197, 94, 0.25); color: #d8ffe4; }
+    .message.error { background: rgba(127, 29, 29, 0.22); border: 1px solid rgba(248, 113, 113, 0.25); color: #ffe0e0; }
+    .message.info { background: rgba(29, 78, 216, 0.16); border: 1px solid rgba(96, 165, 250, 0.22); color: #dbeafe; }
+
+    .empty {
+      padding: 18px;
+      text-align: center;
+      color: var(--muted);
+      border: 1px dashed rgba(255,255,255,0.1);
+      border-radius: 16px;
+    }
+
+    .cover-preview {
+      width: 140px;
+      height: 200px;
+      object-fit: cover;
+      border-radius: 14px;
+      border: 1px solid var(--border);
+      background: rgba(255,255,255,0.04);
+    }
+
+    .sr-only {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      padding: 0;
+      margin: -1px;
+      overflow: hidden;
+      clip: rect(0,0,0,0);
+      white-space: nowrap;
+      border: 0;
+    }
+
+    @media (max-width: 1100px) {
+      .statusbar,
+      .grid.cols-4,
+      .grid.cols-3,
+      .split {
+        grid-template-columns: 1fr 1fr;
+      }
+    }
+
+    @media (max-width: 760px) {
+      .statusbar,
+      .grid.cols-2,
+      .grid.cols-3,
+      .grid.cols-4,
+      .split {
+        grid-template-columns: 1fr;
+      }
+
+      .wrap { padding: 14px; }
+      .panel { padding: 14px; border-radius: 20px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="topbar">
+      <div class="brand">
+        <h1>Catalogação interna</h1>
+        <p>Rascunhos, edição, lotes de publicação, capas e etiquetas para a equipe bibliotecária da BLMF.</p>
+      </div>
+      <div class="userbox">
+        <span id="userEmail" class="pill info">Sem sessão</span>
+        <span id="rolePill" class="pill warn">Verificando acesso…</span>
+        <button id="refreshAllBtn" class="secondary small">Atualizar</button>
+      </div>
+    </div>
+
+    <div class="banner">
+      <h2>Fluxo editorial do catálogo</h2>
+      <p>Crie fichas em rascunho, revise, agrupe em lote e publique de uma vez para o catálogo. Fichas já existentes podem gerar um rascunho de edição sem alterar a versão publicada até a confirmação final.</p>
+    </div>
+
+    <div id="globalMessage" class="message"></div>
+
+    <div class="statusbar">
+      <div class="stat">
+        <div class="label">Lotes abertos</div>
+        <div id="statOpenBatches" class="value">0</div>
+      </div>
+      <div class="stat">
+        <div class="label">Rascunhos ativos</div>
+        <div id="statDrafts" class="value">0</div>
+      </div>
+      <div class="stat">
+        <div class="label">Livros publicados</div>
+        <div id="statBooks" class="value">0</div>
+      </div>
+      <div class="stat">
+        <div class="label">Autores cadastrados</div>
+        <div id="statAuthors" class="value">0</div>
+      </div>
+    </div>
+
+    <div class="tabs" id="tabs">
+      <button class="tab-btn active" data-tab="booksPanel">Fichas de livros</button>
+      <button class="tab-btn" data-tab="authorsPanel">Fichas de autores</button>
+      <button class="tab-btn" data-tab="exemplarsPanel">Exemplares e etiquetas</button>
+      <button class="tab-btn" data-tab="queuePanel">Fila editorial</button>
+      <button class="tab-btn" data-tab="batchesPanel">Lotes</button>
+      <button class="tab-btn" data-tab="catalogPanel">Catálogo publicado</button>
+    </div>
+
+    <section id="booksPanel" class="panel active">
+      <div class="panel-header">
+        <div>
+          <h3>Nova ficha de livro</h3>
+          <p>Crie ou edite um rascunho de livro antes de publicar no catálogo.</p>
+        </div>
+        <div class="inline">
+          <span id="bookDraftModePill" class="pill info">Novo rascunho</span>
+          <button id="bookDraftResetBtn" class="ghost">Limpar formulário</button>
+        </div>
+      </div>
+
+      <div id="bookMessage" class="message"></div>
+
+      <div class="split">
+        <div class="card">
+          <h4>Capa do livro</h4>
+          <img id="bookCoverPreview" class="cover-preview" alt="Pré-visualização da capa" />
+          <div class="field" style="margin-top:12px;">
+            <label for="bookCoverFile">Arquivo da capa</label>
+            <input id="bookCoverFile" type="file" accept="image/*" />
+            <small>O upload vai para o bucket <code>covers</code>. Se preferir, você pode salvar o rascunho sem imagem e enviar depois.</small>
+          </div>
+          <div class="actions">
+            <button id="uploadBookCoverBtn" class="secondary">Enviar capa</button>
+            <button id="clearBookCoverBtn" class="ghost">Remover caminho</button>
+          </div>
+          <div class="field" style="margin-top:12px;">
+            <label for="bookCoverPath">Caminho da capa</label>
+            <input id="bookCoverPath" type="text" placeholder="covers/books/0000123/front.jpg" />
+          </div>
+        </div>
+
+        <form id="bookForm" class="grid cols-3">
+          <input type="hidden" id="bookDraftId" />
+          <input type="hidden" id="bookPublishedId" />
+          <input type="hidden" id="bookAction" value="create" />
+
+          <div class="field">
+            <label for="bookBatchId">Lote</label>
+            <select id="bookBatchId"></select>
+            <small>Você pode deixar sem lote e organizar depois na fila editorial.</small>
+          </div>
+
+          <div class="field">
+            <label for="bookBibRef">Referência</label>
+            <input id="bookBibRef" type="text" placeholder="0000123" />
+            <small>Para ficha nova, pode deixar em branco que o sistema gera depois.</small>
+          </div>
+
+          <div class="field">
+            <label for="bookType">Tipo de material</label>
+            <select id="bookType">
+              <option value="livro">Livro</option>
+              <option value="periodico">Periódico</option>
+              <option value="brochura">Brochura</option>
+              <option value="outro">Outro</option>
+            </select>
+          </div>
+
+          <div class="field" style="grid-column: span 3;">
+            <label for="bookTitle">Título</label>
+            <input id="bookTitle" type="text" required />
+          </div>
+
+          <div class="field" style="grid-column: span 3;">
+            <label for="bookSubtitle">Subtítulo</label>
+            <input id="bookSubtitle" type="text" />
+          </div>
+
+          <div class="field" style="grid-column: span 2;">
+            <label for="bookAuthor">Autor(a) / responsabilidade principal</label>
+            <input id="bookAuthor" type="text" placeholder="Bakunin, Mikhail" />
+          </div>
+
+          <div class="field">
+            <label for="bookEdition">Edição</label>
+            <input id="bookEdition" type="text" placeholder="2. ed." />
+          </div>
+
+          <div class="field">
+            <label for="bookPublisher">Editora</label>
+            <input id="bookPublisher" type="text" />
+          </div>
+
+          <div class="field">
+            <label for="bookPlace">Local de publicação</label>
+            <input id="bookPlace" type="text" />
+          </div>
+
+          <div class="field">
+            <label for="bookYear">Ano</label>
+            <input id="bookYear" type="text" placeholder="2024" />
+          </div>
+
+          <div class="field">
+            <label for="bookISBN">ISBN</label>
+            <input id="bookISBN" type="text" />
+          </div>
+
+          <div class="field">
+            <label for="bookISSN">ISSN</label>
+            <input id="bookISSN" type="text" />
+          </div>
+
+          <div class="field">
+            <label for="bookCDD">CDD</label>
+            <input id="bookCDD" type="text" placeholder="335" />
+          </div>
+
+          <div class="field">
+            <label for="bookLanguage">Idioma</label>
+            <input id="bookLanguage" type="text" placeholder="Português" />
+          </div>
+
+          <div class="field">
+            <label for="bookPages">Páginas</label>
+            <input id="bookPages" type="number" min="1" />
+          </div>
+
+          <div class="field">
+            <label for="bookLoanable">Empréstimo</label>
+            <select id="bookLoanable">
+              <option value="true">Emprestável</option>
+              <option value="false">Somente consulta</option>
+            </select>
+          </div>
+
+          <div class="field" style="grid-column: span 3;">
+            <label for="bookNotes">Notas</label>
+            <textarea id="bookNotes" placeholder="Observações bibliográficas, estado do exemplar-matriz, notas internas…"></textarea>
+          </div>
+
+          <div class="field" style="grid-column: span 3;">
+            <label for="bookMarcJson">Estrutura bibliográfica em JSON</label>
+            <textarea id="bookMarcJson" placeholder='{"245":{"a":"Título"},"100":{"a":"Autor"}}'></textarea>
+            <small>Opcional. Pode ser preenchido depois. O formulário principal continua em português claro.</small>
+          </div>
+
+          <div class="actions" style="grid-column: span 3;">
+            <button id="saveBookDraftBtn" type="submit" class="primary">Salvar rascunho</button>
+            <button id="bookReadyBtn" type="button" class="secondary">Marcar como pronto</button>
+            <button id="publishBookDraftBtn" type="button" class="success">Publicar este rascunho</button>
+          </div>
+        </form>
+      </div>
+    </section>
+
+    <section id="authorsPanel" class="panel">
+      <div class="panel-header">
+        <div>
+          <h3>Fichas de autores</h3>
+          <p>Crie ou edite perfis de autor com fonte informada e publicação em lote.</p>
+        </div>
+        <div class="inline">
+          <span id="authorDraftModePill" class="pill info">Novo rascunho</span>
+          <button id="authorDraftResetBtn" class="ghost">Limpar formulário</button>
+        </div>
+      </div>
+
+      <div id="authorMessage" class="message"></div>
+
+      <div class="split">
+        <div class="card">
+          <h4>Foto do autor</h4>
+          <img id="authorPhotoPreview" class="cover-preview" alt="Pré-visualização da foto do autor" />
+          <div class="field" style="margin-top:12px;">
+            <label for="authorPhotoFile">Arquivo da foto</label>
+            <input id="authorPhotoFile" type="file" accept="image/*" />
+            <small>O upload vai para o bucket <code>authors</code>.</small>
+          </div>
+          <div class="actions">
+            <button id="uploadAuthorPhotoBtn" class="secondary">Enviar foto</button>
+            <button id="clearAuthorPhotoBtn" class="ghost">Remover caminho</button>
+          </div>
+          <div class="field" style="margin-top:12px;">
+            <label for="authorPhotoPath">Caminho da foto</label>
+            <input id="authorPhotoPath" type="text" placeholder="authors/42/profile.jpg" />
+          </div>
+        </div>
+
+        <form id="authorForm" class="grid cols-3">
+          <input type="hidden" id="authorDraftId" />
+          <input type="hidden" id="authorPublishedId" />
+          <input type="hidden" id="authorAction" value="create" />
+
+          <div class="field">
+            <label for="authorBatchId">Lote</label>
+            <select id="authorBatchId"></select>
+          </div>
+
+          <div class="field" style="grid-column: span 2;">
+            <label for="authorPreferredName">Nome preferido</label>
+            <input id="authorPreferredName" type="text" required />
+          </div>
+
+          <div class="field">
+            <label for="authorSortName">Nome para ordenação</label>
+            <input id="authorSortName" type="text" placeholder="Bakunin, Mikhail" />
+          </div>
+
+          <div class="field">
+            <label for="authorBirthYear">Ano de nascimento</label>
+            <input id="authorBirthYear" type="number" />
+          </div>
+
+          <div class="field">
+            <label for="authorDeathYear">Ano de falecimento</label>
+            <input id="authorDeathYear" type="number" />
+          </div>
+
+          <div class="field">
+            <label for="authorCountry">País</label>
+            <input id="authorCountry" type="text" />
+          </div>
+
+          <div class="field">
+            <label for="authorSourceKind">Tipo de fonte</label>
+            <select id="authorSourceKind">
+              <option value="">Sem indicação</option>
+              <option value="autoridade_profissional">Autoridade profissional</option>
+              <option value="wikidata">Wikidata</option>
+              <option value="wikipedia">Wikipedia</option>
+              <option value="site_editora">Site da editora</option>
+              <option value="arquivo_interno">Arquivo interno</option>
+            </select>
+          </div>
+
+          <div class="field">
+            <label for="authorSourceLabel">Fonte informada</label>
+            <input id="authorSourceLabel" type="text" placeholder="VIAF, BnF, site da editora…" />
+          </div>
+
+          <div class="field">
+            <label for="authorSourceUrl">Link da fonte</label>
+            <input id="authorSourceUrl" type="url" placeholder="https://..." />
+          </div>
+
+          <div class="field">
+            <label for="authorVIAF">VIAF</label>
+            <input id="authorVIAF" type="text" />
+          </div>
+
+          <div class="field">
+            <label for="authorISNI">ISNI</label>
+            <input id="authorISNI" type="text" />
+          </div>
+
+          <div class="field">
+            <label for="authorWikidata">Wikidata</label>
+            <input id="authorWikidata" type="text" placeholder="Q12345" />
+          </div>
+
+          <div class="field" style="grid-column: span 3;">
+            <label for="authorBiography">Biografia curta</label>
+            <textarea id="authorBiography"></textarea>
+          </div>
+
+          <div class="field" style="grid-column: span 3;">
+            <label for="authorNotes">Notas</label>
+            <textarea id="authorNotes"></textarea>
+          </div>
+
+          <div class="actions" style="grid-column: span 3;">
+            <button id="saveAuthorDraftBtn" type="submit" class="primary">Salvar rascunho</button>
+            <button id="authorReadyBtn" type="button" class="secondary">Marcar como pronto</button>
+            <button id="publishAuthorDraftBtn" type="button" class="success">Publicar este rascunho</button>
+          </div>
+        </form>
+      </div>
+    </section>
+
+    <section id="exemplarsPanel" class="panel">
+      <div class="panel-header">
+        <div>
+          <h3>Exemplares e etiquetas</h3>
+          <p>Crie ou edite rascunhos de exemplar com tombo, localização e ajustes de etiqueta.</p>
+        </div>
+        <div class="inline">
+          <span id="exemplarDraftModePill" class="pill info">Novo rascunho</span>
+          <button id="exemplarDraftResetBtn" class="ghost">Limpar formulário</button>
+        </div>
+      </div>
+
+      <div id="exemplarMessage" class="message"></div>
+
+      <form id="exemplarForm" class="grid cols-3">
+        <input type="hidden" id="exemplarDraftId" />
+        <input type="hidden" id="exemplarPublishedId" />
+        <input type="hidden" id="exemplarAction" value="create" />
+
+        <div class="field">
+          <label for="exemplarBatchId">Lote</label>
+          <select id="exemplarBatchId"></select>
+        </div>
+
+        <div class="field">
+          <label for="exemplarBibRef">Referência do livro</label>
+          <input id="exemplarBibRef" type="text" placeholder="0000123" required />
+        </div>
+
+        <div class="field">
+          <label for="exemplarTombo">Tombo</label>
+          <input id="exemplarTombo" type="text" required />
+        </div>
+
+        <div class="field">
+          <label for="exemplarShelf">Localização</label>
+          <input id="exemplarShelf" type="text" placeholder="Estante A / Prateleira 3" />
+        </div>
+
+        <div class="field">
+          <label for="exemplarLabelAuthor">Autor na etiqueta</label>
+          <input id="exemplarLabelAuthor" type="text" />
+        </div>
+
+        <div class="field">
+          <label for="exemplarLabelTitle">Título na etiqueta</label>
+          <input id="exemplarLabelTitle" type="text" />
+        </div>
+
+        <div class="field">
+          <label for="exemplarLabelCDD">CDD na etiqueta</label>
+          <input id="exemplarLabelCDD" type="text" />
+        </div>
+
+        <div class="field">
+          <label for="exemplarLabelNote">Nota curta de etiqueta</label>
+          <input id="exemplarLabelNote" type="text" />
+        </div>
+
+        <div class="field" style="grid-column: span 3;">
+          <label for="exemplarNotes">Observações</label>
+          <textarea id="exemplarNotes"></textarea>
+        </div>
+
+        <div class="actions" style="grid-column: span 3;">
+          <button id="saveExemplarDraftBtn" type="submit" class="primary">Salvar rascunho</button>
+          <button id="exemplarReadyBtn" type="button" class="secondary">Marcar como pronto</button>
+          <button id="publishExemplarDraftBtn" type="button" class="success">Publicar este rascunho</button>
+        </div>
+      </form>
+
+      <div class="card" style="margin-top:16px;">
+        <h4>Prévia da etiqueta</h4>
+        <div id="labelPreview" class="grid cols-4">
+          <div class="pill info">Tombo: <span id="labelPrevTombo">—</span></div>
+          <div class="pill info">Referência: <span id="labelPrevBibRef">—</span></div>
+          <div class="pill info">Autor: <span id="labelPrevAuthor">—</span></div>
+          <div class="pill info">CDD: <span id="labelPrevCDD">—</span></div>
+        </div>
+        <div style="margin-top:12px; padding:14px; border-radius:16px; border:1px dashed rgba(255,255,255,0.16); background:rgba(255,255,255,0.02);">
+          <strong id="labelPrevTitle">Título</strong>
+          <div id="labelPrevNote" class="hint" style="margin-top:6px;">Sem nota de etiqueta.</div>
+        </div>
+      </div>
+    </section>
+
+    <section id="queuePanel" class="panel">
+      <div class="panel-header">
+        <div>
+          <h3>Fila editorial</h3>
+          <p>Consulte rascunhos de livros, autores e exemplares. Você pode abrir para edição, atribuir lote e publicar individualmente.</p>
+        </div>
+        <div class="inline">
+          <button id="refreshQueueBtn" class="secondary">Atualizar fila</button>
+        </div>
+      </div>
+
+      <div class="grid cols-4" style="margin-bottom:16px;">
+        <div class="field">
+          <label for="queueTypeFilter">Tipo</label>
+          <select id="queueTypeFilter">
+            <option value="">Todos</option>
+            <option value="book">Livros</option>
+            <option value="author">Autores</option>
+            <option value="exemplar">Exemplares</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="queueStatusFilter">Situação</label>
+          <select id="queueStatusFilter">
+            <option value="">Todas</option>
+            <option value="draft">Em rascunho</option>
+            <option value="ready">Pronto</option>
+            <option value="published">Publicado</option>
+            <option value="cancelled">Cancelado</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="queueSearch">Buscar</label>
+          <input id="queueSearch" type="text" placeholder="Título, autor, tombo, referência…" />
+        </div>
+        <div class="field">
+          <label for="queueBatchAssign">Atribuir lote</label>
+          <select id="queueBatchAssign"></select>
+        </div>
+      </div>
+
+      <div id="queueMessage" class="message"></div>
+      <div id="queueTableWrap" class="table-wrap"></div>
+    </section>
+
+    <section id="batchesPanel" class="panel">
+      <div class="panel-header">
+        <div>
+          <h3>Lotes de publicação</h3>
+          <p>Crie um lote, agrupe fichas e publique tudo de uma vez para o catálogo.</p>
+        </div>
+      </div>
+
+      <div class="split">
+        <div class="card">
+          <h4>Novo lote</h4>
+          <div id="batchMessage" class="message"></div>
+          <form id="batchForm" class="grid">
+            <div class="field">
+              <label for="batchName">Nome do lote</label>
+              <input id="batchName" type="text" placeholder="Lote março 2026" required />
+            </div>
+            <div class="field">
+              <label for="batchNotes">Observações</label>
+              <textarea id="batchNotes" placeholder="Revisão de livros anarquistas, autores novos, tombo já etiquetado…"></textarea>
+            </div>
+            <div class="actions">
+              <button class="primary" type="submit">Criar lote</button>
+            </div>
+          </form>
+        </div>
+
+        <div class="card">
+          <h4>Publicar lote</h4>
+          <div class="field">
+            <label for="publishBatchId">Escolher lote</label>
+            <select id="publishBatchId"></select>
+          </div>
+          <div class="actions">
+            <button id="publishBatchBtn" class="success">Publicar lote selecionado</button>
+            <button id="refreshBatchesBtn" class="secondary">Atualizar lista</button>
+          </div>
+          <p class="hint">A publicação em lote chama a função <code>publish_catalog_batch</code> e envia para o catálogo todas as fichas em rascunho ou prontas dentro desse lote.</p>
+        </div>
+      </div>
+
+      <div style="margin-top:16px;" id="batchListWrap" class="table-wrap"></div>
+    </section>
+
+    <section id="catalogPanel" class="panel">
+      <div class="panel-header">
+        <div>
+          <h3>Catálogo publicado</h3>
+          <p>Busque fichas já publicadas e gere um rascunho de edição sem alterar imediatamente a versão do catálogo.</p>
+        </div>
+      </div>
+
+      <div class="grid cols-4" style="margin-bottom:16px;">
+        <div class="field">
+          <label for="catalogSearch">Buscar no catálogo</label>
+          <input id="catalogSearch" type="text" placeholder="Título, autor, editora, referência…" />
+        </div>
+        <div class="field">
+          <label for="catalogBatchId">Lote para o rascunho</label>
+          <select id="catalogBatchId"></select>
+        </div>
+        <div class="field">
+          <label for="catalogAuthorSearch">Buscar autores</label>
+          <input id="catalogAuthorSearch" type="text" placeholder="Nome do autor" />
+        </div>
+        <div class="field">
+          <label for="catalogExemplarSearch">Buscar exemplares</label>
+          <input id="catalogExemplarSearch" type="text" placeholder="Tombo ou referência" />
+        </div>
+      </div>
+
+      <div id="catalogMessage" class="message"></div>
+
+      <div class="card" style="margin-bottom:16px;">
+        <h4>Livros publicados</h4>
+        <div id="catalogBooksWrap" class="table-wrap"></div>
+      </div>
+
+      <div class="grid cols-2">
+        <div class="card">
+          <h4>Autores publicados</h4>
+          <div id="catalogAuthorsWrap" class="table-wrap"></div>
+        </div>
+        <div class="card">
+          <h4>Exemplares publicados</h4>
+          <div id="catalogExemplarsWrap" class="table-wrap"></div>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <script type="module">
+    import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+
+    const SUPABASE_URL = 'https://asptfmokzykwzlshsncw.supabase.co';
+    const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFzcHRmbW9renlrd3psc2hzbmN3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzI1MzcxNzcsImV4cCI6MjA4ODExMzE3N30.JkMLHPCV2AH5ELZV_1RfcoW250QEofLGvnDKSDpkcn0';
+
+    const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+    const state = {
+      session: null,
+      profile: null,
+      isLibrarian: false,
+      batches: [],
+      queueItems: [],
+      books: [],
+      authors: [],
+      exemplars: [],
+    };
+
+    const el = (id) => document.getElementById(id);
+
+    const refs = {
+      globalMessage: el('globalMessage'),
+      userEmail: el('userEmail'),
+      rolePill: el('rolePill'),
+      bookMessage: el('bookMessage'),
+      authorMessage: el('authorMessage'),
+      exemplarMessage: el('exemplarMessage'),
+      queueMessage: el('queueMessage'),
+      batchMessage: el('batchMessage'),
+      catalogMessage: el('catalogMessage'),
+      statOpenBatches: el('statOpenBatches'),
+      statDrafts: el('statDrafts'),
+      statBooks: el('statBooks'),
+      statAuthors: el('statAuthors'),
+      bookCoverPreview: el('bookCoverPreview'),
+      authorPhotoPreview: el('authorPhotoPreview'),
+      labelPrevTombo: el('labelPrevTombo'),
+      labelPrevBibRef: el('labelPrevBibRef'),
+      labelPrevAuthor: el('labelPrevAuthor'),
+      labelPrevCDD: el('labelPrevCDD'),
+      labelPrevTitle: el('labelPrevTitle'),
+      labelPrevNote: el('labelPrevNote'),
+      bookDraftModePill: el('bookDraftModePill'),
+      authorDraftModePill: el('authorDraftModePill'),
+      exemplarDraftModePill: el('exemplarDraftModePill'),
+      queueTableWrap: el('queueTableWrap'),
+      batchListWrap: el('batchListWrap'),
+      catalogBooksWrap: el('catalogBooksWrap'),
+      catalogAuthorsWrap: el('catalogAuthorsWrap'),
+      catalogExemplarsWrap: el('catalogExemplarsWrap'),
+    };
+
+    function showMessage(target, text, kind = 'info') {
+      target.textContent = text;
+      target.className = `message show ${kind}`;
+    }
+
+    function clearMessage(target) {
+      target.textContent = '';
+      target.className = 'message';
+    }
+
+    function sanitize(text) {
+      if (text === null || text === undefined) return '';
+      return String(text)
+        .replaceAll('&', '&amp;')
+        .replaceAll('<', '&lt;')
+        .replaceAll('>', '&gt;')
+        .replaceAll('"', '&quot;')
+        .replaceAll("'", '&#039;');
+    }
+
+    function formatDate(value) {
+      if (!value) return '—';
+      const d = new Date(value);
+      if (Number.isNaN(d.getTime())) return value;
+      return d.toLocaleString('pt-BR');
+    }
+
+    function setPreviewImage(imgEl, path, bucket) {
+      if (!path) {
+        imgEl.src = '';
+        imgEl.alt = 'Sem imagem';
+        return;
+      }
+      const { data } = supabase.storage.from(bucket).getPublicUrl(path);
+      imgEl.src = data?.publicUrl || '';
+      imgEl.alt = path;
+    }
+
+    function updateStats() {
+      refs.statOpenBatches.textContent = state.batches.filter(b => b.status === 'open').length;
+      refs.statDrafts.textContent = state.queueItems.filter(item => item.status === 'draft' || item.status === 'ready').length;
+      refs.statBooks.textContent = state.books.length;
+      refs.statAuthors.textContent = state.authors.length;
+    }
+
+    function setTab(tabId) {
+      document.querySelectorAll('.tab-btn').forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.tab === tabId);
+      });
+      document.querySelectorAll('.panel').forEach(panel => {
+        panel.classList.toggle('active', panel.id === tabId);
+      });
+    }
+
+    document.querySelectorAll('.tab-btn').forEach(btn => {
+      btn.addEventListener('click', () => setTab(btn.dataset.tab));
+    });
+
+    function batchOptions(includeBlank = true) {
+      const openBatches = state.batches.filter(b => b.status === 'open');
+      const options = [];
+      if (includeBlank) options.push('<option value="">Sem lote por enquanto</option>');
+      for (const batch of openBatches) {
+        options.push(`<option value="${batch.id}">${sanitize(batch.name)} (#${batch.id})</option>`);
+      }
+      return options.join('');
+    }
+
+    function refreshBatchSelects() {
+      const ids = [
+        'bookBatchId', 'authorBatchId', 'exemplarBatchId', 'queueBatchAssign',
+        'publishBatchId', 'catalogBatchId'
+      ];
+      ids.forEach(id => {
+        const node = el(id);
+        if (!node) return;
+        if (id === 'publishBatchId') {
+          node.innerHTML = '<option value="">Selecione um lote</option>' + state.batches
+            .filter(b => b.status === 'open')
+            .map(b => `<option value="${b.id}">${sanitize(b.name)} (#${b.id})</option>`)
+            .join('');
+        } else {
+          node.innerHTML = batchOptions(true);
+        }
+      });
+    }
+
+    function parseJsonSafe(value, fallback = {}) {
+      if (!value || !value.trim()) return fallback;
+      try {
+        return JSON.parse(value);
+      } catch (err) {
+        throw new Error('O JSON informado não está válido.');
+      }
+    }
+
+    function parseOptionalInt(value) {
+      if (value === '' || value === null || value === undefined) return null;
+      const n = Number(value);
+      return Number.isFinite(n) ? n : null;
+    }
+
+    function getBookDraftPayload() {
+      return {
+        id: el('bookDraftId').value || undefined,
+        published_book_id: el('bookPublishedId').value || null,
+        batch_id: el('bookBatchId').value || null,
+        action: el('bookAction').value || 'create',
+        status: 'draft',
+        bib_ref: el('bookBibRef').value.trim() || null,
+        titulo: el('bookTitle').value.trim(),
+        subtitulo: el('bookSubtitle').value.trim() || null,
+        autor: el('bookAuthor').value.trim() || null,
+        edicao: el('bookEdition').value.trim() || null,
+        local_publicacao: el('bookPlace').value.trim() || null,
+        editora: el('bookPublisher').value.trim() || null,
+        ano: el('bookYear').value.trim() || null,
+        isbn: el('bookISBN').value.trim() || null,
+        issn: el('bookISSN').value.trim() || null,
+        cdd: el('bookCDD').value.trim() || null,
+        idioma: el('bookLanguage').value.trim() || null,
+        paginas: parseOptionalInt(el('bookPages').value),
+        notas: el('bookNotes').value.trim() || null,
+        tipo_material: el('bookType').value,
+        loanable: el('bookLoanable').value === 'true',
+        cover_object_path: el('bookCoverPath').value.trim() || null,
+        marc_json: parseJsonSafe(el('bookMarcJson').value, {}),
+        created_by: state.profile.id,
+        updated_by: state.profile.id,
+      };
+    }
+
+    function getAuthorDraftPayload() {
+      return {
+        id: el('authorDraftId').value || undefined,
+        published_author_id: el('authorPublishedId').value || null,
+        batch_id: el('authorBatchId').value || null,
+        action: el('authorAction').value || 'create',
+        status: 'draft',
+        preferred_name: el('authorPreferredName').value.trim(),
+        sort_name: el('authorSortName').value.trim() || null,
+        biography: el('authorBiography').value.trim() || null,
+        birth_year: parseOptionalInt(el('authorBirthYear').value),
+        death_year: parseOptionalInt(el('authorDeathYear').value),
+        country: el('authorCountry').value.trim() || null,
+        source_kind: el('authorSourceKind').value || null,
+        source_label: el('authorSourceLabel').value.trim() || null,
+        source_url: el('authorSourceUrl').value.trim() || null,
+        viaf_id: el('authorVIAF').value.trim() || null,
+        isni: el('authorISNI').value.trim() || null,
+        wikidata_id: el('authorWikidata').value.trim() || null,
+        photo_object_path: el('authorPhotoPath').value.trim() || null,
+        notes: el('authorNotes').value.trim() || null,
+        created_by: state.profile.id,
+        updated_by: state.profile.id,
+      };
+    }
+
+    function getExemplarDraftPayload() {
+      return {
+        id: el('exemplarDraftId').value || undefined,
+        published_exemplar_id: el('exemplarPublishedId').value || null,
+        batch_id: el('exemplarBatchId').value || null,
+        action: el('exemplarAction').value || 'create',
+        status: 'draft',
+        target_bib_ref: el('exemplarBibRef').value.trim(),
+        tombo: el('exemplarTombo').value.trim(),
+        shelf_location: el('exemplarShelf').value.trim() || null,
+        label_title_override: el('exemplarLabelTitle').value.trim() || null,
+        label_author_override: el('exemplarLabelAuthor').value.trim() || null,
+        label_cdd_override: el('exemplarLabelCDD').value.trim() || null,
+        label_note: el('exemplarLabelNote').value.trim() || null,
+        notes: el('exemplarNotes').value.trim() || null,
+        created_by: state.profile.id,
+        updated_by: state.profile.id,
+      };
+    }
+
+    function resetBookForm() {
+      el('bookForm').reset();
+      el('bookDraftId').value = '';
+      el('bookPublishedId').value = '';
+      el('bookAction').value = 'create';
+      el('bookType').value = 'livro';
+      el('bookLoanable').value = 'true';
+      refs.bookDraftModePill.textContent = 'Novo rascunho';
+      el('bookMarcJson').value = '';
+      el('bookCoverPath').value = '';
+      setPreviewImage(refs.bookCoverPreview, '', 'covers');
+      clearMessage(refs.bookMessage);
+    }
+
+    function resetAuthorForm() {
+      el('authorForm').reset();
+      el('authorDraftId').value = '';
+      el('authorPublishedId').value = '';
+      el('authorAction').value = 'create';
+      refs.authorDraftModePill.textContent = 'Novo rascunho';
+      el('authorPhotoPath').value = '';
+      setPreviewImage(refs.authorPhotoPreview, '', 'authors');
+      clearMessage(refs.authorMessage);
+    }
+
+    function resetExemplarForm() {
+      el('exemplarForm').reset();
+      el('exemplarDraftId').value = '';
+      el('exemplarPublishedId').value = '';
+      el('exemplarAction').value = 'create';
+      refs.exemplarDraftModePill.textContent = 'Novo rascunho';
+      updateLabelPreview();
+      clearMessage(refs.exemplarMessage);
+    }
+
+    function updateLabelPreview() {
+      refs.labelPrevTombo.textContent = el('exemplarTombo').value || '—';
+      refs.labelPrevBibRef.textContent = el('exemplarBibRef').value || '—';
+      refs.labelPrevAuthor.textContent = el('exemplarLabelAuthor').value || '—';
+      refs.labelPrevCDD.textContent = el('exemplarLabelCDD').value || '—';
+      refs.labelPrevTitle.textContent = el('exemplarLabelTitle').value || 'Título';
+      refs.labelPrevNote.textContent = el('exemplarLabelNote').value || 'Sem nota de etiqueta.';
+    }
+
+    ['exemplarTombo','exemplarBibRef','exemplarLabelAuthor','exemplarLabelCDD','exemplarLabelTitle','exemplarLabelNote']
+      .forEach(id => el(id).addEventListener('input', updateLabelPreview));
+
+    async function requireSession() {
+      const { data, error } = await supabase.auth.getSession();
+      if (error) throw error;
+      state.session = data.session;
+      if (!state.session) {
+        refs.userEmail.textContent = 'Sem sessão';
+        refs.rolePill.textContent = 'Faça login para usar a catalogação';
+        refs.rolePill.className = 'pill danger';
+        showMessage(refs.globalMessage, 'Você precisa entrar com um usuário bibliotecário para usar esta página.', 'error');
+        throw new Error('Sem sessão');
+      }
+      refs.userEmail.textContent = state.session.user.email || 'Usuário autenticado';
+    }
+
+    async function loadProfile() {
+      const userId = state.session?.user?.id;
+      if (!userId) throw new Error('Sessão sem usuário válido.');
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('id, email, first_name, last_name, is_librarian')
+        .eq('id', userId)
+        .single();
+      if (error) throw error;
+      state.profile = data;
+      state.isLibrarian = !!data?.is_librarian;
+
+      if (state.isLibrarian) {
+        refs.rolePill.textContent = 'Acesso bibliotecário confirmado';
+        refs.rolePill.className = 'pill ok';
+        clearMessage(refs.globalMessage);
+      } else {
+        refs.rolePill.textContent = 'Acesso restrito';
+        refs.rolePill.className = 'pill danger';
+        showMessage(refs.globalMessage, 'Este usuário não tem permissão bibliotecária.', 'error');
+        throw new Error('Usuário sem permissão bibliotecária.');
+      }
+    }
+
+    async function loadBatches() {
+      const { data, error } = await supabase
+        .from('catalog_batches')
+        .select('*')
+        .order('created_at', { ascending: false });
+      if (error) throw error;
+      state.batches = data || [];
+      refreshBatchSelects();
+      renderBatchList();
+    }
+
+    async function loadQueue() {
+      const { data, error } = await supabase
+        .from('v_catalog_queue')
+        .select('*')
+        .order('updated_at', { ascending: false });
+      if (error) throw error;
+      state.queueItems = data || [];
+      renderQueue();
+    }
+
+    async function loadCatalog() {
+      const [{ data: books, error: booksError }, { data: authors, error: authorsError }, { data: exemplars, error: exemplarsError }] = await Promise.all([
+        supabase.from('v_catalog_books_editable').select('*').order('updated_at', { ascending: false }).limit(300),
+        supabase.from('authors').select('*').order('preferred_name', { ascending: true }).limit(300),
+        supabase.from('v_exemplar_labels').select('*').order('exemplar_id', { ascending: false }).limit(300),
+      ]);
+      if (booksError) throw booksError;
+      if (authorsError) throw authorsError;
+      if (exemplarsError) throw exemplarsError;
+      state.books = books || [];
+      state.authors = authors || [];
+      state.exemplars = exemplars || [];
+      renderCatalogBooks();
+      renderCatalogAuthors();
+      renderCatalogExemplars();
+    }
+
+    async function refreshAll() {
+      try {
+        await requireSession();
+        await loadProfile();
+        await Promise.all([loadBatches(), loadQueue(), loadCatalog()]);
+        updateStats();
+      } catch (error) {
+        console.error(error);
+      }
+    }
+
+    async function saveDraft(table, payload, messageTarget, successText) {
+      clearMessage(messageTarget);
+      const isUpdate = !!payload.id;
+      const dbPayload = { ...payload };
+      if (!dbPayload.id) delete dbPayload.id;
+
+      let query = supabase.from(table);
+      let result;
+      if (isUpdate) {
+        const id = dbPayload.id;
+        delete dbPayload.id;
+        result = await query.update(dbPayload).eq('id', id).select().single();
+      } else {
+        result = await query.insert(dbPayload).select().single();
+      }
+
+      if (result.error) throw result.error;
+      showMessage(messageTarget, successText, 'ok');
+      await Promise.all([loadQueue(), loadBatches(), loadCatalog()]);
+      updateStats();
+      return result.data;
+    }
+
+    function fillBookForm(record) {
+      setTab('booksPanel');
+      refs.bookDraftModePill.textContent = record.action === 'update' ? 'Editando rascunho' : 'Novo rascunho';
+      el('bookDraftId').value = record.id || '';
+      el('bookPublishedId').value = record.published_book_id || '';
+      el('bookAction').value = record.action || 'create';
+      el('bookBatchId').value = record.batch_id || '';
+      el('bookBibRef').value = record.bib_ref || '';
+      el('bookType').value = record.tipo_material || 'livro';
+      el('bookTitle').value = record.titulo || '';
+      el('bookSubtitle').value = record.subtitulo || '';
+      el('bookAuthor').value = record.autor || '';
+      el('bookEdition').value = record.edicao || '';
+      el('bookPublisher').value = record.editora || '';
+      el('bookPlace').value = record.local_publicacao || '';
+      el('bookYear').value = record.ano || '';
+      el('bookISBN').value = record.isbn || '';
+      el('bookISSN').value = record.issn || '';
+      el('bookCDD').value = record.cdd || '';
+      el('bookLanguage').value = record.idioma || '';
+      el('bookPages').value = record.paginas || '';
+      el('bookLoanable').value = String(record.loanable ?? true);
+      el('bookNotes').value = record.notas || '';
+      el('bookCoverPath').value = record.cover_object_path || '';
+      el('bookMarcJson').value = record.marc_json ? JSON.stringify(record.marc_json, null, 2) : '';
+      setPreviewImage(refs.bookCoverPreview, record.cover_object_path || '', 'covers');
+    }
+
+    function fillAuthorForm(record) {
+      setTab('authorsPanel');
+      refs.authorDraftModePill.textContent = record.action === 'update' ? 'Editando rascunho' : 'Novo rascunho';
+      el('authorDraftId').value = record.id || '';
+      el('authorPublishedId').value = record.published_author_id || '';
+      el('authorAction').value = record.action || 'create';
+      el('authorBatchId').value = record.batch_id || '';
+      el('authorPreferredName').value = record.preferred_name || '';
+      el('authorSortName').value = record.sort_name || '';
+      el('authorBiography').value = record.biography || '';
+      el('authorBirthYear').value = record.birth_year || '';
+      el('authorDeathYear').value = record.death_year || '';
+      el('authorCountry').value = record.country || '';
+      el('authorSourceKind').value = record.source_kind || '';
+      el('authorSourceLabel').value = record.source_label || '';
+      el('authorSourceUrl').value = record.source_url || '';
+      el('authorVIAF').value = record.viaf_id || '';
+      el('authorISNI').value = record.isni || '';
+      el('authorWikidata').value = record.wikidata_id || '';
+      el('authorPhotoPath').value = record.photo_object_path || '';
+      el('authorNotes').value = record.notes || '';
+      setPreviewImage(refs.authorPhotoPreview, record.photo_object_path || '', 'authors');
+    }
+
+    function fillExemplarForm(record) {
+      setTab('exemplarsPanel');
+      refs.exemplarDraftModePill.textContent = record.action === 'update' ? 'Editando rascunho' : 'Novo rascunho';
+      el('exemplarDraftId').value = record.id || '';
+      el('exemplarPublishedId').value = record.published_exemplar_id || '';
+      el('exemplarAction').value = record.action || 'create';
+      el('exemplarBatchId').value = record.batch_id || '';
+      el('exemplarBibRef').value = record.target_bib_ref || '';
+      el('exemplarTombo').value = record.tombo || '';
+      el('exemplarShelf').value = record.shelf_location || '';
+      el('exemplarLabelTitle').value = record.label_title_override || '';
+      el('exemplarLabelAuthor').value = record.label_author_override || '';
+      el('exemplarLabelCDD').value = record.label_cdd_override || '';
+      el('exemplarLabelNote').value = record.label_note || '';
+      el('exemplarNotes').value = record.notes || '';
+      updateLabelPreview();
+    }
+
+    async function fetchDraftAndEdit(type, id) {
+      const mapping = {
+        book: { table: 'book_drafts', fill: fillBookForm },
+        author: { table: 'author_drafts', fill: fillAuthorForm },
+        exemplar: { table: 'exemplar_drafts', fill: fillExemplarForm },
+      };
+      const cfg = mapping[type];
+      if (!cfg) return;
+      const { data, error } = await supabase.from(cfg.table).select('*').eq('id', id).single();
+      if (error) throw error;
+      cfg.fill(data);
+    }
+
+    async function publishSingleDraft(type, id) {
+      const rpcMap = {
+        book: 'publish_book_draft',
+        author: 'publish_author_draft',
+        exemplar: 'publish_exemplar_draft',
+      };
+      const rpc = rpcMap[type];
+      if (!rpc) return;
+      const { error } = await supabase.rpc(rpc, { p_draft_id: id });
+      if (error) throw error;
+      await Promise.all([loadQueue(), loadBatches(), loadCatalog()]);
+      updateStats();
+    }
+
+    async function assignDraftToBatch(type, id, batchId) {
+      const tableMap = {
+        book: 'book_drafts',
+        author: 'author_drafts',
+        exemplar: 'exemplar_drafts',
+      };
+      const table = tableMap[type];
+      if (!table) return;
+      const { error } = await supabase
+        .from(table)
+        .update({ batch_id: batchId || null, updated_by: state.profile.id })
+        .eq('id', id);
+      if (error) throw error;
+      await Promise.all([loadQueue(), loadBatches()]);
+      updateStats();
+    }
+
+    function renderQueue() {
+      const typeFilter = el('queueTypeFilter').value;
+      const statusFilter = el('queueStatusFilter').value;
+      const search = el('queueSearch').value.trim().toLowerCase();
+      const targetBatchId = el('queueBatchAssign').value;
+
+      let items = [...state.queueItems];
+      if (typeFilter) items = items.filter(item => item.item_type === typeFilter);
+      if (statusFilter) items = items.filter(item => item.status === statusFilter);
+      if (search) {
+        items = items.filter(item => [item.reference_code, item.display_title, item.display_subtitle]
+          .filter(Boolean)
+          .join(' ')
+          .toLowerCase()
+          .includes(search));
+      }
+
+      if (!items.length) {
+        refs.queueTableWrap.innerHTML = '<div class="empty">Nenhum rascunho encontrado com os filtros atuais.</div>';
+        return;
+      }
+
+      refs.queueTableWrap.innerHTML = `
+        <table>
+          <thead>
+            <tr>
+              <th>Tipo</th>
+              <th>Situação</th>
+              <th>Ação</th>
+              <th>Referência</th>
+              <th>Título / nome</th>
+              <th>Complemento</th>
+              <th>Lote</th>
+              <th>Atualizado em</th>
+              <th>Operações</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${items.map(item => `
+              <tr>
+                <td>${sanitize(item.item_type)}</td>
+                <td>${sanitize(item.status)}</td>
+                <td>${sanitize(item.action)}</td>
+                <td>${sanitize(item.reference_code || '—')}</td>
+                <td>${sanitize(item.display_title || '—')}</td>
+                <td>${sanitize(item.display_subtitle || '—')}</td>
+                <td>${item.batch_id ? '#' + sanitize(item.batch_id) : '—'}</td>
+                <td>${sanitize(formatDate(item.updated_at))}</td>
+                <td>
+                  <div class="row-actions">
+                    <button class="small secondary" data-action="edit-queue" data-type="${sanitize(item.item_type)}" data-id="${item.draft_id}">Editar</button>
+                    <button class="small success" data-action="publish-queue" data-type="${sanitize(item.item_type)}" data-id="${item.draft_id}">Publicar</button>
+                    <button class="small ghost" data-action="assign-queue" data-type="${sanitize(item.item_type)}" data-id="${item.draft_id}" data-batch="${sanitize(targetBatchId || '')}">Atribuir lote</button>
+                  </div>
+                </td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
+      `;
+
+      refs.queueTableWrap.querySelectorAll('[data-action="edit-queue"]').forEach(btn => {
+        btn.addEventListener('click', async () => {
+          try {
+            await fetchDraftAndEdit(btn.dataset.type, Number(btn.dataset.id));
+          } catch (error) {
+            showMessage(refs.queueMessage, error.message, 'error');
+          }
+        });
+      });
+
+      refs.queueTableWrap.querySelectorAll('[data-action="publish-queue"]').forEach(btn => {
+        btn.addEventListener('click', async () => {
+          try {
+            await publishSingleDraft(btn.dataset.type, Number(btn.dataset.id));
+            showMessage(refs.queueMessage, 'Rascunho publicado com sucesso.', 'ok');
+          } catch (error) {
+            showMessage(refs.queueMessage, error.message, 'error');
+          }
+        });
+      });
+
+      refs.queueTableWrap.querySelectorAll('[data-action="assign-queue"]').forEach(btn => {
+        btn.addEventListener('click', async () => {
+          const batchId = el('queueBatchAssign').value || null;
+          if (!batchId) {
+            showMessage(refs.queueMessage, 'Escolha um lote aberto antes de atribuir.', 'error');
+            return;
+          }
+          try {
+            await assignDraftToBatch(btn.dataset.type, Number(btn.dataset.id), Number(batchId));
+            showMessage(refs.queueMessage, 'Lote atribuído ao rascunho.', 'ok');
+          } catch (error) {
+            showMessage(refs.queueMessage, error.message, 'error');
+          }
+        });
+      });
+    }
+
+    function renderBatchList() {
+      if (!state.batches.length) {
+        refs.batchListWrap.innerHTML = '<div class="empty">Nenhum lote criado ainda.</div>';
+        return;
+      }
+      refs.batchListWrap.innerHTML = `
+        <table>
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Nome</th>
+              <th>Situação</th>
+              <th>Observações</th>
+              <th>Criado em</th>
+              <th>Publicado em</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${state.batches.map(batch => `
+              <tr>
+                <td>#${batch.id}</td>
+                <td>${sanitize(batch.name)}</td>
+                <td>${sanitize(batch.status)}</td>
+                <td>${sanitize(batch.notes || '—')}</td>
+                <td>${sanitize(formatDate(batch.created_at))}</td>
+                <td>${sanitize(formatDate(batch.published_at))}</td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
+      `;
+    }
+
+    function renderCatalogBooks() {
+      const search = el('catalogSearch').value.trim().toLowerCase();
+      let items = [...state.books];
+      if (search) {
+        items = items.filter(book => [book.bib_ref, book.titulo, book.autor, book.editora, book.ano]
+          .filter(Boolean)
+          .join(' ')
+          .toLowerCase()
+          .includes(search));
+      }
+      if (!items.length) {
+        refs.catalogBooksWrap.innerHTML = '<div class="empty">Nenhum livro encontrado.</div>';
+        return;
+      }
+      refs.catalogBooksWrap.innerHTML = `
+        <table>
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Referência</th>
+              <th>Título</th>
+              <th>Autor(a)</th>
+              <th>Editora</th>
+              <th>Ano</th>
+              <th>Exemplares</th>
+              <th>Operações</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${items.map(book => `
+              <tr>
+                <td>${book.id}</td>
+                <td>${sanitize(book.bib_ref || '—')}</td>
+                <td>${sanitize(book.titulo || '—')}</td>
+                <td>${sanitize(book.autor || '—')}</td>
+                <td>${sanitize(book.editora || '—')}</td>
+                <td>${sanitize(book.ano || '—')}</td>
+                <td>${sanitize(book.total_exemplares || 0)}</td>
+                <td>
+                  <div class="row-actions">
+                    <button class="small secondary" data-action="draft-book" data-book-id="${book.id}">Criar rascunho de edição</button>
+                  </div>
+                </td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
+      `;
+
+      refs.catalogBooksWrap.querySelectorAll('[data-action="draft-book"]').forEach(btn => {
+        btn.addEventListener('click', async () => {
+          try {
+            const batchId = el('catalogBatchId').value || null;
+            const { data, error } = await supabase.rpc('create_book_draft_from_book', {
+              p_book_id: Number(btn.dataset.bookId),
+              p_batch_id: batchId ? Number(batchId) : null,
+            });
+            if (error) throw error;
+            await Promise.all([loadQueue(), loadCatalog(), loadBatches()]);
+            updateStats();
+            showMessage(refs.catalogMessage, `Rascunho de edição criado (#${data}).`, 'ok');
+            await fetchDraftAndEdit('book', Number(data));
+          } catch (error) {
+            showMessage(refs.catalogMessage, error.message, 'error');
+          }
+        });
+      });
+    }
+
+    function renderCatalogAuthors() {
+      const search = el('catalogAuthorSearch').value.trim().toLowerCase();
+      let items = [...state.authors];
+      if (search) {
+        items = items.filter(author => [author.preferred_name, author.sort_name, author.country]
+          .filter(Boolean)
+          .join(' ')
+          .toLowerCase()
+          .includes(search));
+      }
+      if (!items.length) {
+        refs.catalogAuthorsWrap.innerHTML = '<div class="empty">Nenhum autor encontrado.</div>';
+        return;
+      }
+      refs.catalogAuthorsWrap.innerHTML = `
+        <table>
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Nome</th>
+              <th>País</th>
+              <th>Fonte</th>
+              <th>Operações</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${items.map(author => `
+              <tr>
+                <td>${author.id}</td>
+                <td>${sanitize(author.preferred_name || '—')}</td>
+                <td>${sanitize(author.country || '—')}</td>
+                <td>${sanitize(author.source_label || author.source_kind || '—')}</td>
+                <td>
+                  <div class="row-actions">
+                    <button class="small secondary" data-action="draft-author" data-author-id="${author.id}">Criar rascunho de edição</button>
+                  </div>
+                </td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
+      `;
+
+      refs.catalogAuthorsWrap.querySelectorAll('[data-action="draft-author"]').forEach(btn => {
+        btn.addEventListener('click', async () => {
+          try {
+            const batchId = el('catalogBatchId').value || null;
+            const { data, error } = await supabase.rpc('create_author_draft_from_author', {
+              p_author_id: Number(btn.dataset.authorId),
+              p_batch_id: batchId ? Number(batchId) : null,
+            });
+            if (error) throw error;
+            await Promise.all([loadQueue(), loadCatalog(), loadBatches()]);
+            updateStats();
+            showMessage(refs.catalogMessage, `Rascunho de edição de autor criado (#${data}).`, 'ok');
+            await fetchDraftAndEdit('author', Number(data));
+          } catch (error) {
+            showMessage(refs.catalogMessage, error.message, 'error');
+          }
+        });
+      });
+    }
+
+    function renderCatalogExemplars() {
+      const search = el('catalogExemplarSearch').value.trim().toLowerCase();
+      let items = [...state.exemplars];
+      if (search) {
+        items = items.filter(ex => [ex.tombo, ex.bib_ref, ex.autor_etiqueta, ex.titulo_etiqueta]
+          .filter(Boolean)
+          .join(' ')
+          .toLowerCase()
+          .includes(search));
+      }
+      if (!items.length) {
+        refs.catalogExemplarsWrap.innerHTML = '<div class="empty">Nenhum exemplar encontrado.</div>';
+        return;
+      }
+      refs.catalogExemplarsWrap.innerHTML = `
+        <table>
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Tombo</th>
+              <th>Referência</th>
+              <th>Autor</th>
+              <th>Título</th>
+              <th>Operações</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${items.map(ex => `
+              <tr>
+                <td>${ex.exemplar_id}</td>
+                <td>${sanitize(ex.tombo || '—')}</td>
+                <td>${sanitize(ex.bib_ref || '—')}</td>
+                <td>${sanitize(ex.autor_etiqueta || '—')}</td>
+                <td>${sanitize(ex.titulo_etiqueta || '—')}</td>
+                <td>
+                  <div class="row-actions">
+                    <button class="small secondary" data-action="draft-exemplar" data-exemplar-id="${ex.exemplar_id}">Criar rascunho de edição</button>
+                  </div>
+                </td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
+      `;
+
+      refs.catalogExemplarsWrap.querySelectorAll('[data-action="draft-exemplar"]').forEach(btn => {
+        btn.addEventListener('click', async () => {
+          try {
+            const batchId = el('catalogBatchId').value || null;
+            const { data, error } = await supabase.rpc('create_exemplar_draft_from_exemplar', {
+              p_exemplar_id: Number(btn.dataset.exemplarId),
+              p_batch_id: batchId ? Number(batchId) : null,
+            });
+            if (error) throw error;
+            await Promise.all([loadQueue(), loadCatalog(), loadBatches()]);
+            updateStats();
+            showMessage(refs.catalogMessage, `Rascunho de edição de exemplar criado (#${data}).`, 'ok');
+            await fetchDraftAndEdit('exemplar', Number(data));
+          } catch (error) {
+            showMessage(refs.catalogMessage, error.message, 'error');
+          }
+        });
+      });
+    }
+
+    async function uploadFileToBucket(bucket, file, path) {
+      const { error } = await supabase.storage.from(bucket).upload(path, file, {
+        upsert: true,
+        cacheControl: '3600',
+      });
+      if (error) throw error;
+      return path;
+    }
+
+    el('uploadBookCoverBtn').addEventListener('click', async () => {
+      try {
+        clearMessage(refs.bookMessage);
+        const file = el('bookCoverFile').files[0];
+        if (!file) throw new Error('Escolha um arquivo de capa antes do envio.');
+        const bibRef = el('bookBibRef').value.trim() || 'sem-referencia';
+        const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_');
+        const path = `books/${bibRef}/${Date.now()}-${safeName}`;
+        await uploadFileToBucket('covers', file, path);
+        el('bookCoverPath').value = path;
+        setPreviewImage(refs.bookCoverPreview, path, 'covers');
+        showMessage(refs.bookMessage, 'Capa enviada com sucesso.', 'ok');
+      } catch (error) {
+        showMessage(refs.bookMessage, error.message, 'error');
+      }
+    });
+
+    el('uploadAuthorPhotoBtn').addEventListener('click', async () => {
+      try {
+        clearMessage(refs.authorMessage);
+        const file = el('authorPhotoFile').files[0];
+        if (!file) throw new Error('Escolha uma imagem antes do envio.');
+        const base = (el('authorPreferredName').value.trim() || 'autor').toLowerCase().replace(/[^a-z0-9]+/g, '-');
+        const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_');
+        const path = `${base}/${Date.now()}-${safeName}`;
+        await uploadFileToBucket('authors', file, path);
+        el('authorPhotoPath').value = path;
+        setPreviewImage(refs.authorPhotoPreview, path, 'authors');
+        showMessage(refs.authorMessage, 'Foto enviada com sucesso.', 'ok');
+      } catch (error) {
+        showMessage(refs.authorMessage, error.message, 'error');
+      }
+    });
+
+    el('clearBookCoverBtn').addEventListener('click', () => {
+      el('bookCoverPath').value = '';
+      setPreviewImage(refs.bookCoverPreview, '', 'covers');
+    });
+
+    el('clearAuthorPhotoBtn').addEventListener('click', () => {
+      el('authorPhotoPath').value = '';
+      setPreviewImage(refs.authorPhotoPreview, '', 'authors');
+    });
+
+    el('bookForm').addEventListener('submit', async (event) => {
+      event.preventDefault();
+      try {
+        const payload = getBookDraftPayload();
+        if (!payload.titulo) throw new Error('Informe o título do livro.');
+        const saved = await saveDraft('book_drafts', payload, refs.bookMessage, 'Rascunho de livro salvo com sucesso.');
+        fillBookForm(saved);
+      } catch (error) {
+        showMessage(refs.bookMessage, error.message, 'error');
+      }
+    });
+
+    el('authorForm').addEventListener('submit', async (event) => {
+      event.preventDefault();
+      try {
+        const payload = getAuthorDraftPayload();
+        if (!payload.preferred_name) throw new Error('Informe o nome preferido do autor.');
+        const saved = await saveDraft('author_drafts', payload, refs.authorMessage, 'Rascunho de autor salvo com sucesso.');
+        fillAuthorForm(saved);
+      } catch (error) {
+        showMessage(refs.authorMessage, error.message, 'error');
+      }
+    });
+
+    el('exemplarForm').addEventListener('submit', async (event) => {
+      event.preventDefault();
+      try {
+        const payload = getExemplarDraftPayload();
+        if (!payload.target_bib_ref || !payload.tombo) throw new Error('Informe a referência do livro e o tombo do exemplar.');
+        const saved = await saveDraft('exemplar_drafts', payload, refs.exemplarMessage, 'Rascunho de exemplar salvo com sucesso.');
+        fillExemplarForm(saved);
+      } catch (error) {
+        showMessage(refs.exemplarMessage, error.message, 'error');
+      }
+    });
+
+    async function markDraftReady(table, id, target) {
+      if (!id) throw new Error('Salve o rascunho antes de marcá-lo como pronto.');
+      const { error } = await supabase
+        .from(table)
+        .update({ status: 'ready', updated_by: state.profile.id })
+        .eq('id', Number(id));
+      if (error) throw error;
+      await Promise.all([loadQueue(), loadBatches()]);
+      updateStats();
+      showMessage(target, 'Rascunho marcado como pronto.', 'ok');
+    }
+
+    el('bookReadyBtn').addEventListener('click', async () => {
+      try { await markDraftReady('book_drafts', el('bookDraftId').value, refs.bookMessage); } catch (error) { showMessage(refs.bookMessage, error.message, 'error'); }
+    });
+    el('authorReadyBtn').addEventListener('click', async () => {
+      try { await markDraftReady('author_drafts', el('authorDraftId').value, refs.authorMessage); } catch (error) { showMessage(refs.authorMessage, error.message, 'error'); }
+    });
+    el('exemplarReadyBtn').addEventListener('click', async () => {
+      try { await markDraftReady('exemplar_drafts', el('exemplarDraftId').value, refs.exemplarMessage); } catch (error) { showMessage(refs.exemplarMessage, error.message, 'error'); }
+    });
+
+    el('publishBookDraftBtn').addEventListener('click', async () => {
+      try {
+        const draftId = el('bookDraftId').value;
+        if (!draftId) throw new Error('Salve o rascunho antes de publicar.');
+        const { error } = await supabase.rpc('publish_book_draft', { p_draft_id: Number(draftId) });
+        if (error) throw error;
+        await Promise.all([loadQueue(), loadBatches(), loadCatalog()]);
+        updateStats();
+        showMessage(refs.bookMessage, 'Rascunho de livro publicado com sucesso.', 'ok');
+        resetBookForm();
+      } catch (error) {
+        showMessage(refs.bookMessage, error.message, 'error');
+      }
+    });
+
+    el('publishAuthorDraftBtn').addEventListener('click', async () => {
+      try {
+        const draftId = el('authorDraftId').value;
+        if (!draftId) throw new Error('Salve o rascunho antes de publicar.');
+        const { error } = await supabase.rpc('publish_author_draft', { p_draft_id: Number(draftId) });
+        if (error) throw error;
+        await Promise.all([loadQueue(), loadBatches(), loadCatalog()]);
+        updateStats();
+        showMessage(refs.authorMessage, 'Rascunho de autor publicado com sucesso.', 'ok');
+        resetAuthorForm();
+      } catch (error) {
+        showMessage(refs.authorMessage, error.message, 'error');
+      }
+    });
+
+    el('publishExemplarDraftBtn').addEventListener('click', async () => {
+      try {
+        const draftId = el('exemplarDraftId').value;
+        if (!draftId) throw new Error('Salve o rascunho antes de publicar.');
+        const { error } = await supabase.rpc('publish_exemplar_draft', { p_draft_id: Number(draftId) });
+        if (error) throw error;
+        await Promise.all([loadQueue(), loadBatches(), loadCatalog()]);
+        updateStats();
+        showMessage(refs.exemplarMessage, 'Rascunho de exemplar publicado com sucesso.', 'ok');
+        resetExemplarForm();
+      } catch (error) {
+        showMessage(refs.exemplarMessage, error.message, 'error');
+      }
+    });
+
+    el('batchForm').addEventListener('submit', async (event) => {
+      event.preventDefault();
+      try {
+        const name = el('batchName').value.trim();
+        if (!name) throw new Error('Informe um nome para o lote.');
+        const { error } = await supabase.from('catalog_batches').insert({
+          name,
+          notes: el('batchNotes').value.trim() || null,
+          created_by: state.profile.id,
+        });
+        if (error) throw error;
+        el('batchForm').reset();
+        await loadBatches();
+        updateStats();
+        showMessage(refs.batchMessage, 'Lote criado com sucesso.', 'ok');
+      } catch (error) {
+        showMessage(refs.batchMessage, error.message, 'error');
+      }
+    });
+
+    el('publishBatchBtn').addEventListener('click', async () => {
+      try {
+        const batchId = el('publishBatchId').value;
+        if (!batchId) throw new Error('Escolha um lote aberto para publicar.');
+        const { data, error } = await supabase.rpc('publish_catalog_batch', { p_batch_id: Number(batchId) });
+        if (error) throw error;
+        await Promise.all([loadBatches(), loadQueue(), loadCatalog()]);
+        updateStats();
+        showMessage(refs.batchMessage, `Lote publicado. Livros: ${data.books_published}, autores: ${data.authors_published}, exemplares: ${data.exemplars_published}.`, 'ok');
+      } catch (error) {
+        showMessage(refs.batchMessage, error.message, 'error');
+      }
+    });
+
+    el('refreshAllBtn').addEventListener('click', refreshAll);
+    el('refreshQueueBtn').addEventListener('click', loadQueue);
+    el('refreshBatchesBtn').addEventListener('click', loadBatches);
+
+    el('bookDraftResetBtn').addEventListener('click', resetBookForm);
+    el('authorDraftResetBtn').addEventListener('click', resetAuthorForm);
+    el('exemplarDraftResetBtn').addEventListener('click', resetExemplarForm);
+
+    ['queueTypeFilter', 'queueStatusFilter', 'queueSearch'].forEach(id => {
+      el(id).addEventListener('input', renderQueue);
+      el(id).addEventListener('change', renderQueue);
+    });
+    el('queueBatchAssign').addEventListener('change', renderQueue);
+    el('catalogSearch').addEventListener('input', renderCatalogBooks);
+    el('catalogAuthorSearch').addEventListener('input', renderCatalogAuthors);
+    el('catalogExemplarSearch').addEventListener('input', renderCatalogExemplars);
+
+    supabase.auth.onAuthStateChange(async (_event, session) => {
+      state.session = session;
+      if (session) {
+        refs.userEmail.textContent = session.user.email || 'Usuário autenticado';
+      }
+    });
+
+    resetBookForm();
+    resetAuthorForm();
+    resetExemplarForm();
+    refreshAll();
+  </script>
+</body>
+</html>
