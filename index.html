@@ -191,7 +191,7 @@ a { color: inherit; }
 .sheet-head .title { font-weight:700; }
 .small { font-size:.86rem; color: var(--muted); }
 .table-wrap { overflow:auto; max-height:72vh; }
-table { width:100%; border-collapse:separate; border-spacing:0; min-width:1560px; table-layout:fixed; }
+table { width:100%; border-collapse:separate; border-spacing:0; min-width:1710px; table-layout:fixed; }
 thead th {
   position:sticky;
   top:0;
@@ -227,10 +227,9 @@ tbody tr:hover td { background: rgba(179,0,24,.08); }
 .col-cdd { width: 8%; }
 .col-status { width: 12%; }
 .col-reserva { width: 10.5%; white-space: nowrap; }
-.col-acoes { width: 8%; white-space: nowrap; }
+.col-acoes { width: 9%; white-space: nowrap; }
 .reserve-slot { display:flex; flex-direction:column; gap:6px; align-items:flex-start; }
 .reserve-note { font-size:.77rem; color: var(--muted); line-height:1.25; }
-.reserve-btn[disabled] { opacity:.6; cursor:not-allowed; }
 .ref-main { white-space:nowrap; }
 .status-badge {
   display:inline-flex;
@@ -449,7 +448,20 @@ mark { background: rgba(225,29,47,.35); color:#fff; padding:0 2px; border-radius
             <th class="col-cdd" data-key="cdd">CDD</th>
             <th class="col-status" data-key="status">disponibilidade</th>
             <th class="col-reserva" data-key="reserva">reserva</th>
-            <th class="col-acoes" <script>
+            <th class="col-acoes" data-key="acoes">ações</th>
+          </tr>
+        </thead>
+        <tbody id="tbody"></tbody>
+      </table>
+      <div id="mobileResults" class="mobile-results" aria-live="polite"></div>
+      <div id="empty" class="empty" hidden>Nenhum resultado para os filtros atuais.</div>
+    </div>
+  </section>
+
+  <p class="footer"></p>
+</div>
+
+<script>
 const SUPABASE_URL = "https://asptfmokzykwzlshsncw.supabase.co";
 const SUPABASE_ANON_KEY = "sb_publishable_38cFV9vsGhmqMp-Z5gmV4w_HY6ReWSF";
 const GH_BASE = "https://cclamazonia-cmd.github.io";
@@ -718,7 +730,6 @@ function paintHeaderSort() {
     }
   });
 }
-
 function buildReservationMarkup(r) {
   const status = r._status;
   if (!authState.user) {
@@ -733,57 +744,53 @@ function buildReservationMarkup(r) {
   if (status.key === 'unavailable') {
     return '<div class="reserve-slot"><span class="reserve-note">Indisponível</span></div>';
   }
-  if (!r.id) {
+  if (!r.bib_ref) {
     return '<div class="reserve-slot"><span class="reserve-note">Referência indisponível</span></div>';
   }
-  return `<div class="reserve-slot"><button class="btn-inline reserve-btn" type="button" data-book-id="${escapeHTML(String(r.id))}">Reservar</button></div>`;
-}
-
-function buildReservationPayload(bookId) {
-  return {
-    user_id: authState.user.id,
-    book_id: bookId,
-    batch_id: `catalogo-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
-    line_no: 1
-  };
+  return `<div class="reserve-slot"><button class="btn-inline reserve-btn" type="button" data-bib-ref="${encodeURIComponent(r.bib_ref)}">Reservar</button></div>`;
 }
 
 function mapReservaError(msg) {
   const s = normalize(msg || '');
   if (!s) return 'Não foi possível registrar a reserva agora.';
-  if (s.includes('duplicate') || s.includes('already') || s.includes('unique')) return 'Este livro já está reservado na sua conta.';
-  if (s.includes('row-level security') || s.includes('permission denied') || s.includes('42501')) return 'Sua sessão não tem permissão para reservar agora. Entre novamente e tente outra vez.';
-  if (s.includes('jwt') || s.includes('token') || s.includes('auth')) return 'Sua sessão expirou. Entre novamente para reservar.';
+  if (s.includes('duplicate') || s.includes('already') || s.includes('unique') || s.includes('ja existe')) return 'Este livro já está reservado na sua conta.';
+  if (s.includes('permission denied') || s.includes('row-level security') || s.includes('42501')) return 'Sua sessão não tem permissão para reservar agora. Entre novamente e tente outra vez.';
+  if (s.includes('jwt') || s.includes('token') || s.includes('auth') || s.includes('session')) return 'Sua sessão expirou. Entre novamente para reservar.';
   if (s.includes('network') || s.includes('fetch')) return 'Falha de conexão ao registrar a reserva.';
   return 'Não foi possível registrar a reserva agora.';
 }
 
-async function createReservaFromCatalog(bookId) {
+async function createReservaFromCatalog(bibRef) {
   if (!authState.user || !authState.accessToken) {
     location.assign(CADASTRO_URL);
     return { ok: false, message: 'Entre na sua conta para reservar.' };
   }
-  const res = await fetch(`${SUPABASE_URL}/rest/v1/reservas`, {
+  const res = await fetch(`${SUPABASE_URL}/rest/v1/rpc/fn_v2_create_reserva_by_bib_refs`, {
     method: 'POST',
     headers: {
       apikey: SUPABASE_ANON_KEY,
       Authorization: `Bearer ${authState.accessToken}`,
-      'Content-Type': 'application/json',
-      Prefer: 'return=representation'
+      'Content-Type': 'application/json'
     },
-    body: JSON.stringify(buildReservationPayload(bookId))
+    body: JSON.stringify({
+      p_user_id: authState.user.id,
+      p_bib_refs: [bibRef],
+      p_expires_at: null,
+      p_notes: 'Reserva criada pelo catálogo público.'
+    })
   });
   const text = await res.text();
   if (!res.ok) {
     let message = text;
     try {
       const parsed = JSON.parse(text);
-      message = parsed?.message || parsed?.error || text;
+      message = parsed?.message || parsed?.error || JSON.stringify(parsed);
     } catch (e) {}
     return { ok: false, message: mapReservaError(message) };
   }
   return { ok: true };
 }
+
 function buildRowMarkup(r) {
   const ref = r.bib_ref || '';
   const terms = [...(lastQuery.phrases || []), ...(lastQuery.tokens || [])];
@@ -1039,20 +1046,20 @@ async function handleResultActions(e) {
   }
   const reserveBtn = e.target.closest('.reserve-btn');
   if (reserveBtn) {
-    const bookId = reserveBtn.dataset.bookId || '';
-    if (!bookId) return;
+    const bibRef = decodeURIComponent(reserveBtn.dataset.bibRef || '');
+    if (!bibRef) return;
     const prev = reserveBtn.textContent;
     reserveBtn.textContent = 'Reservando...';
     reserveBtn.disabled = true;
     try {
-      const result = await createReservaFromCatalog(bookId);
+      const result = await createReservaFromCatalog(bibRef);
       if (!result.ok) {
         alert(result.message);
         reserveBtn.textContent = prev;
         reserveBtn.disabled = false;
         return;
       }
-      const targetRow = rows.find(r => String(r.id) === String(bookId));
+      const targetRow = rows.find(r => String(r.bib_ref || '') === String(bibRef));
       if (targetRow) targetRow._reserveDone = true;
       render();
     } catch (err) {
@@ -1087,21 +1094,7 @@ document.addEventListener('keydown', (e) => {
   }
 });
 (async function init() {
-  rows = await loadRowsFromSupabase();
-  prepareRows();
   authState = await getCurrentUserAndRole();
-  render();
-})();
-</script>Element !== search && !e.ctrlKey && !e.metaKey && !e.altKey) {
-    e.preventDefault();
-    search.focus();
-  }
-  if (e.key === 'Escape' && document.activeElement === search) {
-    search.value = '';
-    debouncedRender();
-  }
-});
-(async function init() {
   rows = await loadRowsFromSupabase();
   prepareRows();
   render();
