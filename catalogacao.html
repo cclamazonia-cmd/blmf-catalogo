@@ -3,231 +3,284 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Catalogação | BLMF</title>
+  <title>Catalogação interna da BLMF</title>
+  <meta name="description" content="Catalogação interna da BLMF — rascunhos, lotes, autores, exemplares, capas e etiquetas para a equipe bibliotecária." />
+  <meta name="theme-color" content="#b30018" />
+  <meta property="og:locale" content="pt_BR" />
+  <meta property="og:type" content="website" />
+  <meta property="og:site_name" content="BLMF" />
+  <meta property="og:title" content="Catalogação interna da BLMF" />
+  <meta property="og:description" content="Área bibliotecária da Biblioteca Libertária Maxwell Ferreira para rascunhos, lotes, capas, autores e etiquetas." />
+  <meta property="og:image" content="https://cclamazonia.noblogs.org/files/2026/03/logo_detoure_BLMF.png" />
+  <meta property="og:image:alt" content="Logotipo da Biblioteca Libertária Maxwell Ferreira" />
+  <meta name="twitter:card" content="summary" />
+  <meta name="twitter:title" content="Catalogação interna da BLMF" />
+  <meta name="twitter:description" content="Área bibliotecária da BLMF para gestão editorial do catálogo." />
+  <meta name="twitter:image" content="https://cclamazonia.noblogs.org/files/2026/03/logo_detoure_BLMF.png" />
+  <link rel="icon" type="image/png" href="https://cclamazonia.noblogs.org/files/2026/03/logo_detoure_BLMF.png" />
+  <link rel="shortcut icon" href="https://cclamazonia.noblogs.org/files/2026/03/logo_detoure_BLMF.png" />
+  <link rel="apple-touch-icon" href="https://cclamazonia.noblogs.org/files/2026/03/logo_detoure_BLMF.png" />
   <style>
     :root {
-      --bg: #0d1117;
-      --panel: #161b22;
-      --panel-2: #1f2937;
-      --border: #30363d;
-      --text: #e6edf3;
-      --muted: #9da7b3;
-      --red: #b91c1c;
-      --red-2: #dc2626;
+      --bg: #0b0b0b;
+      --panel: rgba(18,18,18,.96);
+      --panel-2: rgba(24,24,24,.94);
+      --line: rgba(255,255,255,.08);
+      --text: #f5f5f5;
+      --muted: #d1d1d1;
+      --red: #b30018;
+      --red-2: #e11d2f;
+      --shadow: 0 18px 40px rgba(0,0,0,.45);
       --green: #15803d;
       --amber: #b45309;
       --blue: #1d4ed8;
-      --danger: #991b1b;
-      --shadow: 0 10px 30px rgba(0, 0, 0, 0.25);
-      --radius: 18px;
     }
 
     * { box-sizing: border-box; }
-    body {
+
+    html, body {
       margin: 0;
-      font-family: Inter, Arial, sans-serif;
-      background: linear-gradient(180deg, #0b0f14 0%, #121821 100%);
+      padding: 0;
       color: var(--text);
+      font-family: Inter, "Segoe UI", Arial, sans-serif;
+      background-image:
+        linear-gradient(rgba(0,0,0,0.78), rgba(0,0,0,0.78)),
+        url('https://cclamazonia.noblogs.org/files/2024/11/Arte-CCLA-paredao.jpg');
+      background-size: cover;
+      background-position: center center;
+      background-attachment: fixed;
+      background-repeat: no-repeat;
     }
 
     a { color: inherit; }
 
     .wrap {
-      max-width: 1440px;
+      max-width: 1680px;
       margin: 0 auto;
-      padding: 20px;
+      padding: 24px;
     }
 
-    .topbar {
+    .hero {
+      background: linear-gradient(135deg, rgba(179,0,24,.95), rgba(90,0,12,.96));
+      border: 1px solid rgba(255,255,255,.08);
+      border-radius: 22px;
+      padding: 28px;
+      box-shadow: var(--shadow);
+      margin-bottom: 22px;
+    }
+
+    .hero-topbar {
       display: flex;
-      flex-wrap: wrap;
-      gap: 12px;
       align-items: center;
       justify-content: space-between;
-      margin-bottom: 18px;
+      gap: 20px;
+      flex-wrap: wrap;
     }
 
-    .brand h1 {
+    .hero h1 {
+      margin: 0 0 8px;
+      font-size: clamp(1.8rem, 3vw, 3rem);
+      line-height: 1.05;
+    }
+
+    .hero p {
       margin: 0;
-      font-size: 1.5rem;
+      color: rgba(255,255,255,.95);
+      font-size: 1rem;
+      max-width: 900px;
     }
 
-    .brand p {
-      margin: 6px 0 0;
-      color: var(--muted);
-      font-size: 0.95rem;
+    .topbar-logo {
+      width: 150px;
+      height: auto;
+      flex: 0 0 auto;
     }
 
-    .userbox {
+    .toolbar {
+      margin-bottom: 18px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .toolbar-actions {
       display: flex;
       flex-wrap: wrap;
-      align-items: center;
       gap: 10px;
-      background: rgba(255,255,255,0.03);
-      border: 1px solid var(--border);
-      border-radius: 999px;
-      padding: 10px 14px;
+      align-items: center;
+    }
+
+    .button,
+    .tab-btn,
+    .action-link,
+    .file-button,
+    .btn-inline {
+      width: auto;
+      border: 1px solid rgba(255,255,255,.14);
+      background: rgba(18,18,18,.96);
+      color: #fff;
+      border-radius: 14px;
+      padding: 12px 16px;
+      font-size: .95rem;
+      cursor: pointer;
+      box-shadow: var(--shadow);
+      text-decoration: none;
+      font-weight: 600;
+      transition: .18s ease;
+    }
+
+    .button:hover,
+    .tab-btn:hover,
+    .action-link:hover,
+    .file-button:hover,
+    .btn-inline:hover {
+      border-color: rgba(225,29,47,.65);
+      color: #fff;
+      transform: translateY(-1px);
+    }
+
+    .button.primary,
+    .tab-btn.active,
+    .btn-inline.primary {
+      background: linear-gradient(135deg, var(--red-2), var(--red));
+      border-color: transparent;
+    }
+
+    .button.secondary,
+    .btn-inline.secondary {
+      background: rgba(18,18,18,.96);
+    }
+
+    .button.success,
+    .btn-inline.success {
+      background: linear-gradient(135deg, #166534, #16a34a);
+      border-color: transparent;
+    }
+
+    .button.warning,
+    .btn-inline.warning {
+      background: linear-gradient(135deg, #92400e, #d97706);
+      border-color: transparent;
+    }
+
+    .button.ghost,
+    .btn-inline.ghost {
+      background: rgba(18,18,18,.72);
+    }
+
+    .button.small,
+    .btn-inline.small {
+      padding: 8px 10px;
+      font-size: .82rem;
+      border-radius: 12px;
+    }
+
+    .button:disabled,
+    .btn-inline:disabled {
+      opacity: .55;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    .stats {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin: 0 0 16px;
     }
 
     .pill {
+      border: 1px solid rgba(255,255,255,.08);
+      background: rgba(24,24,24,.92);
+      color: var(--muted);
+      border-radius: 999px;
+      padding: 8px 12px;
+      font-size: .9rem;
       display: inline-flex;
       align-items: center;
       gap: 8px;
-      padding: 6px 12px;
-      border-radius: 999px;
-      font-size: 0.88rem;
-      border: 1px solid rgba(255,255,255,0.08);
-      background: rgba(255,255,255,0.04);
     }
 
-    .pill.ok { background: rgba(21, 128, 61, 0.16); color: #c9f7d2; }
+    .pill.ok { background: rgba(21, 128, 61, 0.16); color: #d8ffe4; }
     .pill.warn { background: rgba(180, 83, 9, 0.16); color: #fde5b6; }
-    .pill.info { background: rgba(29, 78, 216, 0.16); color: #d8e8ff; }
-    .pill.danger { background: rgba(153, 27, 27, 0.22); color: #ffd8d8; }
-
-    .banner {
-      margin-bottom: 18px;
-      border-radius: var(--radius);
-      border: 1px solid var(--border);
-      background: linear-gradient(135deg, rgba(185, 28, 28, 0.14), rgba(29, 78, 216, 0.12));
-      padding: 16px 18px;
-      box-shadow: var(--shadow);
-    }
-
-    .banner h2 {
-      margin: 0 0 6px;
-      font-size: 1.08rem;
-    }
-
-    .banner p {
-      margin: 0;
-      color: var(--muted);
-      line-height: 1.5;
-    }
+    .pill.info { background: rgba(29, 78, 216, 0.16); color: #dbeafe; }
+    .pill.danger { background: rgba(127, 29, 29, 0.22); color: #ffe0e0; }
 
     .statusbar {
       display: grid;
       grid-template-columns: repeat(4, minmax(0, 1fr));
       gap: 12px;
-      margin-bottom: 18px;
+      margin: 0 0 18px;
     }
 
     .stat {
-      background: var(--panel);
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      padding: 14px;
+      border: 1px solid rgba(255,255,255,.08);
+      border-radius: 18px;
+      background: rgba(18,18,18,.96);
       box-shadow: var(--shadow);
+      padding: 16px;
     }
 
     .stat .label {
-      color: var(--muted);
-      font-size: 0.88rem;
+      color: #ffe3e7;
+      font-weight: 800;
+      font-size: .9rem;
       margin-bottom: 8px;
     }
 
     .stat .value {
-      font-size: 1.5rem;
+      font-size: 1.55rem;
       font-weight: 700;
+    }
+
+    .sheet,
+    .panel {
+      border: 1px solid rgba(255,255,255,.08);
+      border-radius: 22px;
+      overflow: hidden;
+      background: rgba(18,18,18,.96);
+      box-shadow: var(--shadow);
+      margin-bottom: 18px;
+    }
+
+    .panel { display: none; }
+    .panel.active { display: block; }
+
+    .sheet-head,
+    .panel-header {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 16px 18px;
+      background: linear-gradient(180deg, #1a1a1a, #121212);
+      border-bottom: 1px solid rgba(255,255,255,.06);
+      flex-wrap: wrap;
+    }
+
+    .panel-header h3,
+    .sheet-head h3 {
+      margin: 0 0 6px;
+      font-size: 1.2rem;
+    }
+
+    .panel-header p,
+    .sheet-head p,
+    .small {
+      margin: 0;
+      color: var(--muted);
+      font-size: .9rem;
+    }
+
+    .panel-body {
+      padding: 18px;
     }
 
     .tabs {
       display: flex;
       flex-wrap: wrap;
       gap: 8px;
-      margin-bottom: 18px;
-    }
-
-    .tab-btn,
-    button,
-    .file-label {
-      appearance: none;
-      border: 1px solid var(--border);
-      background: var(--panel);
-      color: var(--text);
-      border-radius: 12px;
-      padding: 10px 14px;
-      cursor: pointer;
-      transition: 0.18s ease;
-      font-weight: 600;
-    }
-
-    .tab-btn:hover,
-    button:hover,
-    .file-label:hover {
-      transform: translateY(-1px);
-      border-color: #4b5563;
-    }
-
-    .tab-btn.active {
-      background: linear-gradient(135deg, var(--red), var(--red-2));
-      border-color: transparent;
-    }
-
-    button.primary {
-      background: linear-gradient(135deg, var(--red), var(--red-2));
-      border-color: transparent;
-    }
-
-    button.secondary {
-      background: var(--panel-2);
-    }
-
-    button.ghost {
-      background: transparent;
-    }
-
-    button.success {
-      background: linear-gradient(135deg, #166534, #16a34a);
-      border-color: transparent;
-    }
-
-    button.warning {
-      background: linear-gradient(135deg, #92400e, #d97706);
-      border-color: transparent;
-    }
-
-    button.small {
-      padding: 8px 10px;
-      font-size: 0.88rem;
-      border-radius: 10px;
-    }
-
-    button:disabled {
-      opacity: 0.55;
-      cursor: not-allowed;
-      transform: none;
-    }
-
-    .panel {
-      display: none;
-      background: rgba(13, 17, 23, 0.72);
-      border: 1px solid var(--border);
-      border-radius: 24px;
-      padding: 18px;
-      box-shadow: var(--shadow);
-      margin-bottom: 18px;
-    }
-
-    .panel.active { display: block; }
-
-    .panel-header {
-      display: flex;
-      flex-wrap: wrap;
-      justify-content: space-between;
-      gap: 12px;
-      align-items: flex-start;
-      margin-bottom: 18px;
-    }
-
-    .panel-header h3 {
-      margin: 0 0 6px;
-      font-size: 1.2rem;
-    }
-
-    .panel-header p {
-      margin: 0;
-      color: var(--muted);
+      margin: 0 0 18px;
     }
 
     .grid {
@@ -239,105 +292,6 @@
     .grid.cols-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
     .grid.cols-4 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
 
-    .field {
-      display: flex;
-      flex-direction: column;
-      gap: 8px;
-    }
-
-    .field label {
-      font-size: 0.9rem;
-      color: #dbe5f0;
-      font-weight: 600;
-    }
-
-    .field small {
-      color: var(--muted);
-      font-size: 0.82rem;
-    }
-
-    input,
-    select,
-    textarea {
-      width: 100%;
-      padding: 11px 12px;
-      border-radius: 12px;
-      border: 1px solid var(--border);
-      background: #0f1720;
-      color: var(--text);
-      font: inherit;
-      outline: none;
-    }
-
-    input:focus,
-    select:focus,
-    textarea:focus {
-      border-color: #60a5fa;
-      box-shadow: 0 0 0 3px rgba(96, 165, 250, 0.15);
-    }
-
-    textarea { min-height: 110px; resize: vertical; }
-
-    .actions {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 10px;
-      align-items: center;
-      margin-top: 8px;
-    }
-
-    .hint {
-      color: var(--muted);
-      font-size: 0.88rem;
-      line-height: 1.45;
-    }
-
-    .table-wrap {
-      width: 100%;
-      overflow-x: auto;
-      border: 1px solid var(--border);
-      border-radius: 18px;
-      background: rgba(255,255,255,0.02);
-    }
-
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      min-width: 900px;
-    }
-
-    th,
-    td {
-      padding: 12px 12px;
-      text-align: left;
-      border-bottom: 1px solid rgba(255,255,255,0.06);
-      vertical-align: top;
-      font-size: 0.94rem;
-    }
-
-    th {
-      background: rgba(255,255,255,0.04);
-      color: #dce5ef;
-      position: sticky;
-      top: 0;
-      z-index: 1;
-    }
-
-    td.muted { color: var(--muted); }
-
-    .row-actions {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 8px;
-    }
-
-    .inline {
-      display: flex;
-      gap: 10px;
-      flex-wrap: wrap;
-      align-items: center;
-    }
-
     .split {
       display: grid;
       grid-template-columns: 340px minmax(0, 1fr);
@@ -345,9 +299,9 @@
     }
 
     .card {
-      background: rgba(255,255,255,0.03);
-      border: 1px solid var(--border);
+      border: 1px solid rgba(255,255,255,.08);
       border-radius: 18px;
+      background: rgba(255,255,255,.02);
       padding: 14px;
     }
 
@@ -356,34 +310,156 @@
       font-size: 1rem;
     }
 
+    .field {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      min-width: 0;
+      padding: 10px 12px 12px;
+      border-radius: 18px;
+      background: linear-gradient(180deg, rgba(179,0,24,.14), rgba(255,255,255,.03));
+      border: 1px solid rgba(255,255,255,.10);
+    }
+
+    .field label {
+      font-size: .93rem;
+      color: #ffe3e7;
+      font-weight: 800;
+      letter-spacing: .01em;
+      text-shadow: 0 1px 0 rgba(0,0,0,.28);
+    }
+
+    .field small,
+    .hint {
+      color: var(--muted);
+      font-size: .85rem;
+      line-height: 1.45;
+    }
+
+    input,
+    select,
+    textarea {
+      width: 100%;
+      border: 1px solid rgba(255,255,255,.18);
+      background: rgba(10,10,10,.98);
+      color: #fff;
+      border-radius: 14px;
+      padding: 14px 14px;
+      font-size: .98rem;
+      outline: none;
+      box-shadow: var(--shadow);
+      font: inherit;
+    }
+
+    select { font-weight: 600; }
+    input::placeholder,
+    textarea::placeholder { color: #f0d6da; opacity: 1; }
+
+    input:focus,
+    select:focus,
+    textarea:focus {
+      border-color: rgba(225,29,47,.95);
+      box-shadow: 0 0 0 3px rgba(225,29,47,.24), var(--shadow);
+    }
+
+    textarea {
+      min-height: 110px;
+      resize: vertical;
+    }
+
+    .actions,
+    .inline,
+    .row-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      align-items: center;
+    }
+
+    .table-wrap {
+      overflow: auto;
+      max-height: 72vh;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: separate;
+      border-spacing: 0;
+      min-width: 980px;
+      table-layout: fixed;
+    }
+
+    thead th {
+      position: sticky;
+      top: 0;
+      z-index: 2;
+      text-align: left;
+      padding: 14px 16px;
+      background: linear-gradient(180deg, #26060a, #160407);
+      color: #fff;
+      border-bottom: 1px solid rgba(255,255,255,.08);
+      font-size: .88rem;
+      text-transform: uppercase;
+      letter-spacing: .04em;
+    }
+
+    tbody td {
+      padding: 12px 16px;
+      border-bottom: 1px solid rgba(255,255,255,.05);
+      color: #f0f0f0;
+      vertical-align: top;
+      white-space: normal;
+      word-break: break-word;
+      overflow-wrap: anywhere;
+      line-height: 1.35;
+    }
+
+    tbody tr:nth-child(odd) td { background: rgba(255,255,255,.01); }
+    tbody tr:hover td { background: rgba(179,0,24,.08); }
+
     .message {
       display: none;
       padding: 12px 14px;
       border-radius: 14px;
       margin-bottom: 16px;
       line-height: 1.45;
+      border: 1px solid rgba(255,255,255,.08);
     }
 
     .message.show { display: block; }
-    .message.ok { background: rgba(22, 101, 52, 0.18); border: 1px solid rgba(34, 197, 94, 0.25); color: #d8ffe4; }
-    .message.error { background: rgba(127, 29, 29, 0.22); border: 1px solid rgba(248, 113, 113, 0.25); color: #ffe0e0; }
-    .message.info { background: rgba(29, 78, 216, 0.16); border: 1px solid rgba(96, 165, 250, 0.22); color: #dbeafe; }
+    .message.ok { background: rgba(22, 101, 52, 0.18); border-color: rgba(34, 197, 94, 0.25); color: #d8ffe4; }
+    .message.error { background: rgba(127, 29, 29, 0.22); border-color: rgba(248, 113, 113, 0.25); color: #ffe0e0; }
+    .message.info { background: rgba(29, 78, 216, 0.16); border-color: rgba(96, 165, 250, 0.22); color: #dbeafe; }
 
     .empty {
-      padding: 18px;
-      text-align: center;
+      padding: 22px;
       color: var(--muted);
-      border: 1px dashed rgba(255,255,255,0.1);
-      border-radius: 16px;
+      text-align: center;
+      border: 1px dashed rgba(255,255,255,.10);
+      border-radius: 18px;
+      background: rgba(255,255,255,.02);
     }
 
     .cover-preview {
-      width: 140px;
-      height: 200px;
+      width: 100%;
+      max-width: 180px;
+      height: 250px;
       object-fit: cover;
       border-radius: 14px;
-      border: 1px solid var(--border);
-      background: rgba(255,255,255,0.04);
+      border: 1px solid rgba(255,255,255,.10);
+      background: rgba(255,255,255,.04);
+    }
+
+    .file-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      align-items: center;
+    }
+
+    .file-status {
+      color: var(--muted);
+      font-size: .9rem;
     }
 
     .sr-only {
@@ -398,47 +474,62 @@
       border: 0;
     }
 
-    @media (max-width: 1100px) {
+    code {
+      background: rgba(255,255,255,.08);
+      border-radius: 8px;
+      padding: 2px 6px;
+      font-size: .88em;
+    }
+
+    @media (max-width: 1520px) {
       .statusbar,
-      .grid.cols-4,
+      .grid.cols-4 {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+    }
+
+    @media (max-width: 1100px) {
       .grid.cols-3,
       .split {
-        grid-template-columns: 1fr 1fr;
+        grid-template-columns: 1fr;
+      }
+    }
+
+    @media (max-width: 980px) {
+      .topbar-logo { width: 118px; }
+      .grid.cols-2,
+      .grid.cols-4,
+      .statusbar {
+        grid-template-columns: 1fr;
       }
     }
 
     @media (max-width: 760px) {
-      .statusbar,
-      .grid.cols-2,
-      .grid.cols-3,
-      .grid.cols-4,
-      .split {
-        grid-template-columns: 1fr;
-      }
-
       .wrap { padding: 14px; }
-      .panel { padding: 14px; border-radius: 20px; }
+      .table-wrap { max-height: none; }
+      table { min-width: 820px; }
     }
   </style>
 </head>
 <body>
   <div class="wrap">
-    <div class="topbar">
-      <div class="brand">
-        <h1>Catalogação interna</h1>
-        <p>Rascunhos, edição, lotes de publicação, capas e etiquetas para a equipe bibliotecária da BLMF.</p>
+    <section class="hero">
+      <div class="hero-topbar">
+        <div>
+          <h1>Catalogação interna da BLMF</h1>
+          <p>Biblioteca Libertária Maxwell Ferreira · CCLA · Rascunhos, lotes, capas, autores, exemplares e publicação editorial do catálogo.</p>
+        </div>
+        <img src="https://cclamazonia.noblogs.org/files/2026/03/logo_detoure_BLMF.png" alt="Logotipo da Biblioteca Libertária Maxwell Ferreira" class="topbar-logo">
       </div>
-      <div class="userbox">
+    </section>
+
+    <section class="toolbar">
+      <div class="toolbar-actions">
         <span id="userEmail" class="pill info">Sem sessão</span>
         <span id="rolePill" class="pill warn">Verificando acesso…</span>
-        <button id="refreshAllBtn" class="secondary small">Atualizar</button>
+        <button id="refreshAllBtn" class="button secondary">Atualizar</button>
       </div>
-    </div>
-
-    <div class="banner">
-      <h2>Fluxo editorial do catálogo</h2>
-      <p>Crie fichas em rascunho, revise, agrupe em lote e publique de uma vez para o catálogo. Fichas já existentes podem gerar um rascunho de edição sem alterar a versão publicada até a confirmação final.</p>
-    </div>
+    </section>
 
     <div id="globalMessage" class="message"></div>
 
@@ -473,148 +564,153 @@
     <section id="booksPanel" class="panel active">
       <div class="panel-header">
         <div>
-          <h3>Nova ficha de livro</h3>
+          <h3>Fichas de livros</h3>
           <p>Crie ou edite um rascunho de livro antes de publicar no catálogo.</p>
         </div>
         <div class="inline">
           <span id="bookDraftModePill" class="pill info">Novo rascunho</span>
-          <button id="bookDraftResetBtn" class="ghost">Limpar formulário</button>
+          <button id="bookDraftResetBtn" class="button ghost">Limpar formulário</button>
         </div>
       </div>
+      <div class="panel-body">
+        <div id="bookMessage" class="message"></div>
 
-      <div id="bookMessage" class="message"></div>
+        <div class="split">
+          <div class="card">
+            <h4>Capa do livro</h4>
+            <img id="bookCoverPreview" class="cover-preview" alt="Pré-visualização da capa" />
+            <div class="field" style="margin-top:12px;">
+              <label for="bookCoverFile">Arquivo da capa</label>
+              <input id="bookCoverFile" class="sr-only" type="file" accept="image/*" />
+              <div class="file-row">
+                <label for="bookCoverFile" class="file-button">Escolher arquivo</label>
+                <span id="bookCoverFileName" class="file-status">Nenhum arquivo selecionado</span>
+              </div>
+              <small>O upload vai para o bucket <code>covers</code>. Você pode salvar o rascunho sem imagem e enviar depois.</small>
+            </div>
+            <div class="actions">
+              <button id="uploadBookCoverBtn" class="button secondary">Enviar capa</button>
+              <button id="clearBookCoverBtn" class="button ghost">Remover caminho</button>
+            </div>
+            <div class="field" style="margin-top:12px;">
+              <label for="bookCoverPath">Caminho da capa</label>
+              <input id="bookCoverPath" type="text" placeholder="books/0000123/front.jpg" />
+            </div>
+          </div>
 
-      <div class="split">
-        <div class="card">
-          <h4>Capa do livro</h4>
-          <img id="bookCoverPreview" class="cover-preview" alt="Pré-visualização da capa" />
-          <div class="field" style="margin-top:12px;">
-            <label for="bookCoverFile">Arquivo da capa</label>
-            <input id="bookCoverFile" type="file" accept="image/*" />
-            <small>O upload vai para o bucket <code>covers</code>. Se preferir, você pode salvar o rascunho sem imagem e enviar depois.</small>
-          </div>
-          <div class="actions">
-            <button id="uploadBookCoverBtn" class="secondary">Enviar capa</button>
-            <button id="clearBookCoverBtn" class="ghost">Remover caminho</button>
-          </div>
-          <div class="field" style="margin-top:12px;">
-            <label for="bookCoverPath">Caminho da capa</label>
-            <input id="bookCoverPath" type="text" placeholder="covers/books/0000123/front.jpg" />
-          </div>
+          <form id="bookForm" class="grid cols-3">
+            <input type="hidden" id="bookDraftId" />
+            <input type="hidden" id="bookPublishedId" />
+            <input type="hidden" id="bookAction" value="create" />
+
+            <div class="field">
+              <label for="bookBatchId">Lote</label>
+              <select id="bookBatchId"></select>
+              <small>Você pode deixar sem lote e organizar depois na fila editorial.</small>
+            </div>
+
+            <div class="field">
+              <label for="bookBibRef">Referência</label>
+              <input id="bookBibRef" type="text" placeholder="0000123" />
+              <small>Para ficha nova, pode deixar em branco que o sistema gera depois.</small>
+            </div>
+
+            <div class="field">
+              <label for="bookType">Tipo de material</label>
+              <select id="bookType">
+                <option value="livro">Livro</option>
+                <option value="periodico">Periódico</option>
+                <option value="brochura">Brochura</option>
+                <option value="outro">Outro</option>
+              </select>
+            </div>
+
+            <div class="field" style="grid-column: span 3;">
+              <label for="bookTitle">Título</label>
+              <input id="bookTitle" type="text" required />
+            </div>
+
+            <div class="field" style="grid-column: span 3;">
+              <label for="bookSubtitle">Subtítulo</label>
+              <input id="bookSubtitle" type="text" />
+            </div>
+
+            <div class="field" style="grid-column: span 2;">
+              <label for="bookAuthor">Autor(a) / responsabilidade principal</label>
+              <input id="bookAuthor" type="text" placeholder="Bakunin, Mikhail" />
+            </div>
+
+            <div class="field">
+              <label for="bookEdition">Edição</label>
+              <input id="bookEdition" type="text" placeholder="2. ed." />
+            </div>
+
+            <div class="field">
+              <label for="bookPublisher">Editora</label>
+              <input id="bookPublisher" type="text" />
+            </div>
+
+            <div class="field">
+              <label for="bookPlace">Local de publicação</label>
+              <input id="bookPlace" type="text" />
+            </div>
+
+            <div class="field">
+              <label for="bookYear">Ano</label>
+              <input id="bookYear" type="text" placeholder="2024" />
+            </div>
+
+            <div class="field">
+              <label for="bookISBN">ISBN</label>
+              <input id="bookISBN" type="text" />
+            </div>
+
+            <div class="field">
+              <label for="bookISSN">ISSN</label>
+              <input id="bookISSN" type="text" />
+            </div>
+
+            <div class="field">
+              <label for="bookCDD">CDD</label>
+              <input id="bookCDD" type="text" placeholder="335" />
+            </div>
+
+            <div class="field">
+              <label for="bookLanguage">Idioma</label>
+              <input id="bookLanguage" type="text" placeholder="Português" />
+            </div>
+
+            <div class="field">
+              <label for="bookPages">Páginas</label>
+              <input id="bookPages" type="number" min="1" />
+            </div>
+
+            <div class="field">
+              <label for="bookLoanable">Empréstimo</label>
+              <select id="bookLoanable">
+                <option value="true">Emprestável</option>
+                <option value="false">Somente consulta</option>
+              </select>
+            </div>
+
+            <div class="field" style="grid-column: span 3;">
+              <label for="bookNotes">Notas</label>
+              <textarea id="bookNotes" placeholder="Observações bibliográficas, estado do exemplar-matriz, notas internas…"></textarea>
+            </div>
+
+            <div class="field" style="grid-column: span 3;">
+              <label for="bookMarcJson">Estrutura bibliográfica em JSON</label>
+              <textarea id="bookMarcJson" placeholder='{"245":{"a":"Título"},"100":{"a":"Autor"}}'></textarea>
+              <small>Opcional. Pode ser preenchido depois. O formulário principal continua em português claro.</small>
+            </div>
+
+            <div class="actions" style="grid-column: span 3;">
+              <button id="saveBookDraftBtn" type="submit" class="button primary">Salvar rascunho</button>
+              <button id="bookReadyBtn" type="button" class="button secondary">Marcar como pronto</button>
+              <button id="publishBookDraftBtn" type="button" class="button success">Publicar este rascunho</button>
+            </div>
+          </form>
         </div>
-
-        <form id="bookForm" class="grid cols-3">
-          <input type="hidden" id="bookDraftId" />
-          <input type="hidden" id="bookPublishedId" />
-          <input type="hidden" id="bookAction" value="create" />
-
-          <div class="field">
-            <label for="bookBatchId">Lote</label>
-            <select id="bookBatchId"></select>
-            <small>Você pode deixar sem lote e organizar depois na fila editorial.</small>
-          </div>
-
-          <div class="field">
-            <label for="bookBibRef">Referência</label>
-            <input id="bookBibRef" type="text" placeholder="0000123" />
-            <small>Para ficha nova, pode deixar em branco que o sistema gera depois.</small>
-          </div>
-
-          <div class="field">
-            <label for="bookType">Tipo de material</label>
-            <select id="bookType">
-              <option value="livro">Livro</option>
-              <option value="periodico">Periódico</option>
-              <option value="brochura">Brochura</option>
-              <option value="outro">Outro</option>
-            </select>
-          </div>
-
-          <div class="field" style="grid-column: span 3;">
-            <label for="bookTitle">Título</label>
-            <input id="bookTitle" type="text" required />
-          </div>
-
-          <div class="field" style="grid-column: span 3;">
-            <label for="bookSubtitle">Subtítulo</label>
-            <input id="bookSubtitle" type="text" />
-          </div>
-
-          <div class="field" style="grid-column: span 2;">
-            <label for="bookAuthor">Autor(a) / responsabilidade principal</label>
-            <input id="bookAuthor" type="text" placeholder="Bakunin, Mikhail" />
-          </div>
-
-          <div class="field">
-            <label for="bookEdition">Edição</label>
-            <input id="bookEdition" type="text" placeholder="2. ed." />
-          </div>
-
-          <div class="field">
-            <label for="bookPublisher">Editora</label>
-            <input id="bookPublisher" type="text" />
-          </div>
-
-          <div class="field">
-            <label for="bookPlace">Local de publicação</label>
-            <input id="bookPlace" type="text" />
-          </div>
-
-          <div class="field">
-            <label for="bookYear">Ano</label>
-            <input id="bookYear" type="text" placeholder="2024" />
-          </div>
-
-          <div class="field">
-            <label for="bookISBN">ISBN</label>
-            <input id="bookISBN" type="text" />
-          </div>
-
-          <div class="field">
-            <label for="bookISSN">ISSN</label>
-            <input id="bookISSN" type="text" />
-          </div>
-
-          <div class="field">
-            <label for="bookCDD">CDD</label>
-            <input id="bookCDD" type="text" placeholder="335" />
-          </div>
-
-          <div class="field">
-            <label for="bookLanguage">Idioma</label>
-            <input id="bookLanguage" type="text" placeholder="Português" />
-          </div>
-
-          <div class="field">
-            <label for="bookPages">Páginas</label>
-            <input id="bookPages" type="number" min="1" />
-          </div>
-
-          <div class="field">
-            <label for="bookLoanable">Empréstimo</label>
-            <select id="bookLoanable">
-              <option value="true">Emprestável</option>
-              <option value="false">Somente consulta</option>
-            </select>
-          </div>
-
-          <div class="field" style="grid-column: span 3;">
-            <label for="bookNotes">Notas</label>
-            <textarea id="bookNotes" placeholder="Observações bibliográficas, estado do exemplar-matriz, notas internas…"></textarea>
-          </div>
-
-          <div class="field" style="grid-column: span 3;">
-            <label for="bookMarcJson">Estrutura bibliográfica em JSON</label>
-            <textarea id="bookMarcJson" placeholder='{"245":{"a":"Título"},"100":{"a":"Autor"}}'></textarea>
-            <small>Opcional. Pode ser preenchido depois. O formulário principal continua em português claro.</small>
-          </div>
-
-          <div class="actions" style="grid-column: span 3;">
-            <button id="saveBookDraftBtn" type="submit" class="primary">Salvar rascunho</button>
-            <button id="bookReadyBtn" type="button" class="secondary">Marcar como pronto</button>
-            <button id="publishBookDraftBtn" type="button" class="success">Publicar este rascunho</button>
-          </div>
-        </form>
       </div>
     </section>
 
@@ -626,119 +722,124 @@
         </div>
         <div class="inline">
           <span id="authorDraftModePill" class="pill info">Novo rascunho</span>
-          <button id="authorDraftResetBtn" class="ghost">Limpar formulário</button>
+          <button id="authorDraftResetBtn" class="button ghost">Limpar formulário</button>
         </div>
       </div>
+      <div class="panel-body">
+        <div id="authorMessage" class="message"></div>
 
-      <div id="authorMessage" class="message"></div>
+        <div class="split">
+          <div class="card">
+            <h4>Foto do autor</h4>
+            <img id="authorPhotoPreview" class="cover-preview" alt="Pré-visualização da foto do autor" />
+            <div class="field" style="margin-top:12px;">
+              <label for="authorPhotoFile">Arquivo da foto</label>
+              <input id="authorPhotoFile" class="sr-only" type="file" accept="image/*" />
+              <div class="file-row">
+                <label for="authorPhotoFile" class="file-button">Escolher arquivo</label>
+                <span id="authorPhotoFileName" class="file-status">Nenhum arquivo selecionado</span>
+              </div>
+              <small>O upload vai para o bucket <code>authors</code>.</small>
+            </div>
+            <div class="actions">
+              <button id="uploadAuthorPhotoBtn" class="button secondary">Enviar foto</button>
+              <button id="clearAuthorPhotoBtn" class="button ghost">Remover caminho</button>
+            </div>
+            <div class="field" style="margin-top:12px;">
+              <label for="authorPhotoPath">Caminho da foto</label>
+              <input id="authorPhotoPath" type="text" placeholder="autor/profile.jpg" />
+            </div>
+          </div>
 
-      <div class="split">
-        <div class="card">
-          <h4>Foto do autor</h4>
-          <img id="authorPhotoPreview" class="cover-preview" alt="Pré-visualização da foto do autor" />
-          <div class="field" style="margin-top:12px;">
-            <label for="authorPhotoFile">Arquivo da foto</label>
-            <input id="authorPhotoFile" type="file" accept="image/*" />
-            <small>O upload vai para o bucket <code>authors</code>.</small>
-          </div>
-          <div class="actions">
-            <button id="uploadAuthorPhotoBtn" class="secondary">Enviar foto</button>
-            <button id="clearAuthorPhotoBtn" class="ghost">Remover caminho</button>
-          </div>
-          <div class="field" style="margin-top:12px;">
-            <label for="authorPhotoPath">Caminho da foto</label>
-            <input id="authorPhotoPath" type="text" placeholder="authors/42/profile.jpg" />
-          </div>
+          <form id="authorForm" class="grid cols-3">
+            <input type="hidden" id="authorDraftId" />
+            <input type="hidden" id="authorPublishedId" />
+            <input type="hidden" id="authorAction" value="create" />
+
+            <div class="field">
+              <label for="authorBatchId">Lote</label>
+              <select id="authorBatchId"></select>
+            </div>
+
+            <div class="field" style="grid-column: span 2;">
+              <label for="authorPreferredName">Nome preferido</label>
+              <input id="authorPreferredName" type="text" required />
+            </div>
+
+            <div class="field">
+              <label for="authorSortName">Nome para ordenação</label>
+              <input id="authorSortName" type="text" placeholder="Bakunin, Mikhail" />
+            </div>
+
+            <div class="field">
+              <label for="authorBirthYear">Ano de nascimento</label>
+              <input id="authorBirthYear" type="number" />
+            </div>
+
+            <div class="field">
+              <label for="authorDeathYear">Ano de falecimento</label>
+              <input id="authorDeathYear" type="number" />
+            </div>
+
+            <div class="field">
+              <label for="authorCountry">País</label>
+              <input id="authorCountry" type="text" />
+            </div>
+
+            <div class="field">
+              <label for="authorSourceKind">Tipo de fonte</label>
+              <select id="authorSourceKind">
+                <option value="">Sem indicação</option>
+                <option value="autoridade_profissional">Autoridade profissional</option>
+                <option value="wikidata">Wikidata</option>
+                <option value="wikipedia">Wikipedia</option>
+                <option value="site_editora">Site da editora</option>
+                <option value="arquivo_interno">Arquivo interno</option>
+              </select>
+            </div>
+
+            <div class="field">
+              <label for="authorSourceLabel">Fonte informada</label>
+              <input id="authorSourceLabel" type="text" placeholder="VIAF, BnF, site da editora…" />
+            </div>
+
+            <div class="field">
+              <label for="authorSourceUrl">Link da fonte</label>
+              <input id="authorSourceUrl" type="url" placeholder="https://..." />
+            </div>
+
+            <div class="field">
+              <label for="authorVIAF">VIAF</label>
+              <input id="authorVIAF" type="text" />
+            </div>
+
+            <div class="field">
+              <label for="authorISNI">ISNI</label>
+              <input id="authorISNI" type="text" />
+            </div>
+
+            <div class="field">
+              <label for="authorWikidata">Wikidata</label>
+              <input id="authorWikidata" type="text" placeholder="Q12345" />
+            </div>
+
+            <div class="field" style="grid-column: span 3;">
+              <label for="authorBiography">Biografia curta</label>
+              <textarea id="authorBiography"></textarea>
+            </div>
+
+            <div class="field" style="grid-column: span 3;">
+              <label for="authorNotes">Notas</label>
+              <textarea id="authorNotes"></textarea>
+            </div>
+
+            <div class="actions" style="grid-column: span 3;">
+              <button id="saveAuthorDraftBtn" type="submit" class="button primary">Salvar rascunho</button>
+              <button id="authorReadyBtn" type="button" class="button secondary">Marcar como pronto</button>
+              <button id="publishAuthorDraftBtn" type="button" class="button success">Publicar este rascunho</button>
+            </div>
+          </form>
         </div>
-
-        <form id="authorForm" class="grid cols-3">
-          <input type="hidden" id="authorDraftId" />
-          <input type="hidden" id="authorPublishedId" />
-          <input type="hidden" id="authorAction" value="create" />
-
-          <div class="field">
-            <label for="authorBatchId">Lote</label>
-            <select id="authorBatchId"></select>
-          </div>
-
-          <div class="field" style="grid-column: span 2;">
-            <label for="authorPreferredName">Nome preferido</label>
-            <input id="authorPreferredName" type="text" required />
-          </div>
-
-          <div class="field">
-            <label for="authorSortName">Nome para ordenação</label>
-            <input id="authorSortName" type="text" placeholder="Bakunin, Mikhail" />
-          </div>
-
-          <div class="field">
-            <label for="authorBirthYear">Ano de nascimento</label>
-            <input id="authorBirthYear" type="number" />
-          </div>
-
-          <div class="field">
-            <label for="authorDeathYear">Ano de falecimento</label>
-            <input id="authorDeathYear" type="number" />
-          </div>
-
-          <div class="field">
-            <label for="authorCountry">País</label>
-            <input id="authorCountry" type="text" />
-          </div>
-
-          <div class="field">
-            <label for="authorSourceKind">Tipo de fonte</label>
-            <select id="authorSourceKind">
-              <option value="">Sem indicação</option>
-              <option value="autoridade_profissional">Autoridade profissional</option>
-              <option value="wikidata">Wikidata</option>
-              <option value="wikipedia">Wikipedia</option>
-              <option value="site_editora">Site da editora</option>
-              <option value="arquivo_interno">Arquivo interno</option>
-            </select>
-          </div>
-
-          <div class="field">
-            <label for="authorSourceLabel">Fonte informada</label>
-            <input id="authorSourceLabel" type="text" placeholder="VIAF, BnF, site da editora…" />
-          </div>
-
-          <div class="field">
-            <label for="authorSourceUrl">Link da fonte</label>
-            <input id="authorSourceUrl" type="url" placeholder="https://..." />
-          </div>
-
-          <div class="field">
-            <label for="authorVIAF">VIAF</label>
-            <input id="authorVIAF" type="text" />
-          </div>
-
-          <div class="field">
-            <label for="authorISNI">ISNI</label>
-            <input id="authorISNI" type="text" />
-          </div>
-
-          <div class="field">
-            <label for="authorWikidata">Wikidata</label>
-            <input id="authorWikidata" type="text" placeholder="Q12345" />
-          </div>
-
-          <div class="field" style="grid-column: span 3;">
-            <label for="authorBiography">Biografia curta</label>
-            <textarea id="authorBiography"></textarea>
-          </div>
-
-          <div class="field" style="grid-column: span 3;">
-            <label for="authorNotes">Notas</label>
-            <textarea id="authorNotes"></textarea>
-          </div>
-
-          <div class="actions" style="grid-column: span 3;">
-            <button id="saveAuthorDraftBtn" type="submit" class="primary">Salvar rascunho</button>
-            <button id="authorReadyBtn" type="button" class="secondary">Marcar como pronto</button>
-            <button id="publishAuthorDraftBtn" type="button" class="success">Publicar este rascunho</button>
-          </div>
-        </form>
       </div>
     </section>
 
@@ -750,80 +851,81 @@
         </div>
         <div class="inline">
           <span id="exemplarDraftModePill" class="pill info">Novo rascunho</span>
-          <button id="exemplarDraftResetBtn" class="ghost">Limpar formulário</button>
+          <button id="exemplarDraftResetBtn" class="button ghost">Limpar formulário</button>
         </div>
       </div>
+      <div class="panel-body">
+        <div id="exemplarMessage" class="message"></div>
 
-      <div id="exemplarMessage" class="message"></div>
+        <form id="exemplarForm" class="grid cols-3">
+          <input type="hidden" id="exemplarDraftId" />
+          <input type="hidden" id="exemplarPublishedId" />
+          <input type="hidden" id="exemplarAction" value="create" />
 
-      <form id="exemplarForm" class="grid cols-3">
-        <input type="hidden" id="exemplarDraftId" />
-        <input type="hidden" id="exemplarPublishedId" />
-        <input type="hidden" id="exemplarAction" value="create" />
+          <div class="field">
+            <label for="exemplarBatchId">Lote</label>
+            <select id="exemplarBatchId"></select>
+          </div>
 
-        <div class="field">
-          <label for="exemplarBatchId">Lote</label>
-          <select id="exemplarBatchId"></select>
-        </div>
+          <div class="field">
+            <label for="exemplarBibRef">Referência do livro</label>
+            <input id="exemplarBibRef" type="text" placeholder="0000123" required />
+          </div>
 
-        <div class="field">
-          <label for="exemplarBibRef">Referência do livro</label>
-          <input id="exemplarBibRef" type="text" placeholder="0000123" required />
-        </div>
+          <div class="field">
+            <label for="exemplarTombo">Tombo</label>
+            <input id="exemplarTombo" type="text" required />
+          </div>
 
-        <div class="field">
-          <label for="exemplarTombo">Tombo</label>
-          <input id="exemplarTombo" type="text" required />
-        </div>
+          <div class="field">
+            <label for="exemplarShelf">Localização</label>
+            <input id="exemplarShelf" type="text" placeholder="Estante A / Prateleira 3" />
+          </div>
 
-        <div class="field">
-          <label for="exemplarShelf">Localização</label>
-          <input id="exemplarShelf" type="text" placeholder="Estante A / Prateleira 3" />
-        </div>
+          <div class="field">
+            <label for="exemplarLabelAuthor">Autor na etiqueta</label>
+            <input id="exemplarLabelAuthor" type="text" />
+          </div>
 
-        <div class="field">
-          <label for="exemplarLabelAuthor">Autor na etiqueta</label>
-          <input id="exemplarLabelAuthor" type="text" />
-        </div>
+          <div class="field">
+            <label for="exemplarLabelTitle">Título na etiqueta</label>
+            <input id="exemplarLabelTitle" type="text" />
+          </div>
 
-        <div class="field">
-          <label for="exemplarLabelTitle">Título na etiqueta</label>
-          <input id="exemplarLabelTitle" type="text" />
-        </div>
+          <div class="field">
+            <label for="exemplarLabelCDD">CDD na etiqueta</label>
+            <input id="exemplarLabelCDD" type="text" />
+          </div>
 
-        <div class="field">
-          <label for="exemplarLabelCDD">CDD na etiqueta</label>
-          <input id="exemplarLabelCDD" type="text" />
-        </div>
+          <div class="field">
+            <label for="exemplarLabelNote">Nota curta de etiqueta</label>
+            <input id="exemplarLabelNote" type="text" />
+          </div>
 
-        <div class="field">
-          <label for="exemplarLabelNote">Nota curta de etiqueta</label>
-          <input id="exemplarLabelNote" type="text" />
-        </div>
+          <div class="field" style="grid-column: span 3;">
+            <label for="exemplarNotes">Observações</label>
+            <textarea id="exemplarNotes"></textarea>
+          </div>
 
-        <div class="field" style="grid-column: span 3;">
-          <label for="exemplarNotes">Observações</label>
-          <textarea id="exemplarNotes"></textarea>
-        </div>
+          <div class="actions" style="grid-column: span 3;">
+            <button id="saveExemplarDraftBtn" type="submit" class="button primary">Salvar rascunho</button>
+            <button id="exemplarReadyBtn" type="button" class="button secondary">Marcar como pronto</button>
+            <button id="publishExemplarDraftBtn" type="button" class="button success">Publicar este rascunho</button>
+          </div>
+        </form>
 
-        <div class="actions" style="grid-column: span 3;">
-          <button id="saveExemplarDraftBtn" type="submit" class="primary">Salvar rascunho</button>
-          <button id="exemplarReadyBtn" type="button" class="secondary">Marcar como pronto</button>
-          <button id="publishExemplarDraftBtn" type="button" class="success">Publicar este rascunho</button>
-        </div>
-      </form>
-
-      <div class="card" style="margin-top:16px;">
-        <h4>Prévia da etiqueta</h4>
-        <div id="labelPreview" class="grid cols-4">
-          <div class="pill info">Tombo: <span id="labelPrevTombo">—</span></div>
-          <div class="pill info">Referência: <span id="labelPrevBibRef">—</span></div>
-          <div class="pill info">Autor: <span id="labelPrevAuthor">—</span></div>
-          <div class="pill info">CDD: <span id="labelPrevCDD">—</span></div>
-        </div>
-        <div style="margin-top:12px; padding:14px; border-radius:16px; border:1px dashed rgba(255,255,255,0.16); background:rgba(255,255,255,0.02);">
-          <strong id="labelPrevTitle">Título</strong>
-          <div id="labelPrevNote" class="hint" style="margin-top:6px;">Sem nota de etiqueta.</div>
+        <div class="card" style="margin-top:16px;">
+          <h4>Prévia da etiqueta</h4>
+          <div id="labelPreview" class="grid cols-4">
+            <div class="pill info">Tombo: <span id="labelPrevTombo">—</span></div>
+            <div class="pill info">Referência: <span id="labelPrevBibRef">—</span></div>
+            <div class="pill info">Autor: <span id="labelPrevAuthor">—</span></div>
+            <div class="pill info">CDD: <span id="labelPrevCDD">—</span></div>
+          </div>
+          <div style="margin-top:12px; padding:14px; border-radius:16px; border:1px dashed rgba(255,255,255,.16); background:rgba(255,255,255,.02);">
+            <strong id="labelPrevTitle">Título</strong>
+            <div id="labelPrevNote" class="hint" style="margin-top:6px;">Sem nota de etiqueta.</div>
+          </div>
         </div>
       </div>
     </section>
@@ -835,42 +937,43 @@
           <p>Consulte rascunhos de livros, autores e exemplares. Você pode abrir para edição, atribuir lote e publicar individualmente.</p>
         </div>
         <div class="inline">
-          <button id="refreshQueueBtn" class="secondary">Atualizar fila</button>
+          <button id="refreshQueueBtn" class="button secondary">Atualizar fila</button>
         </div>
       </div>
+      <div class="panel-body">
+        <div class="grid cols-4" style="margin-bottom:16px;">
+          <div class="field">
+            <label for="queueTypeFilter">Tipo</label>
+            <select id="queueTypeFilter">
+              <option value="">Todos</option>
+              <option value="book">Livros</option>
+              <option value="author">Autores</option>
+              <option value="exemplar">Exemplares</option>
+            </select>
+          </div>
+          <div class="field">
+            <label for="queueStatusFilter">Situação</label>
+            <select id="queueStatusFilter">
+              <option value="">Todas</option>
+              <option value="draft">Em rascunho</option>
+              <option value="ready">Pronto</option>
+              <option value="published">Publicado</option>
+              <option value="cancelled">Cancelado</option>
+            </select>
+          </div>
+          <div class="field">
+            <label for="queueSearch">Buscar</label>
+            <input id="queueSearch" type="text" placeholder="Título, autor, tombo, referência…" />
+          </div>
+          <div class="field">
+            <label for="queueBatchAssign">Atribuir lote</label>
+            <select id="queueBatchAssign"></select>
+          </div>
+        </div>
 
-      <div class="grid cols-4" style="margin-bottom:16px;">
-        <div class="field">
-          <label for="queueTypeFilter">Tipo</label>
-          <select id="queueTypeFilter">
-            <option value="">Todos</option>
-            <option value="book">Livros</option>
-            <option value="author">Autores</option>
-            <option value="exemplar">Exemplares</option>
-          </select>
-        </div>
-        <div class="field">
-          <label for="queueStatusFilter">Situação</label>
-          <select id="queueStatusFilter">
-            <option value="">Todas</option>
-            <option value="draft">Em rascunho</option>
-            <option value="ready">Pronto</option>
-            <option value="published">Publicado</option>
-            <option value="cancelled">Cancelado</option>
-          </select>
-        </div>
-        <div class="field">
-          <label for="queueSearch">Buscar</label>
-          <input id="queueSearch" type="text" placeholder="Título, autor, tombo, referência…" />
-        </div>
-        <div class="field">
-          <label for="queueBatchAssign">Atribuir lote</label>
-          <select id="queueBatchAssign"></select>
-        </div>
+        <div id="queueMessage" class="message"></div>
+        <div id="queueTableWrap" class="table-wrap"></div>
       </div>
-
-      <div id="queueMessage" class="message"></div>
-      <div id="queueTableWrap" class="table-wrap"></div>
     </section>
 
     <section id="batchesPanel" class="panel">
@@ -880,41 +983,42 @@
           <p>Crie um lote, agrupe fichas e publique tudo de uma vez para o catálogo.</p>
         </div>
       </div>
+      <div class="panel-body">
+        <div class="split">
+          <div class="card">
+            <h4>Novo lote</h4>
+            <div id="batchMessage" class="message"></div>
+            <form id="batchForm" class="grid">
+              <div class="field">
+                <label for="batchName">Nome do lote</label>
+                <input id="batchName" type="text" placeholder="Lote março 2026" required />
+              </div>
+              <div class="field">
+                <label for="batchNotes">Observações</label>
+                <textarea id="batchNotes" placeholder="Revisão de livros anarquistas, autores novos, tombo já etiquetado…"></textarea>
+              </div>
+              <div class="actions">
+                <button class="button primary" type="submit">Criar lote</button>
+              </div>
+            </form>
+          </div>
 
-      <div class="split">
-        <div class="card">
-          <h4>Novo lote</h4>
-          <div id="batchMessage" class="message"></div>
-          <form id="batchForm" class="grid">
+          <div class="card">
+            <h4>Publicar lote</h4>
             <div class="field">
-              <label for="batchName">Nome do lote</label>
-              <input id="batchName" type="text" placeholder="Lote março 2026" required />
-            </div>
-            <div class="field">
-              <label for="batchNotes">Observações</label>
-              <textarea id="batchNotes" placeholder="Revisão de livros anarquistas, autores novos, tombo já etiquetado…"></textarea>
+              <label for="publishBatchId">Escolher lote</label>
+              <select id="publishBatchId"></select>
             </div>
             <div class="actions">
-              <button class="primary" type="submit">Criar lote</button>
+              <button id="publishBatchBtn" class="button success">Publicar lote selecionado</button>
+              <button id="refreshBatchesBtn" class="button secondary">Atualizar lista</button>
             </div>
-          </form>
+            <p class="hint">A publicação em lote chama a função <code>publish_catalog_batch</code> e envia para o catálogo todas as fichas em rascunho ou prontas dentro desse lote.</p>
+          </div>
         </div>
 
-        <div class="card">
-          <h4>Publicar lote</h4>
-          <div class="field">
-            <label for="publishBatchId">Escolher lote</label>
-            <select id="publishBatchId"></select>
-          </div>
-          <div class="actions">
-            <button id="publishBatchBtn" class="success">Publicar lote selecionado</button>
-            <button id="refreshBatchesBtn" class="secondary">Atualizar lista</button>
-          </div>
-          <p class="hint">A publicação em lote chama a função <code>publish_catalog_batch</code> e envia para o catálogo todas as fichas em rascunho ou prontas dentro desse lote.</p>
-        </div>
+        <div style="margin-top:16px;" id="batchListWrap" class="table-wrap"></div>
       </div>
-
-      <div style="margin-top:16px;" id="batchListWrap" class="table-wrap"></div>
     </section>
 
     <section id="catalogPanel" class="panel">
@@ -924,41 +1028,42 @@
           <p>Busque fichas já publicadas e gere um rascunho de edição sem alterar imediatamente a versão do catálogo.</p>
         </div>
       </div>
+      <div class="panel-body">
+        <div class="grid cols-4" style="margin-bottom:16px;">
+          <div class="field">
+            <label for="catalogSearch">Buscar no catálogo</label>
+            <input id="catalogSearch" type="text" placeholder="Título, autor, editora, referência…" />
+          </div>
+          <div class="field">
+            <label for="catalogBatchId">Lote para o rascunho</label>
+            <select id="catalogBatchId"></select>
+          </div>
+          <div class="field">
+            <label for="catalogAuthorSearch">Buscar autores</label>
+            <input id="catalogAuthorSearch" type="text" placeholder="Nome do autor" />
+          </div>
+          <div class="field">
+            <label for="catalogExemplarSearch">Buscar exemplares</label>
+            <input id="catalogExemplarSearch" type="text" placeholder="Tombo ou referência" />
+          </div>
+        </div>
 
-      <div class="grid cols-4" style="margin-bottom:16px;">
-        <div class="field">
-          <label for="catalogSearch">Buscar no catálogo</label>
-          <input id="catalogSearch" type="text" placeholder="Título, autor, editora, referência…" />
-        </div>
-        <div class="field">
-          <label for="catalogBatchId">Lote para o rascunho</label>
-          <select id="catalogBatchId"></select>
-        </div>
-        <div class="field">
-          <label for="catalogAuthorSearch">Buscar autores</label>
-          <input id="catalogAuthorSearch" type="text" placeholder="Nome do autor" />
-        </div>
-        <div class="field">
-          <label for="catalogExemplarSearch">Buscar exemplares</label>
-          <input id="catalogExemplarSearch" type="text" placeholder="Tombo ou referência" />
-        </div>
-      </div>
+        <div id="catalogMessage" class="message"></div>
 
-      <div id="catalogMessage" class="message"></div>
-
-      <div class="card" style="margin-bottom:16px;">
-        <h4>Livros publicados</h4>
-        <div id="catalogBooksWrap" class="table-wrap"></div>
-      </div>
-
-      <div class="grid cols-2">
-        <div class="card">
-          <h4>Autores publicados</h4>
-          <div id="catalogAuthorsWrap" class="table-wrap"></div>
+        <div class="card" style="margin-bottom:16px;">
+          <h4>Livros publicados</h4>
+          <div id="catalogBooksWrap" class="table-wrap"></div>
         </div>
-        <div class="card">
-          <h4>Exemplares publicados</h4>
-          <div id="catalogExemplarsWrap" class="table-wrap"></div>
+
+        <div class="grid cols-2">
+          <div class="card">
+            <h4>Autores publicados</h4>
+            <div id="catalogAuthorsWrap" class="table-wrap"></div>
+          </div>
+          <div class="card">
+            <h4>Exemplares publicados</h4>
+            <div id="catalogExemplarsWrap" class="table-wrap"></div>
+          </div>
         </div>
       </div>
     </section>
@@ -1015,6 +1120,8 @@
       catalogBooksWrap: el('catalogBooksWrap'),
       catalogAuthorsWrap: el('catalogAuthorsWrap'),
       catalogExemplarsWrap: el('catalogExemplarsWrap'),
+      bookCoverFileName: el('bookCoverFileName'),
+      authorPhotoFileName: el('authorPhotoFileName'),
     };
 
     function showMessage(target, text, kind = 'info') {
@@ -1046,7 +1153,7 @@
 
     function setPreviewImage(imgEl, path, bucket) {
       if (!path) {
-        imgEl.src = '';
+        imgEl.src = 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" width="200" height="280"><rect width="100%" height="100%" fill="#111827"/><text x="50%" y="50%" dominant-baseline="middle" text-anchor="middle" fill="#d1d5db" font-family="Arial" font-size="18">Sem imagem</text></svg>`);
         imgEl.alt = 'Sem imagem';
         return;
       }
@@ -1086,10 +1193,7 @@
     }
 
     function refreshBatchSelects() {
-      const ids = [
-        'bookBatchId', 'authorBatchId', 'exemplarBatchId', 'queueBatchAssign',
-        'publishBatchId', 'catalogBatchId'
-      ];
+      const ids = ['bookBatchId','authorBatchId','exemplarBatchId','queueBatchAssign','publishBatchId','catalogBatchId'];
       ids.forEach(id => {
         const node = el(id);
         if (!node) return;
@@ -1108,7 +1212,7 @@
       if (!value || !value.trim()) return fallback;
       try {
         return JSON.parse(value);
-      } catch (err) {
+      } catch {
         throw new Error('O JSON informado não está válido.');
       }
     }
@@ -1205,6 +1309,8 @@
       refs.bookDraftModePill.textContent = 'Novo rascunho';
       el('bookMarcJson').value = '';
       el('bookCoverPath').value = '';
+      el('bookCoverFile').value = '';
+      refs.bookCoverFileName.textContent = 'Nenhum arquivo selecionado';
       setPreviewImage(refs.bookCoverPreview, '', 'covers');
       clearMessage(refs.bookMessage);
     }
@@ -1216,6 +1322,8 @@
       el('authorAction').value = 'create';
       refs.authorDraftModePill.textContent = 'Novo rascunho';
       el('authorPhotoPath').value = '';
+      el('authorPhotoFile').value = '';
+      refs.authorPhotoFileName.textContent = 'Nenhum arquivo selecionado';
       setPreviewImage(refs.authorPhotoPreview, '', 'authors');
       clearMessage(refs.authorMessage);
     }
@@ -1239,8 +1347,19 @@
       refs.labelPrevNote.textContent = el('exemplarLabelNote').value || 'Sem nota de etiqueta.';
     }
 
-    ['exemplarTombo','exemplarBibRef','exemplarLabelAuthor','exemplarLabelCDD','exemplarLabelTitle','exemplarLabelNote']
-      .forEach(id => el(id).addEventListener('input', updateLabelPreview));
+    ['exemplarTombo','exemplarBibRef','exemplarLabelAuthor','exemplarLabelCDD','exemplarLabelTitle','exemplarLabelNote'].forEach(id => {
+      el(id).addEventListener('input', updateLabelPreview);
+    });
+
+    el('bookCoverFile').addEventListener('change', () => {
+      const file = el('bookCoverFile').files[0];
+      refs.bookCoverFileName.textContent = file ? file.name : 'Nenhum arquivo selecionado';
+    });
+
+    el('authorPhotoFile').addEventListener('change', () => {
+      const file = el('authorPhotoFile').files[0];
+      refs.authorPhotoFileName.textContent = file ? file.name : 'Nenhum arquivo selecionado';
+    });
 
     async function requireSession() {
       const { data, error } = await supabase.auth.getSession();
@@ -1259,11 +1378,7 @@
     async function loadProfile() {
       const userId = state.session?.user?.id;
       if (!userId) throw new Error('Sessão sem usuário válido.');
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('id, email, first_name, last_name, is_librarian')
-        .eq('id', userId)
-        .single();
+      const { data, error } = await supabase.from('profiles').select('id, email, first_name, last_name, is_librarian').eq('id', userId).single();
       if (error) throw error;
       state.profile = data;
       state.isLibrarian = !!data?.is_librarian;
@@ -1281,10 +1396,7 @@
     }
 
     async function loadBatches() {
-      const { data, error } = await supabase
-        .from('catalog_batches')
-        .select('*')
-        .order('created_at', { ascending: false });
+      const { data, error } = await supabase.from('catalog_batches').select('*').order('created_at', { ascending: false });
       if (error) throw error;
       state.batches = data || [];
       refreshBatchSelects();
@@ -1292,10 +1404,7 @@
     }
 
     async function loadQueue() {
-      const { data, error } = await supabase
-        .from('v_catalog_queue')
-        .select('*')
-        .order('updated_at', { ascending: false });
+      const { data, error } = await supabase.from('v_catalog_queue').select('*').order('updated_at', { ascending: false });
       if (error) throw error;
       state.queueItems = data || [];
       renderQueue();
@@ -1335,14 +1444,13 @@
       const dbPayload = { ...payload };
       if (!dbPayload.id) delete dbPayload.id;
 
-      let query = supabase.from(table);
       let result;
       if (isUpdate) {
         const id = dbPayload.id;
         delete dbPayload.id;
-        result = await query.update(dbPayload).eq('id', id).select().single();
+        result = await supabase.from(table).update(dbPayload).eq('id', id).select().single();
       } else {
-        result = await query.insert(dbPayload).select().single();
+        result = await supabase.from(table).insert(dbPayload).select().single();
       }
 
       if (result.error) throw result.error;
@@ -1378,6 +1486,7 @@
       el('bookCoverPath').value = record.cover_object_path || '';
       el('bookMarcJson').value = record.marc_json ? JSON.stringify(record.marc_json, null, 2) : '';
       setPreviewImage(refs.bookCoverPreview, record.cover_object_path || '', 'covers');
+      refs.bookCoverFileName.textContent = 'Nenhum arquivo selecionado';
     }
 
     function fillAuthorForm(record) {
@@ -1402,6 +1511,7 @@
       el('authorPhotoPath').value = record.photo_object_path || '';
       el('authorNotes').value = record.notes || '';
       setPreviewImage(refs.authorPhotoPreview, record.photo_object_path || '', 'authors');
+      refs.authorPhotoFileName.textContent = 'Nenhum arquivo selecionado';
     }
 
     function fillExemplarForm(record) {
@@ -1436,11 +1546,7 @@
     }
 
     async function publishSingleDraft(type, id) {
-      const rpcMap = {
-        book: 'publish_book_draft',
-        author: 'publish_author_draft',
-        exemplar: 'publish_exemplar_draft',
-      };
+      const rpcMap = { book: 'publish_book_draft', author: 'publish_author_draft', exemplar: 'publish_exemplar_draft' };
       const rpc = rpcMap[type];
       if (!rpc) return;
       const { error } = await supabase.rpc(rpc, { p_draft_id: id });
@@ -1450,17 +1556,10 @@
     }
 
     async function assignDraftToBatch(type, id, batchId) {
-      const tableMap = {
-        book: 'book_drafts',
-        author: 'author_drafts',
-        exemplar: 'exemplar_drafts',
-      };
+      const tableMap = { book: 'book_drafts', author: 'author_drafts', exemplar: 'exemplar_drafts' };
       const table = tableMap[type];
       if (!table) return;
-      const { error } = await supabase
-        .from(table)
-        .update({ batch_id: batchId || null, updated_by: state.profile.id })
-        .eq('id', id);
+      const { error } = await supabase.from(table).update({ batch_id: batchId || null, updated_by: state.profile.id }).eq('id', id);
       if (error) throw error;
       await Promise.all([loadQueue(), loadBatches()]);
       updateStats();
@@ -1471,16 +1570,11 @@
       const statusFilter = el('queueStatusFilter').value;
       const search = el('queueSearch').value.trim().toLowerCase();
       const targetBatchId = el('queueBatchAssign').value;
-
       let items = [...state.queueItems];
       if (typeFilter) items = items.filter(item => item.item_type === typeFilter);
       if (statusFilter) items = items.filter(item => item.status === statusFilter);
       if (search) {
-        items = items.filter(item => [item.reference_code, item.display_title, item.display_subtitle]
-          .filter(Boolean)
-          .join(' ')
-          .toLowerCase()
-          .includes(search));
+        items = items.filter(item => [item.reference_code, item.display_title, item.display_subtitle].filter(Boolean).join(' ').toLowerCase().includes(search));
       }
 
       if (!items.length) {
@@ -1516,24 +1610,20 @@
                 <td>${sanitize(formatDate(item.updated_at))}</td>
                 <td>
                   <div class="row-actions">
-                    <button class="small secondary" data-action="edit-queue" data-type="${sanitize(item.item_type)}" data-id="${item.draft_id}">Editar</button>
-                    <button class="small success" data-action="publish-queue" data-type="${sanitize(item.item_type)}" data-id="${item.draft_id}">Publicar</button>
-                    <button class="small ghost" data-action="assign-queue" data-type="${sanitize(item.item_type)}" data-id="${item.draft_id}" data-batch="${sanitize(targetBatchId || '')}">Atribuir lote</button>
+                    <button class="btn-inline small secondary" data-action="edit-queue" data-type="${sanitize(item.item_type)}" data-id="${item.draft_id}">Editar</button>
+                    <button class="btn-inline small success" data-action="publish-queue" data-type="${sanitize(item.item_type)}" data-id="${item.draft_id}">Publicar</button>
+                    <button class="btn-inline small ghost" data-action="assign-queue" data-type="${sanitize(item.item_type)}" data-id="${item.draft_id}" data-batch="${sanitize(targetBatchId || '')}">Atribuir lote</button>
                   </div>
                 </td>
               </tr>
             `).join('')}
           </tbody>
-        </table>
-      `;
+        </table>`;
 
       refs.queueTableWrap.querySelectorAll('[data-action="edit-queue"]').forEach(btn => {
         btn.addEventListener('click', async () => {
-          try {
-            await fetchDraftAndEdit(btn.dataset.type, Number(btn.dataset.id));
-          } catch (error) {
-            showMessage(refs.queueMessage, error.message, 'error');
-          }
+          try { await fetchDraftAndEdit(btn.dataset.type, Number(btn.dataset.id)); }
+          catch (error) { showMessage(refs.queueMessage, error.message, 'error'); }
         });
       });
 
@@ -1591,22 +1681,16 @@
                 <td>${sanitize(batch.notes || '—')}</td>
                 <td>${sanitize(formatDate(batch.created_at))}</td>
                 <td>${sanitize(formatDate(batch.published_at))}</td>
-              </tr>
-            `).join('')}
+              </tr>`).join('')}
           </tbody>
-        </table>
-      `;
+        </table>`;
     }
 
     function renderCatalogBooks() {
       const search = el('catalogSearch').value.trim().toLowerCase();
       let items = [...state.books];
       if (search) {
-        items = items.filter(book => [book.bib_ref, book.titulo, book.autor, book.editora, book.ano]
-          .filter(Boolean)
-          .join(' ')
-          .toLowerCase()
-          .includes(search));
+        items = items.filter(book => [book.bib_ref, book.titulo, book.autor, book.editora, book.ano].filter(Boolean).join(' ').toLowerCase().includes(search));
       }
       if (!items.length) {
         refs.catalogBooksWrap.innerHTML = '<div class="empty">Nenhum livro encontrado.</div>';
@@ -1636,25 +1720,16 @@
                 <td>${sanitize(book.editora || '—')}</td>
                 <td>${sanitize(book.ano || '—')}</td>
                 <td>${sanitize(book.total_exemplares || 0)}</td>
-                <td>
-                  <div class="row-actions">
-                    <button class="small secondary" data-action="draft-book" data-book-id="${book.id}">Criar rascunho de edição</button>
-                  </div>
-                </td>
-              </tr>
-            `).join('')}
+                <td><div class="row-actions"><button class="btn-inline small secondary" data-action="draft-book" data-book-id="${book.id}">Criar rascunho de edição</button></div></td>
+              </tr>`).join('')}
           </tbody>
-        </table>
-      `;
+        </table>`;
 
       refs.catalogBooksWrap.querySelectorAll('[data-action="draft-book"]').forEach(btn => {
         btn.addEventListener('click', async () => {
           try {
             const batchId = el('catalogBatchId').value || null;
-            const { data, error } = await supabase.rpc('create_book_draft_from_book', {
-              p_book_id: Number(btn.dataset.bookId),
-              p_batch_id: batchId ? Number(batchId) : null,
-            });
+            const { data, error } = await supabase.rpc('create_book_draft_from_book', { p_book_id: Number(btn.dataset.bookId), p_batch_id: batchId ? Number(batchId) : null });
             if (error) throw error;
             await Promise.all([loadQueue(), loadCatalog(), loadBatches()]);
             updateStats();
@@ -1671,11 +1746,7 @@
       const search = el('catalogAuthorSearch').value.trim().toLowerCase();
       let items = [...state.authors];
       if (search) {
-        items = items.filter(author => [author.preferred_name, author.sort_name, author.country]
-          .filter(Boolean)
-          .join(' ')
-          .toLowerCase()
-          .includes(search));
+        items = items.filter(author => [author.preferred_name, author.sort_name, author.country].filter(Boolean).join(' ').toLowerCase().includes(search));
       }
       if (!items.length) {
         refs.catalogAuthorsWrap.innerHTML = '<div class="empty">Nenhum autor encontrado.</div>';
@@ -1699,25 +1770,16 @@
                 <td>${sanitize(author.preferred_name || '—')}</td>
                 <td>${sanitize(author.country || '—')}</td>
                 <td>${sanitize(author.source_label || author.source_kind || '—')}</td>
-                <td>
-                  <div class="row-actions">
-                    <button class="small secondary" data-action="draft-author" data-author-id="${author.id}">Criar rascunho de edição</button>
-                  </div>
-                </td>
-              </tr>
-            `).join('')}
+                <td><div class="row-actions"><button class="btn-inline small secondary" data-action="draft-author" data-author-id="${author.id}">Criar rascunho de edição</button></div></td>
+              </tr>`).join('')}
           </tbody>
-        </table>
-      `;
+        </table>`;
 
       refs.catalogAuthorsWrap.querySelectorAll('[data-action="draft-author"]').forEach(btn => {
         btn.addEventListener('click', async () => {
           try {
             const batchId = el('catalogBatchId').value || null;
-            const { data, error } = await supabase.rpc('create_author_draft_from_author', {
-              p_author_id: Number(btn.dataset.authorId),
-              p_batch_id: batchId ? Number(batchId) : null,
-            });
+            const { data, error } = await supabase.rpc('create_author_draft_from_author', { p_author_id: Number(btn.dataset.authorId), p_batch_id: batchId ? Number(batchId) : null });
             if (error) throw error;
             await Promise.all([loadQueue(), loadCatalog(), loadBatches()]);
             updateStats();
@@ -1734,11 +1796,7 @@
       const search = el('catalogExemplarSearch').value.trim().toLowerCase();
       let items = [...state.exemplars];
       if (search) {
-        items = items.filter(ex => [ex.tombo, ex.bib_ref, ex.autor_etiqueta, ex.titulo_etiqueta]
-          .filter(Boolean)
-          .join(' ')
-          .toLowerCase()
-          .includes(search));
+        items = items.filter(ex => [ex.tombo, ex.bib_ref, ex.autor_etiqueta, ex.titulo_etiqueta].filter(Boolean).join(' ').toLowerCase().includes(search));
       }
       if (!items.length) {
         refs.catalogExemplarsWrap.innerHTML = '<div class="empty">Nenhum exemplar encontrado.</div>';
@@ -1764,25 +1822,16 @@
                 <td>${sanitize(ex.bib_ref || '—')}</td>
                 <td>${sanitize(ex.autor_etiqueta || '—')}</td>
                 <td>${sanitize(ex.titulo_etiqueta || '—')}</td>
-                <td>
-                  <div class="row-actions">
-                    <button class="small secondary" data-action="draft-exemplar" data-exemplar-id="${ex.exemplar_id}">Criar rascunho de edição</button>
-                  </div>
-                </td>
-              </tr>
-            `).join('')}
+                <td><div class="row-actions"><button class="btn-inline small secondary" data-action="draft-exemplar" data-exemplar-id="${ex.exemplar_id}">Criar rascunho de edição</button></div></td>
+              </tr>`).join('')}
           </tbody>
-        </table>
-      `;
+        </table>`;
 
       refs.catalogExemplarsWrap.querySelectorAll('[data-action="draft-exemplar"]').forEach(btn => {
         btn.addEventListener('click', async () => {
           try {
             const batchId = el('catalogBatchId').value || null;
-            const { data, error } = await supabase.rpc('create_exemplar_draft_from_exemplar', {
-              p_exemplar_id: Number(btn.dataset.exemplarId),
-              p_batch_id: batchId ? Number(batchId) : null,
-            });
+            const { data, error } = await supabase.rpc('create_exemplar_draft_from_exemplar', { p_exemplar_id: Number(btn.dataset.exemplarId), p_batch_id: batchId ? Number(batchId) : null });
             if (error) throw error;
             await Promise.all([loadQueue(), loadCatalog(), loadBatches()]);
             updateStats();
@@ -1796,10 +1845,7 @@
     }
 
     async function uploadFileToBucket(bucket, file, path) {
-      const { error } = await supabase.storage.from(bucket).upload(path, file, {
-        upsert: true,
-        cacheControl: '3600',
-      });
+      const { error } = await supabase.storage.from(bucket).upload(path, file, { upsert: true, cacheControl: '3600' });
       if (error) throw error;
       return path;
     }
@@ -1886,10 +1932,7 @@
 
     async function markDraftReady(table, id, target) {
       if (!id) throw new Error('Salve o rascunho antes de marcá-lo como pronto.');
-      const { error } = await supabase
-        .from(table)
-        .update({ status: 'ready', updated_by: state.profile.id })
-        .eq('id', Number(id));
+      const { error } = await supabase.from(table).update({ status: 'ready', updated_by: state.profile.id }).eq('id', Number(id));
       if (error) throw error;
       await Promise.all([loadQueue(), loadBatches()]);
       updateStats();
@@ -1956,11 +1999,7 @@
       try {
         const name = el('batchName').value.trim();
         if (!name) throw new Error('Informe um nome para o lote.');
-        const { error } = await supabase.from('catalog_batches').insert({
-          name,
-          notes: el('batchNotes').value.trim() || null,
-          created_by: state.profile.id,
-        });
+        const { error } = await supabase.from('catalog_batches').insert({ name, notes: el('batchNotes').value.trim() || null, created_by: state.profile.id });
         if (error) throw error;
         el('batchForm').reset();
         await loadBatches();
@@ -1988,7 +2027,6 @@
     el('refreshAllBtn').addEventListener('click', refreshAll);
     el('refreshQueueBtn').addEventListener('click', loadQueue);
     el('refreshBatchesBtn').addEventListener('click', loadBatches);
-
     el('bookDraftResetBtn').addEventListener('click', resetBookForm);
     el('authorDraftResetBtn').addEventListener('click', resetAuthorForm);
     el('exemplarDraftResetBtn').addEventListener('click', resetExemplarForm);
@@ -2004,9 +2042,7 @@
 
     supabase.auth.onAuthStateChange(async (_event, session) => {
       state.session = session;
-      if (session) {
-        refs.userEmail.textContent = session.user.email || 'Usuário autenticado';
-      }
+      if (session) refs.userEmail.textContent = session.user.email || 'Usuário autenticado';
     });
 
     resetBookForm();
