@@ -3,7 +3,22 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>BLMF | Catálogo</title>
+<title>Catálogo da BLMF</title>
+<meta name="description" content="Catálogo da BLMF — Biblioteca Libertária Maxwell Ferreira. Consulte referências, autores, títulos, editoras, anos, CDD e disponibilidade.">
+<meta name="theme-color" content="#b30018">
+<link rel="canonical" href="https://cclamazonia-cmd.github.io/blmf-catalogo/">
+<meta property="og:locale" content="pt_BR">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="BLMF">
+<meta property="og:title" content="Catálogo da BLMF">
+<meta property="og:description" content="Biblioteca Libertária Maxwell Ferreira — catálogo público com busca por autor, título, editora, ano, CDD e disponibilidade.">
+<meta property="og:url" content="https://cclamazonia-cmd.github.io/blmf-catalogo/">
+<meta property="og:image" content="https://cclamazonia.noblogs.org/files/2026/03/logo_detoure_BLMF.png">
+<meta property="og:image:alt" content="Logotipo da Biblioteca Libertária Maxwell Ferreira">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="Catálogo da BLMF">
+<meta name="twitter:description" content="Biblioteca Libertária Maxwell Ferreira — catálogo público da BLMF.">
+<meta name="twitter:image" content="https://cclamazonia.noblogs.org/files/2026/03/logo_detoure_BLMF.png">
 <link rel="icon" type="image/png" href="https://cclamazonia.noblogs.org/files/2026/03/logo_detoure_BLMF.png">
 <link rel="shortcut icon" href="https://cclamazonia.noblogs.org/files/2026/03/logo_detoure_BLMF.png">
 <link rel="apple-touch-icon" href="https://cclamazonia.noblogs.org/files/2026/03/logo_detoure_BLMF.png">
@@ -47,20 +62,46 @@ a { color: inherit; }
 .hero h1 { margin:0 0 8px; font-size: clamp(1.8rem, 3vw, 3rem); line-height:1.05; }
 .hero p { margin:0; color: rgba(255,255,255,.95); font-size:1rem; }
 .topbar-logo { width: 150px; height:auto; flex:0 0 auto; }
-.toolbar { margin-bottom:18px; }
+.toolbar {
+  margin-bottom:18px;
+  display:flex;
+  flex-direction:column;
+  gap:12px;
+}
 .filters-grid {
   display:grid;
-  grid-template-columns: minmax(300px,1.5fr) minmax(220px,1fr) minmax(220px,1fr) minmax(170px,.8fr) minmax(150px,.7fr) minmax(200px,.9fr) auto auto auto;
+  grid-template-columns: minmax(340px,1.45fr) minmax(250px,1.05fr) minmax(250px,1.05fr) minmax(230px,.9fr);
   gap:12px;
   align-items:end;
 }
-.field { display:flex; flex-direction:column; gap:6px; min-width:0; }
-.field-label { font-size:.9rem; color:#fff; font-weight:700; }
-.field-actions { display:flex; flex-wrap:wrap; gap:10px; align-items:end; justify-content:flex-end; }
+.field {
+  display:flex;
+  flex-direction:column;
+  gap:8px;
+  min-width:0;
+  padding:10px 12px 12px;
+  border-radius:18px;
+  background: linear-gradient(180deg, rgba(179,0,24,.14), rgba(255,255,255,.03));
+  border:1px solid rgba(255,255,255,.10);
+}
+.field-label {
+  font-size:.93rem;
+  color:#ffe3e7;
+  font-weight:800;
+  letter-spacing:.01em;
+  text-shadow:0 1px 0 rgba(0,0,0,.28);
+}
+.toolbar-actions {
+  display:flex;
+  flex-wrap:wrap;
+  gap:10px;
+  align-items:center;
+}
+
 .input, .select, .button {
   width:100%;
-  border:1px solid rgba(255,255,255,.12);
-  background: rgba(18,18,18,.96);
+  border:1px solid rgba(255,255,255,.18);
+  background: rgba(10,10,10,.98);
   color: #fff;
   border-radius:14px;
   padding:14px 14px;
@@ -68,10 +109,11 @@ a { color: inherit; }
   outline:none;
   box-shadow: var(--shadow);
 }
-.input::placeholder { color: #d4d4d4; opacity: .95; }
+.select { color:#fff; font-weight:600; }
+.input::placeholder { color: #f0d6da; opacity: 1; }
 .input:focus, .select:focus {
-  border-color: rgba(225,29,47,.9);
-  box-shadow: 0 0 0 3px rgba(225,29,47,.22), var(--shadow);
+  border-color: rgba(225,29,47,.95);
+  box-shadow: 0 0 0 3px rgba(225,29,47,.24), var(--shadow);
 }
 .button {
   cursor:pointer;
@@ -104,6 +146,23 @@ a { color: inherit; }
   color: var(--muted);
   box-shadow: var(--shadow);
 }
+.toolbar-actions .button,
+.toolbar-actions .action-link {
+  min-height:48px;
+  padding:12px 16px;
+  font-size:.95rem;
+}
+.toolbar-actions .action-link {
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  border-radius:14px;
+  border:1px solid rgba(255,255,255,.14);
+  background: rgba(18,18,18,.96);
+  color:#fff;
+  font-weight:600;
+  text-decoration:none;
+}
 .stats { display:flex; flex-wrap:wrap; gap:10px; margin:0 0 16px; }
 .pill {
   border:1px solid rgba(255,255,255,.08);
@@ -132,7 +191,7 @@ a { color: inherit; }
 .sheet-head .title { font-weight:700; }
 .small { font-size:.86rem; color: var(--muted); }
 .table-wrap { overflow:auto; max-height:72vh; }
-table { width:100%; border-collapse:separate; border-spacing:0; min-width:1720px; table-layout:fixed; }
+table { width:100%; border-collapse:separate; border-spacing:0; min-width:1560px; table-layout:fixed; }
 thead th {
   position:sticky;
   top:0;
@@ -160,15 +219,18 @@ tbody td {
 }
 tbody tr:nth-child(odd) td { background: rgba(255,255,255,.01); }
 tbody tr:hover td { background: rgba(179,0,24,.08); }
-.col-ref { width: 8%; white-space: nowrap; font-variant-numeric: tabular-nums; }
-.col-autor { width: 14.5%; }
-.col-titulo { width: 22%; }
-.col-ano { width: 6.5%; white-space: nowrap; }
-.col-editora { width: 14%; }
-.col-cdd { width: 7%; }
-.col-status { width: 11%; }
-.col-reserva { width: 11%; }
-.col-acoes { width: 6%; white-space: nowrap; }
+.col-ref { width: 8.5%; white-space: nowrap; font-variant-numeric: tabular-nums; }
+.col-autor { width: 16%; }
+.col-titulo { width: 26%; }
+.col-ano { width: 7%; white-space: nowrap; }
+.col-editora { width: 15.5%; }
+.col-cdd { width: 8%; }
+.col-status { width: 12%; }
+.col-reserva { width: 10.5%; white-space: nowrap; }
+.col-acoes { width: 8%; white-space: nowrap; }
+.reserve-slot { display:flex; flex-direction:column; gap:6px; align-items:flex-start; }
+.reserve-note { font-size:.77rem; color: var(--muted); line-height:1.25; }
+.reserve-btn[disabled] { opacity:.6; cursor:not-allowed; }
 .ref-main { white-space:nowrap; }
 .status-badge {
   display:inline-flex;
@@ -198,48 +260,6 @@ tbody tr:hover td { background: rgba(179,0,24,.08); }
   cursor:pointer;
   text-decoration:none;
 }
-.reserve-cell {
-  display:flex;
-  flex-direction:column;
-  gap:6px;
-  min-width:0;
-}
-.reserve-btn {
-  width:100%;
-  min-height:36px;
-  border:none;
-  border-radius:12px;
-  padding:9px 10px;
-  font-size:.82rem;
-  font-weight:700;
-  cursor:pointer;
-  color:#fff;
-  background: linear-gradient(135deg, var(--red-2), var(--red));
-}
-.reserve-btn.is-disabled {
-  background: rgba(255,255,255,.08);
-  border:1px solid rgba(255,255,255,.12);
-  color:#ddd;
-  cursor:not-allowed;
-}
-.reserve-btn.is-success {
-  background: rgba(34,197,94,.18);
-  border:1px solid rgba(34,197,94,.35);
-  color:#d8ffe2;
-  cursor:default;
-}
-.reserve-btn.is-working {
-  opacity:.8;
-  cursor:wait;
-}
-.reserve-note {
-  font-size:.74rem;
-  line-height:1.25;
-}
-.reserve-note.ok { color:#c8ffd1; }
-.reserve-note.info { color:#d9e9ff; }
-.reserve-note.warn { color:#ffe2a6; }
-.reserve-note.muted { color: var(--muted); }
 mark { background: rgba(225,29,47,.35); color:#fff; padding:0 2px; border-radius:4px; }
 .empty { padding:22px; color: var(--muted); }
 .footer { margin-top:16px; color: var(--muted); font-size:.9rem; }
@@ -247,13 +267,13 @@ mark { background: rgba(225,29,47,.35); color:#fff; padding:0 2px; border-radius
   .filters-grid {
     grid-template-columns: repeat(4, minmax(210px, 1fr));
   }
-  .field-actions { grid-column: span 4; justify-content:flex-start; }
+  .toolbar-actions { justify-content:flex-start; }
 }
 @media (max-width: 980px) {
   .filters-grid {
     grid-template-columns: repeat(2, minmax(220px, 1fr));
   }
-  .field-actions { grid-column: span 2; }
+  .toolbar-actions { justify-content:flex-start; }
   .topbar-logo { width: 118px; }
 }
 
@@ -312,7 +332,7 @@ mark { background: rgba(225,29,47,.35); color:#fff; padding:0 2px; border-radius
 @media (max-width: 640px) {
   .wrap { padding: 14px; }
   .filters-grid { grid-template-columns: 1fr; }
-  .field-actions { grid-column: auto; }
+  .toolbar-actions { justify-content:flex-start; }
 }
 @media (max-width: 760px) {
   .table-wrap {
@@ -353,26 +373,35 @@ mark { background: rgba(225,29,47,.35); color:#fff; padding:0 2px; border-radius
     <div class="filters-grid">
       <div class="field">
         <label class="field-label" for="search">Buscar</label>
-        <input id="search" class="input" type="search" autocomplete="off" placeholder="Autor, título, editora, referência…">
+        <input id="search" class="input" type="search" autocomplete="off" placeholder="Autor, título, editora, referência ou vários termos entre aspas…">
       </div>
       <div class="field">
         <label class="field-label" for="authorFilter">Autor(a)</label>
-        <input id="authorFilter" class="input" type="search" autocomplete="off" placeholder="Filtrar por autor(a)">
+        <input id="authorFilter" class="input" type="search" autocomplete="off" placeholder="Digite parte do nome para filtrar por autor(a)">
       </div>
       <div class="field">
         <label class="field-label" for="publisherFilter">Editora</label>
-        <input id="publisherFilter" class="input" type="search" autocomplete="off" placeholder="Filtrar por editora">
+        <input id="publisherFilter" class="input" type="search" autocomplete="off" placeholder="Digite parte do nome da editora para filtrar">
       </div>
       <div class="field">
         <label class="field-label" for="yearFilter">Ano</label>
-        <input id="yearFilter" class="input" type="search" autocomplete="off" placeholder="1984 ou 1917-1921">
+        <input id="yearFilter" class="input" type="search" autocomplete="off" placeholder="Ex.: 1984 ou intervalo 1917-1921">
       </div>
       <div class="field">
         <label class="field-label" for="cddFilter">CDD</label>
         <input id="cddFilter" class="input" type="search" autocomplete="off" placeholder="Ex.: 335">
       </div>
       <div class="field">
-        <label class="field-label" for="sortSelect">Ordenar por</label>
+        <label class="field-label" for="availabilityFilter">Disponibilidade</label>
+        <select id="availabilityFilter" class="select">
+          <option value="all">Todas</option>
+          <option value="available">Mostrar só “Disponível agora”</option>
+          <option value="local">Somente consulta local</option>
+          <option value="unavailable">Indisponível no momento</option>
+        </select>
+      </div>
+      <div class="field">
+        <label class="field-label" for="sortSelect">Ordenar por (relevância, etc.)</label>
         <select id="sortSelect" class="select">
           <option value="relevance">Relevância</option>
           <option value="bib_ref">Referência</option>
@@ -384,22 +413,13 @@ mark { background: rgba(225,29,47,.35); color:#fff; padding:0 2px; border-radius
           <option value="status">Disponibilidade</option>
         </select>
       </div>
-      <div class="field">
-        <label class="field-label" for="availabilityFilter">Disponibilidade</label>
-        <select id="availabilityFilter" class="select">
-          <option value="all">Todas</option>
-          <option value="available">Mostrar só “Disponível agora”</option>
-          <option value="local">Somente consulta local</option>
-          <option value="unavailable">Indisponível no momento</option>
-        </select>
-      </div>
-      <div class="field-actions">
-        <button id="clearBtn" class="button secondary" type="button">Limpar filtros</button>
-        <button id="pdfBtn" class="button" type="button">Exportar PDF</button>
-        <a id="csvAdvancedLink" class="action-link" href="#" role="button">CSV (avançado)</a>
-        <button id="contaBtn" class="button secondary" type="button">Minha conta</button>
-        <a id="blogBtn" class="button secondary" href="https://cclamazonia.noblogs.org">Voltar ao blogue</a>
-      </div>
+    </div>
+    <div class="toolbar-actions">
+      <button id="clearBtn" class="button secondary" type="button">Limpar filtros</button>
+      <button id="pdfBtn" class="button" type="button">Exportar PDF</button>
+      <a id="csvAdvancedLink" class="action-link" href="#" role="button">CSV (avançado)</a>
+      <button id="contaBtn" class="button secondary" type="button">Painel / minha conta</button>
+      <a id="blogBtn" class="button secondary" href="https://cclamazonia.noblogs.org">Voltar ao blogue</a>
     </div>
   </section>
 
@@ -407,7 +427,7 @@ mark { background: rgba(225,29,47,.35); color:#fff; padding:0 2px; border-radius
     <div class="pill" id="totalPill">Total: 0</div>
     <div class="pill" id="visiblePill">Exibidos: 0</div>
     <div class="pill" id="statusPill">Disponíveis agora: 0</div>
-    <div class="pill">Colunas: ref · autor · título · ano · editora · CDD · disponibilidade · reserva · ações</div>
+    <div class="pill">Colunas: ref · autor · título · ano · editora · CDD · disponibilidade</div>
   </div>
 
   <section class="sheet">
@@ -429,20 +449,7 @@ mark { background: rgba(225,29,47,.35); color:#fff; padding:0 2px; border-radius
             <th class="col-cdd" data-key="cdd">CDD</th>
             <th class="col-status" data-key="status">disponibilidade</th>
             <th class="col-reserva" data-key="reserva">reserva</th>
-            <th class="col-acoes" data-key="acoes">ações</th>
-          </tr>
-        </thead>
-        <tbody id="tbody"></tbody>
-      </table>
-      <div id="mobileResults" class="mobile-results" aria-live="polite"></div>
-      <div id="empty" class="empty" hidden>Nenhum resultado para os filtros atuais.</div>
-    </div>
-  </section>
-
-  <p class="footer"></p>
-</div>
-
-<script>
+            <th class="col-acoes" <script>
 const SUPABASE_URL = "https://asptfmokzykwzlshsncw.supabase.co";
 const SUPABASE_ANON_KEY = "sb_publishable_38cFV9vsGhmqMp-Z5gmV4w_HY6ReWSF";
 const GH_BASE = "https://cclamazonia-cmd.github.io";
@@ -456,7 +463,7 @@ let rows = [];
 let lastQuery = { tokens: [], phrases: [] };
 let sortKey = 'relevance';
 let sortDir = 'asc';
-let authState = { user: null, accessToken: null, isLibrarian: false, activeBibRefs: new Set() };
+let authState = { user: null, isLibrarian: false, accessToken: null };
 
 const tbody = document.getElementById('tbody');
 const mobileResults = document.getElementById('mobileResults');
@@ -711,80 +718,71 @@ function paintHeaderSort() {
     }
   });
 }
-function getReservePresentation(r) {
+
+function buildReservationMarkup(r) {
+  const status = r._status;
   if (!authState.user) {
-    return {
-      mode: 'login',
-      noteClass: 'reserve-note muted',
-      note: 'Entre na sua conta para reservar.'
-    };
+    return '<div class="reserve-slot"><span class="reserve-note">Entre para reservar</span></div>';
   }
-  const bibRefKey = String(r.bib_ref || '').trim();
-  if (!bibRefKey) {
-    return {
-      mode: 'disabled',
-      disabled: true,
-      buttonClass: 'reserve-btn is-disabled',
-      buttonLabel: 'Sem referência',
-      noteClass: 'reserve-note muted',
-      note: 'Não foi possível identificar a referência deste título.'
-    };
+  if (r._reserveDone) {
+    return '<div class="reserve-slot"><span class="status-badge status-available">Reservado</span></div>';
   }
-  if (authState.activeBibRefs.has(bibRefKey)) {
-    return {
-      mode: 'reserved',
-      disabled: true,
-      buttonClass: 'reserve-btn is-success',
-      buttonLabel: 'Reservado',
-      noteClass: 'reserve-note ok',
-      note: 'Você já tem uma reserva ativa deste título.'
-    };
+  if (status.key === 'local') {
+    return '<div class="reserve-slot"><span class="reserve-note">Consulta local</span></div>';
   }
-  if (r.loanable === false || r._status.key === 'local') {
-    return {
-      mode: 'local',
-      disabled: true,
-      buttonClass: 'reserve-btn is-disabled',
-      buttonLabel: 'Consulta local',
-      noteClass: 'reserve-note info',
-      note: 'Este item está liberado apenas para consulta local.'
-    };
+  if (status.key === 'unavailable') {
+    return '<div class="reserve-slot"><span class="reserve-note">Indisponível</span></div>';
   }
-  if (r._status.key !== 'available') {
-    return {
-      mode: 'unavailable',
-      disabled: true,
-      buttonClass: 'reserve-btn is-disabled',
-      buttonLabel: 'Indisponível',
-      noteClass: 'reserve-note warn',
-      note: 'A reserva rápida só aparece para itens disponíveis agora.'
-    };
+  if (!r.id) {
+    return '<div class="reserve-slot"><span class="reserve-note">Referência indisponível</span></div>';
   }
+  return `<div class="reserve-slot"><button class="btn-inline reserve-btn" type="button" data-book-id="${escapeHTML(String(r.id))}">Reservar</button></div>`;
+}
+
+function buildReservationPayload(bookId) {
   return {
-    mode: 'ready',
-    disabled: false,
-    buttonClass: 'reserve-btn reserveActionBtn',
-    buttonLabel: 'Reservar',
-    noteClass: 'reserve-note ok',
-    note: 'Reserva rápida disponível para este título.'
+    user_id: authState.user.id,
+    book_id: bookId,
+    batch_id: `catalogo-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+    line_no: 1
   };
 }
-function buildReserveMarkup(r) {
-  const p = getReservePresentation(r);
-  if (p.mode === 'login') {
-    return `<div class="${p.noteClass}">${p.note}</div>`;
+
+function mapReservaError(msg) {
+  const s = normalize(msg || '');
+  if (!s) return 'Não foi possível registrar a reserva agora.';
+  if (s.includes('duplicate') || s.includes('already') || s.includes('unique')) return 'Este livro já está reservado na sua conta.';
+  if (s.includes('row-level security') || s.includes('permission denied') || s.includes('42501')) return 'Sua sessão não tem permissão para reservar agora. Entre novamente e tente outra vez.';
+  if (s.includes('jwt') || s.includes('token') || s.includes('auth')) return 'Sua sessão expirou. Entre novamente para reservar.';
+  if (s.includes('network') || s.includes('fetch')) return 'Falha de conexão ao registrar a reserva.';
+  return 'Não foi possível registrar a reserva agora.';
+}
+
+async function createReservaFromCatalog(bookId) {
+  if (!authState.user || !authState.accessToken) {
+    location.assign(CADASTRO_URL);
+    return { ok: false, message: 'Entre na sua conta para reservar.' };
   }
-  return `
-    <div class="reserve-cell">
-      <button
-        class="${p.buttonClass}"
-        type="button"
-        data-ref="${encodeURIComponent(r.bib_ref || '')}"
-        ${p.disabled ? 'disabled aria-disabled="true"' : ''}
-      >${p.buttonLabel}</button>
-      <div class="${p.noteClass}">${p.note}</div>
-    </div>
-  `;
+  const res = await fetch(`${SUPABASE_URL}/rest/v1/reservas`, {
+    method: 'POST',
+    headers: {
+      apikey: SUPABASE_ANON_KEY,
+      Authorization: `Bearer ${authState.accessToken}`,
+      'Content-Type': 'application/json',
+      Prefer: 'return=representation'
+    },
+    body: JSON.stringify(buildReservationPayload(bookId))
+  });
+  const text = await res.text();
+  if (!res.ok) {
+    let message = text;
+    try {
+      const parsed = JSON.parse(text);
+      message = parsed?.message || parsed?.error || text;
+    } catch (e) {}
+    return { ok: false, message: mapReservaError(message) };
+  }
+  return { ok: true };
 }
 function buildRowMarkup(r) {
   const ref = r.bib_ref || '';
@@ -802,7 +800,7 @@ function buildRowMarkup(r) {
     ? `<button class="tag-link cdd-chip" type="button" data-cdd="${escapeHTML(r.cdd)}">${highlightHTML(r.cdd, terms)}</button>`
     : '<span class="muted">—</span>';
   const status = r._status;
-  const reserveHtml = buildReserveMarkup(r);
+  const reservaHtml = buildReservationMarkup(r);
   return {
     ref,
     refHtml,
@@ -820,7 +818,7 @@ function buildRowMarkup(r) {
       <td class="col-editora">${editoraHtml}</td>
       <td class="col-cdd">${cddHtml}</td>
       <td class="col-status"><span class="status-badge ${status.cls}">${status.label}</span></td>
-      <td class="col-reserva">${reserveHtml}</td>
+      <td class="col-reserva">${reservaHtml}</td>
       <td class="col-acoes"><button class="btn-inline copyRefBtn" type="button" data-ref="${encodeURIComponent(ref)}">Copiar referência</button></td>
     `,
     mobileHtml: `
@@ -854,7 +852,7 @@ function buildRowMarkup(r) {
           </div>
         </div>
         <div class="mobile-card-actions">
-          ${reserveHtml}
+          ${reservaHtml}
           <button class="btn-inline copyRefBtn" type="button" data-ref="${encodeURIComponent(ref)}">Copiar referência</button>
         </div>
       </article>
@@ -980,81 +978,6 @@ async function getCurrentUserAndRole() {
     return { user: null, isLibrarian: false, accessToken: null };
   }
 }
-async function loadActiveReservationBibRefs(accessToken, userId) {
-  if (!accessToken || !userId) return new Set();
-  try {
-    const url = `${SUPABASE_URL}/rest/v1/reserva_itens_ui?select=bib_ref&user_id=eq.${encodeURIComponent(userId)}&item_status=eq.ativa`;
-    const res = await fetch(url, {
-      headers: {
-        apikey: SUPABASE_ANON_KEY,
-        Authorization: `Bearer ${accessToken}`,
-        'Accept-Profile': 'api',
-        Accept: 'application/json'
-      }
-    });
-    if (!res.ok) return new Set();
-    const data = await res.json();
-    return new Set((data || []).map((r) => String(r.bib_ref || '').trim()).filter(Boolean));
-  } catch (e) {
-    return new Set();
-  }
-}
-async function refreshAuthState() {
-  const state = await getCurrentUserAndRole();
-  authState.user = state.user || null;
-  authState.accessToken = state.accessToken || null;
-  authState.isLibrarian = !!state.isLibrarian;
-  authState.activeBibRefs = authState.user ? await loadActiveReservationBibRefs(authState.accessToken, authState.user.id) : new Set();
-  return authState;
-}
-function mapReserveError(payload) {
-  const raw = typeof payload === 'string' ? payload : JSON.stringify(payload || {});
-  const norm = normalize(raw);
-  if (norm.includes('duplicate') || norm.includes('already') || (norm.includes('ja') && norm.includes('reserva'))) {
-    return 'Você já tem uma reserva ativa para este título.';
-  }
-  if (norm.includes('restrit') || norm.includes('restricted') || norm.includes('bloquead')) {
-    return 'Seu cadastro está restrito. Procure a biblioteca para regularizar a situação.';
-  }
-  if (norm.includes('limit') || norm.includes('maximum') || norm.includes('maximo') || norm.includes('max') || norm.includes('limite')) {
-    return 'Você atingiu o limite de reservas ativas permitido.';
-  }
-  if (norm.includes('permission') || norm.includes('jwt') || norm.includes('token') || norm.includes('session') || norm.includes('unauthorized')) {
-    return 'Sua sessão expirou. Entre novamente para reservar.';
-  }
-  if (norm.includes('dispon') || norm.includes('available') || norm.includes('loanable') || norm.includes('emprest')) {
-    return 'Este título não está disponível para reserva rápida neste momento.';
-  }
-  return 'Não foi possível registrar a reserva agora. Tente novamente em instantes.';
-}
-async function createQuickReservation(bibRef) {
-  if (!authState.user || !authState.accessToken) {
-    throw new Error('Entre na sua conta para reservar.');
-  }
-  const res = await fetch(`${SUPABASE_URL}/rest/v1/rpc/fn_v2_create_reserva_by_bib_refs`, {
-    method: 'POST',
-    headers: {
-      apikey: SUPABASE_ANON_KEY,
-      Authorization: `Bearer ${authState.accessToken}`,
-      'Content-Type': 'application/json',
-      Accept: 'application/json'
-    },
-    body: JSON.stringify({
-      p_user_id: authState.user.id,
-      p_bib_refs: [bibRef],
-      p_expires_at: null,
-      p_notes: 'Reserva criada pelo catálogo público.'
-    })
-  });
-  const text = await res.text();
-  let payload = null;
-  try { payload = text ? JSON.parse(text) : null; } catch (e) { payload = text; }
-  if (!res.ok) {
-    throw new Error(mapReserveError(payload));
-  }
-  authState.activeBibRefs = await loadActiveReservationBibRefs(authState.accessToken, authState.user.id);
-  return payload;
-}
 async function handleContaClick() {
   const state = await getCurrentUserAndRole();
   if (!state.user) {
@@ -1093,30 +1016,6 @@ document.querySelectorAll('thead th[data-key]').forEach(th => {
   });
 });
 async function handleResultActions(e) {
-  const reserveBtn = e.target.closest('.reserveActionBtn');
-  if (reserveBtn) {
-    if (!authState.user) {
-      location.assign(CADASTRO_URL);
-      return;
-    }
-    const bibRef = decodeURIComponent(reserveBtn.dataset.ref || '');
-    if (!bibRef) return;
-    const prev = reserveBtn.textContent;
-    reserveBtn.disabled = true;
-    reserveBtn.classList.add('is-working');
-    reserveBtn.textContent = 'Reservando...';
-    try {
-      await createQuickReservation(bibRef);
-      render();
-      alert(`Reserva registrada com sucesso para a referência ${bibRef}.`);
-    } catch (err) {
-      reserveBtn.disabled = false;
-      reserveBtn.classList.remove('is-working');
-      reserveBtn.textContent = prev;
-      alert(err?.message || 'Não foi possível registrar a reserva agora.');
-    }
-    return;
-  }
   const copyBtn = e.target.closest('.copyRefBtn');
   if (copyBtn) {
     const txt = decodeURIComponent(copyBtn.dataset.ref || '');
@@ -1136,6 +1035,31 @@ async function handleResultActions(e) {
     copyBtn.textContent = 'Copiado!';
     copyBtn.disabled = true;
     setTimeout(() => { copyBtn.textContent = prev; copyBtn.disabled = false; }, 900);
+    return;
+  }
+  const reserveBtn = e.target.closest('.reserve-btn');
+  if (reserveBtn) {
+    const bookId = reserveBtn.dataset.bookId || '';
+    if (!bookId) return;
+    const prev = reserveBtn.textContent;
+    reserveBtn.textContent = 'Reservando...';
+    reserveBtn.disabled = true;
+    try {
+      const result = await createReservaFromCatalog(bookId);
+      if (!result.ok) {
+        alert(result.message);
+        reserveBtn.textContent = prev;
+        reserveBtn.disabled = false;
+        return;
+      }
+      const targetRow = rows.find(r => String(r.id) === String(bookId));
+      if (targetRow) targetRow._reserveDone = true;
+      render();
+    } catch (err) {
+      alert('Não foi possível registrar a reserva agora.');
+      reserveBtn.textContent = prev;
+      reserveBtn.disabled = false;
+    }
     return;
   }
   const authorBtn = e.target.closest('.author-chip');
@@ -1165,7 +1089,21 @@ document.addEventListener('keydown', (e) => {
 (async function init() {
   rows = await loadRowsFromSupabase();
   prepareRows();
-  await refreshAuthState();
+  authState = await getCurrentUserAndRole();
+  render();
+})();
+</script>Element !== search && !e.ctrlKey && !e.metaKey && !e.altKey) {
+    e.preventDefault();
+    search.focus();
+  }
+  if (e.key === 'Escape' && document.activeElement === search) {
+    search.value = '';
+    debouncedRender();
+  }
+});
+(async function init() {
+  rows = await loadRowsFromSupabase();
+  prepareRows();
   render();
 })();
 </script>
