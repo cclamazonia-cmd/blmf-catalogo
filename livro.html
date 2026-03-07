@@ -77,6 +77,35 @@
     .status.ok{color:var(--ok)} .status.warn{color:var(--warn)} .status.bad{color:var(--bad)}
     .actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:12px}
     .hr{height:1px;background:rgba(255,255,255,.08);margin:14px 0}
+    .detail{
+      display:grid;
+      grid-template-columns: 260px minmax(0,1fr);
+      gap:16px;
+      align-items:start;
+    }
+    @media (max-width:820px){.detail{grid-template-columns:1fr}}
+    .coverbox{
+      border:1px solid rgba(255,255,255,.08);
+      background:rgba(255,255,255,.02);
+      border-radius:18px;
+      padding:12px;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      min-height:320px;
+    }
+    .coverbox.empty{display:none}
+    .coverimg{
+      width:100%;
+      max-width:220px;
+      height:auto;
+      max-height:340px;
+      object-fit:contain;
+      display:block;
+      border-radius:12px;
+      box-shadow:var(--shadow);
+    }
+    .contentbox{min-width:0}
   </style>
 </head>
 <body>
@@ -97,27 +126,35 @@
     </div>
 
     <div class="card">
-      <h1 class="title" id="title">Carregando…</h1>
-      <div class="muted" id="authorLine">—</div>
+      <div class="detail">
+        <div class="coverbox empty" id="coverBox">
+          <img class="coverimg" id="coverImg" alt="Capa do livro" />
+        </div>
 
-      <div class="meta" style="margin-top:12px">
-        <div class="pill" id="bibRefPill">ref: —</div>
-        <div class="pill" id="tomboPill">tombo: —</div>
-        <div class="pill" id="yearPill">ano: —</div>
-        <div class="pill" id="pubPill">editora: —</div>
-        <div class="pill" id="cddPill">CDD: —</div>
+        <div class="contentbox">
+          <h1 class="title" id="title">Carregando…</h1>
+          <div class="muted" id="authorLine">—</div>
+
+          <div class="meta" style="margin-top:12px">
+            <div class="pill" id="bibRefPill">ref: —</div>
+            <div class="pill" id="tomboPill">tombo: —</div>
+            <div class="pill" id="yearPill">ano: —</div>
+            <div class="pill" id="pubPill">editora: —</div>
+            <div class="pill" id="cddPill">CDD: —</div>
+          </div>
+
+          <div class="hr"></div>
+
+          <div class="muted" id="desc">—</div>
+
+          <div class="actions">
+            <button class="btn primary" id="btnReservar" type="button">Reservar este livro</button>
+            <button class="btn" id="btnAbrirPdf" type="button" style="display:none">Abrir PDF</button>
+          </div>
+
+          <div class="status" id="status"></div>
+        </div>
       </div>
-
-      <div class="hr"></div>
-
-      <div class="muted" id="desc">—</div>
-
-      <div class="actions">
-        <button class="btn primary" id="btnReservar" type="button">Reservar este livro</button>
-        <button class="btn" id="btnAbrirPdf" type="button" style="display:none">Abrir PDF</button>
-      </div>
-
-      <div class="status" id="status"></div>
     </div>
   </div>
 
@@ -148,6 +185,37 @@
       const el = $("status");
       el.className = "status" + (cls ? " " + cls : "");
       el.textContent = msg || "";
+    }
+
+    function setCover(pathOrUrl) {
+      const box = $("coverBox");
+      const img = $("coverImg");
+      if (!pathOrUrl) {
+        box.classList.add("empty");
+        img.removeAttribute("src");
+        return;
+      }
+
+      let src = String(pathOrUrl || "").trim();
+      if (!src) {
+        box.classList.add("empty");
+        img.removeAttribute("src");
+        return;
+      }
+
+      if (!/^https?:\/\//i.test(src)) {
+        const { data } = supabase.storage.from("covers").getPublicUrl(src);
+        src = data?.publicUrl || "";
+      }
+
+      if (!src) {
+        box.classList.add("empty");
+        img.removeAttribute("src");
+        return;
+      }
+
+      img.src = src;
+      box.classList.remove("empty");
     }
 
     function getBibRefFromUrl() {
@@ -234,6 +302,7 @@
 
       if (!bib_ref) {
         $("title").textContent = "Livro não encontrado";
+        setCover("");
         setStatus("Faltou a referência na URL (ex.: livro.html?ref=0000124).", "warn");
         return;
       }
@@ -261,6 +330,7 @@
       const colCDD = findCol(keys, ["cdd", "classificacao", "classificação"]);
       const colRes = findCol(keys, ["resumo", "descricao", "descrição", "description", "obs", "observacao", "observação"]);
       const colPdf = findCol(keys, ["pdf_url", "url_pdf", "pdf", "arquivo_pdf", "link_pdf", "url"]);
+      const colCover = findCol(keys, ["cover_object_path", "cover_url", "capa_url", "capa", "image_url", "imagem_url"]);
 
       const { data, error } = await supabase
         .from(booksTable)
@@ -275,6 +345,7 @@
 
       if (!data) {
         $("title").textContent = "Livro não encontrado";
+        setCover("");
         setStatus("Não encontrei esse livro no catálogo.", "warn");
         return;
       }
@@ -286,6 +357,21 @@
       const cdd = colCDD ? (data[colCDD] || "") : "";
       const resumo = colRes ? (data[colRes] || "") : "";
       const pdf = colPdf ? (data[colPdf] || "") : "";
+      let cover = colCover ? (data[colCover] || "") : "";
+
+      if (!cover) {
+        const fallback = await supabase
+          .from("books")
+          .select("cover_object_path")
+          .eq("bib_ref", bib_ref)
+          .maybeSingle();
+
+        if (!fallback.error && fallback.data?.cover_object_path) {
+          cover = fallback.data.cover_object_path;
+        }
+      }
+
+      setCover(cover);
 
       $("title").textContent = titulo || "Sem título";
       $("authorLine").textContent = autor || "—";
