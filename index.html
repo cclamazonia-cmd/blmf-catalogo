@@ -17,10 +17,6 @@
   --muted: #d1d1d1;
   --red: #b30018;
   --red-2: #e11d2f;
-  --green: #16a34a;
-  --green-2: #22c55e;
-  --amber: #f59e0b;
-  --blue: #3b82f6;
   --shadow: 0 18px 40px rgba(0,0,0,.45);
 }
 * { box-sizing: border-box; }
@@ -38,7 +34,7 @@ html, body {
   background-repeat: no-repeat;
 }
 a { color: inherit; }
-.wrap { max-width: 1932px; width: min(1932px, 115vw); margin: 0 auto; padding: 24px; }
+.wrap { max-width: 1680px; margin: 0 auto; padding: 24px; }
 .hero {
   background: linear-gradient(135deg, rgba(179,0,24,.95), rgba(90,0,12,.96));
   border: 1px solid rgba(255,255,255,.08);
@@ -51,118 +47,79 @@ a { color: inherit; }
 .hero h1 { margin:0 0 8px; font-size: clamp(1.8rem, 3vw, 3rem); line-height:1.05; }
 .hero p { margin:0; color: rgba(255,255,255,.95); font-size:1rem; }
 .topbar-logo { width: 150px; height:auto; flex:0 0 auto; }
-
-.toolbar {
-  margin-bottom: 18px;
-  border: 1px solid rgba(255,255,255,.08);
-  border-radius: 22px;
-  background: rgba(18,18,18,.93);
-  box-shadow: var(--shadow);
-  padding: 18px;
-}
-.toolbar-stack {
-  display: grid;
-  gap: 14px;
-}
-.filters-row {
+.toolbar { margin-bottom:18px; }
+.filters-grid {
   display:grid;
-  gap:14px;
+  grid-template-columns: minmax(300px,1.5fr) minmax(220px,1fr) minmax(220px,1fr) minmax(170px,.8fr) minmax(150px,.7fr) minmax(200px,.9fr) auto auto auto;
+  gap:12px;
   align-items:end;
 }
-.filters-row.primary {
-  grid-template-columns: minmax(460px, 2.2fr) minmax(320px, 1.15fr) minmax(320px, 1.15fr) minmax(250px, .9fr);
-}
-.filters-row.secondary {
-  grid-template-columns: minmax(250px, .9fr) minmax(360px, 1.2fr) minmax(320px, 1.05fr);
-}
-.toolbar-actions {
+.field {
   display:flex;
-  flex-wrap:wrap;
-  gap:12px;
-  align-items:center;
+  flex-direction:column;
+  gap:8px;
+  min-width:0;
+  padding:10px 12px 12px;
+  border-radius:18px;
+  background: linear-gradient(180deg, rgba(179,0,24,.14), rgba(255,255,255,.03));
+  border:1px solid rgba(255,255,255,.10);
 }
-.field { display:flex; flex-direction:column; gap:6px; min-width:0; }
-.field-label { font-size:.9rem; color:#fff; font-weight:700; }
-.field-help { font-size:.8rem; color: var(--muted); }
+.field-label {
+  font-size:.93rem;
+  color:#ffe3e7;
+  font-weight:800;
+  letter-spacing:.01em;
+  text-shadow:0 1px 0 rgba(0,0,0,.28);
+}
+.field-actions { display:flex; flex-wrap:wrap; gap:10px; align-items:end; justify-content:flex-end; }
 .input, .select, .button {
   width:100%;
-  border:1px solid rgba(255,255,255,.12);
-  background: rgba(18,18,18,.96);
+  border:1px solid rgba(255,255,255,.18);
+  background: rgba(10,10,10,.98);
   color: #fff;
   border-radius:14px;
   padding:14px 14px;
   font-size:.98rem;
   outline:none;
   box-shadow: var(--shadow);
-  min-height: 50px;
 }
-.input::placeholder { color: #d4d4d4; opacity: .95; }
+.select { color:#fff; font-weight:600; }
+.input::placeholder { color: #f0d6da; opacity: 1; }
 .input:focus, .select:focus {
-  border-color: rgba(225,29,47,.9);
-  box-shadow: 0 0 0 3px rgba(225,29,47,.22), var(--shadow);
+  border-color: rgba(225,29,47,.95);
+  box-shadow: 0 0 0 3px rgba(225,29,47,.24), var(--shadow);
 }
 .button {
   cursor:pointer;
-  background: rgba(18,18,18,.96);
-  border:1px solid rgba(255,255,255,.14);
+  background: linear-gradient(135deg, var(--red-2), var(--red));
+  border:none;
   font-weight:700;
   color:#fff;
   width:auto;
-  transition: transform .12s ease, opacity .12s ease, border-color .12s ease;
-}
-.button:hover,
-.btn-inline:hover,
-.reserve-btn:hover,
-.tag-link:hover,
-.action-link:hover { transform: translateY(-1px); }
-.button:disabled,
-.btn-inline:disabled,
-.reserve-btn:disabled {
-  cursor:not-allowed;
-  opacity:.78;
-  transform:none;
 }
 .button.secondary {
   background: rgba(18,18,18,.96);
   border:1px solid rgba(255,255,255,.14);
   color:#fff;
-  font-weight:700;
+  font-weight:600;
 }
-.button.secondary:hover { border-color: rgba(225,29,47,.65); color:#fff; }
-
-.toolbar-links {
-  display:flex;
-  flex-wrap:wrap;
-  gap:12px;
-  justify-content:space-between;
-  align-items:flex-start;
+.button.secondary:hover, .action-link:hover, .btn-inline:hover, .tag-link:hover {
+  border-color: rgba(225,29,47,.65);
+  color:#fff;
 }
-.toolbar-notice {
-  min-height: 22px;
-  font-size:.9rem;
-  color: var(--muted);
-  flex: 1 1 520px;
-}
-.toolbar-notice strong { color:#fff; }
-
 .action-link {
   display:inline-flex;
   align-items:center;
-  justify-content:center;
   gap:8px;
-  padding:12px 16px;
-  border-radius:14px;
-  border:1px solid rgba(255,255,255,.14);
-  background: rgba(18,18,18,.96);
+  padding:8px 10px;
+  border-radius:12px;
+  border:1px solid rgba(255,255,255,.10);
+  background: rgba(18,18,18,.65);
   text-decoration:none;
-  font-size:.9rem;
-  font-weight:700;
-  color:#fff;
+  font-size:.82rem;
+  color: var(--muted);
   box-shadow: var(--shadow);
-  min-height: 50px;
 }
-.action-link:hover { border-color: rgba(225,29,47,.65); }
-
 .stats { display:flex; flex-wrap:wrap; gap:10px; margin:0 0 16px; }
 .pill {
   border:1px solid rgba(255,255,255,.08);
@@ -191,7 +148,7 @@ a { color: inherit; }
 .sheet-head .title { font-weight:700; }
 .small { font-size:.86rem; color: var(--muted); }
 .table-wrap { overflow:auto; max-height:72vh; }
-table { width:100%; border-collapse:separate; border-spacing:0; min-width:1795px; table-layout:fixed; }
+table { width:100%; border-collapse:separate; border-spacing:0; min-width:1560px; table-layout:fixed; }
 thead th {
   position:sticky;
   top:0;
@@ -219,17 +176,14 @@ tbody td {
 }
 tbody tr:nth-child(odd) td { background: rgba(255,255,255,.01); }
 tbody tr:hover td { background: rgba(179,0,24,.08); }
-
-.col-ref { width: 8%; white-space: nowrap; font-variant-numeric: tabular-nums; }
-.col-autor { width: 15%; }
-.col-titulo { width: 24%; }
-.col-ano { width: 6.5%; white-space: nowrap; }
-.col-editora { width: 14%; }
-.col-cdd { width: 7%; }
-.col-status { width: 12%; }
-.col-reserva { width: 13.5%; }
-.col-acoes { width: 10%; white-space: nowrap; }
-
+.col-ref { width: 8.5%; white-space: nowrap; font-variant-numeric: tabular-nums; }
+.col-autor { width: 16%; }
+.col-titulo { width: 26%; }
+.col-ano { width: 7%; white-space: nowrap; }
+.col-editora { width: 15.5%; }
+.col-cdd { width: 8%; }
+.col-status { width: 12.5%; }
+.col-acoes { width: 7.5%; white-space: nowrap; }
 .ref-main { white-space:nowrap; }
 .status-badge {
   display:inline-flex;
@@ -248,51 +202,33 @@ tbody tr:hover td { background: rgba(179,0,24,.08); }
 .status-local { background: rgba(96,165,250,.16); color: #e3f1ff; border-color: rgba(96,165,250,.35); }
 .status-unavailable { background: rgba(251,191,36,.18); color: #fff2cc; border-color: rgba(251,191,36,.35); }
 .sort-indicator { margin-left:6px; opacity:.85; }
-
-.tag-link, .btn-inline, .reserve-btn {
+.tag-link, .btn-inline {
   width:auto;
   border:1px solid rgba(255,255,255,.12);
   background: rgba(18,18,18,.96);
   color:#fff;
   border-radius:12px;
-  padding:10px 12px;
+  padding:8px 10px;
   font-size:.82rem;
   cursor:pointer;
   text-decoration:none;
-  min-height: 40px;
 }
-.btn-inline { white-space: nowrap; }
-
-.reserve-cell {
-  display:flex;
-  flex-direction:column;
-  gap:7px;
-  align-items:flex-start;
-}
-.reserve-btn {
-  font-weight:700;
-  background: linear-gradient(135deg, var(--red-2), var(--red));
-  border:none;
-}
-.reserve-btn.is-disabled {
-  background: rgba(255,255,255,.07);
-  border:1px solid rgba(255,255,255,.12);
-}
-.reserve-btn.is-success {
-  background: linear-gradient(135deg, var(--green-2), var(--green));
-}
-.reserve-note {
-  font-size:.76rem;
-  color: var(--muted);
-  line-height:1.35;
-}
-.reserve-note.ok { color:#d8ffe2; }
-.reserve-note.warn { color:#fff2cc; }
-.reserve-note.info { color:#d7e8ff; }
-
 mark { background: rgba(225,29,47,.35); color:#fff; padding:0 2px; border-radius:4px; }
 .empty { padding:22px; color: var(--muted); }
 .footer { margin-top:16px; color: var(--muted); font-size:.9rem; }
+@media (max-width: 1520px) {
+  .filters-grid {
+    grid-template-columns: repeat(4, minmax(210px, 1fr));
+  }
+  .field-actions { grid-column: span 4; justify-content:flex-start; }
+}
+@media (max-width: 980px) {
+  .filters-grid {
+    grid-template-columns: repeat(2, minmax(220px, 1fr));
+  }
+  .field-actions { grid-column: span 2; }
+  .topbar-logo { width: 118px; }
+}
 
 .mobile-results { display:none; }
 .mobile-card {
@@ -345,32 +281,13 @@ mark { background: rgba(225,29,47,.35); color:#fff; padding:0 2px; border-radius
   display:flex;
   flex-wrap:wrap;
   gap:8px;
-  align-items:flex-start;
 }
-
-@media (max-width: 1540px) {
-  .filters-row.primary {
-    grid-template-columns: repeat(2, minmax(300px, 1fr));
-  }
-  .filters-row.secondary {
-    grid-template-columns: repeat(2, minmax(280px, 1fr));
-  }
-}
-@media (max-width: 980px) {
-  .topbar-logo { width: 118px; }
-  .toolbar-links {
-    align-items:flex-start;
-    flex-direction:column;
-  }
-  .toolbar-actions {
-    width:100%;
-  }
+@media (max-width: 640px) {
+  .wrap { padding: 14px; }
+  .filters-grid { grid-template-columns: 1fr; }
+  .field-actions { grid-column: auto; }
 }
 @media (max-width: 760px) {
-  .wrap { padding: 14px; width: 100%; }
-  .filters-row.primary,
-  .filters-row.secondary { grid-template-columns: 1fr; }
-  .toolbar-actions { justify-content:flex-start; }
   .table-wrap {
     overflow:visible;
     max-height:none;
@@ -406,66 +323,55 @@ mark { background: rgba(225,29,47,.35); color:#fff; padding:0 2px; border-radius
   </section>
 
   <section class="toolbar">
-    <div class="toolbar-stack">
-      <div class="filters-row primary">
-        <div class="field">
-          <label class="field-label" for="search">Buscar</label>
-          <input id="search" class="input" type="search" autocomplete="off" placeholder="Autor, título, editora, referência ou vários termos entre aspas…">
-        </div>
-        <div class="field">
-          <label class="field-label" for="authorFilter">Autor(a)</label>
-          <input id="authorFilter" class="input" type="search" autocomplete="off" placeholder="Digite parte do nome para filtrar por autor(a)">
-        </div>
-        <div class="field">
-          <label class="field-label" for="publisherFilter">Editora</label>
-          <input id="publisherFilter" class="input" type="search" autocomplete="off" placeholder="Digite parte do nome da editora para filtrar">
-        </div>
-        <div class="field">
-          <label class="field-label" for="yearFilter">Ano</label>
-          <input id="yearFilter" class="input" type="search" autocomplete="off" placeholder="Ex.: 1984 ou intervalo 1917-1921">
-        </div>
+    <div class="filters-grid">
+      <div class="field">
+        <label class="field-label" for="search">Buscar</label>
+        <input id="search" class="input" type="search" autocomplete="off" placeholder="Autor, título, editora, referência ou vários termos entre aspas…">
       </div>
-
-      <div class="filters-row secondary">
-        <div class="field">
-          <label class="field-label" for="cddFilter">CDD</label>
-          <input id="cddFilter" class="input" type="search" autocomplete="off" placeholder="Ex.: 335">
-        </div>
-        <div class="field">
-          <label class="field-label" for="availabilityFilter">Disponibilidade</label>
-          <select id="availabilityFilter" class="select">
-            <option value="all">Todas</option>
-            <option value="available">Mostrar só “Disponível agora”</option>
-            <option value="local">Somente consulta local</option>
-            <option value="unavailable">Indisponível no momento</option>
-          </select>
-        </div>
-        <div class="field">
-          <label class="field-label" for="sortSelect">Ordenar por</label>
-          <select id="sortSelect" class="select">
-            <option value="relevance">Relevância</option>
-            <option value="bib_ref">Referência</option>
-            <option value="autor">Autor(a)</option>
-            <option value="titulo">Título</option>
-            <option value="ano">Ano</option>
-            <option value="editora">Editora</option>
-            <option value="cdd">CDD</option>
-            <option value="status">Disponibilidade</option>
-          </select>
-        </div>
+      <div class="field">
+        <label class="field-label" for="authorFilter">Autor(a)</label>
+        <input id="authorFilter" class="input" type="search" autocomplete="off" placeholder="Digite parte do nome para filtrar por autor(a)">
       </div>
-
-      <div class="toolbar-actions">
+      <div class="field">
+        <label class="field-label" for="publisherFilter">Editora</label>
+        <input id="publisherFilter" class="input" type="search" autocomplete="off" placeholder="Digite parte do nome da editora para filtrar">
+      </div>
+      <div class="field">
+        <label class="field-label" for="yearFilter">Ano</label>
+        <input id="yearFilter" class="input" type="search" autocomplete="off" placeholder="Ex.: 1984 ou intervalo 1917-1921">
+      </div>
+      <div class="field">
+        <label class="field-label" for="cddFilter">CDD</label>
+        <input id="cddFilter" class="input" type="search" autocomplete="off" placeholder="Ex.: 335">
+      </div>
+      <div class="field">
+        <label class="field-label" for="sortSelect">Ordenar por (relevância, etc.)</label>
+        <select id="sortSelect" class="select">
+          <option value="relevance">Relevância</option>
+          <option value="bib_ref">Referência</option>
+          <option value="autor">Autor(a)</option>
+          <option value="titulo">Título</option>
+          <option value="ano">Ano</option>
+          <option value="editora">Editora</option>
+          <option value="cdd">CDD</option>
+          <option value="status">Disponibilidade</option>
+        </select>
+      </div>
+      <div class="field">
+        <label class="field-label" for="availabilityFilter">Disponibilidade</label>
+        <select id="availabilityFilter" class="select">
+          <option value="all">Todas</option>
+          <option value="available">Mostrar só “Disponível agora”</option>
+          <option value="local">Somente consulta local</option>
+          <option value="unavailable">Indisponível no momento</option>
+        </select>
+      </div>
+      <div class="field-actions">
         <button id="clearBtn" class="button secondary" type="button">Limpar filtros</button>
-        <button id="pdfBtn" class="button secondary" type="button">Exportar PDF</button>
+        <button id="pdfBtn" class="button" type="button">Exportar PDF</button>
         <a id="csvAdvancedLink" class="action-link" href="#" role="button">CSV (avançado)</a>
-        <button id="contaBtn" class="button secondary" type="button">Painel / minha conta</button>
-        <a id="blogBtn" class="action-link" href="https://cclamazonia.noblogs.org">Voltar ao blogue</a>
-      </div>
-
-      <div class="toolbar-links">
-        <div id="toolbarNotice" class="toolbar-notice">Entre na sua conta para reservar um exemplar disponível diretamente no catálogo.</div>
-        <div class="field-help">Dica: clique em um(a) autor(a), em uma CDD ou no cabeçalho das colunas para filtrar e ordenar mais rápido.</div>
+        <button id="contaBtn" class="button secondary" type="button">Minha conta</button>
+        <a id="blogBtn" class="button secondary" href="https://cclamazonia.noblogs.org">Voltar ao blogue</a>
       </div>
     </div>
   </section>
@@ -474,15 +380,14 @@ mark { background: rgba(225,29,47,.35); color:#fff; padding:0 2px; border-radius
     <div class="pill" id="totalPill">Total: 0</div>
     <div class="pill" id="visiblePill">Exibidos: 0</div>
     <div class="pill" id="statusPill">Disponíveis agora: 0</div>
-    <div class="pill" id="authPill">Reserva rápida: faça login</div>
-    <div class="pill">Colunas: ref · autor · título · ano · editora · CDD · disponibilidade · reserva · ações</div>
+    <div class="pill">Colunas: ref · autor · título · ano · editora · CDD · disponibilidade</div>
   </div>
 
   <section class="sheet">
     <div class="sheet-head">
       <div>
         <div class="title">BLMF · Catálogo consultável</div>
-        <div class="small">Clique no cabeçalho para ordenar · os títulos abrem a ficha do livro</div>
+        <div class="small">Clique no cabeçalho para ordenar</div>
       </div>
     </div>
     <div class="table-wrap">
@@ -496,7 +401,6 @@ mark { background: rgba(225,29,47,.35); color:#fff; padding:0 2px; border-radius
             <th class="col-editora" data-key="editora">editora</th>
             <th class="col-cdd" data-key="cdd">CDD</th>
             <th class="col-status" data-key="status">disponibilidade</th>
-            <th class="col-reserva" data-key="reserva">reserva</th>
             <th class="col-acoes" data-key="acoes">ações</th>
           </tr>
         </thead>
@@ -524,13 +428,6 @@ let rows = [];
 let lastQuery = { tokens: [], phrases: [] };
 let sortKey = 'relevance';
 let sortDir = 'asc';
-let authState = {
-  user: null,
-  accessToken: null,
-  isLibrarian: false,
-  activeReservations: new Set(),
-  knownReservationStatus: new Map()
-};
 
 const tbody = document.getElementById('tbody');
 const mobileResults = document.getElementById('mobileResults');
@@ -544,8 +441,6 @@ const availabilityFilter = document.getElementById('availabilityFilter');
 const totalPill = document.getElementById('totalPill');
 const visiblePill = document.getElementById('visiblePill');
 const statusPill = document.getElementById('statusPill');
-const authPill = document.getElementById('authPill');
-const toolbarNotice = document.getElementById('toolbarNotice');
 const empty = document.getElementById('empty');
 const contaBtn = document.getElementById('contaBtn');
 const clearBtn = document.getElementById('clearBtn');
@@ -582,16 +477,6 @@ function diceCoefficient(a, b) {
     overlap += Math.min(countA, countB);
   }
   return (2 * overlap) / ((a.length - 1) + (b.length - 1));
-}
-function generateUUID() {
-  if (window.crypto && typeof window.crypto.randomUUID === 'function') {
-    return window.crypto.randomUUID();
-  }
-  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
-    const r = Math.random() * 16 | 0;
-    const v = c === 'x' ? r : ((r & 0x3) | 0x8);
-    return v.toString(16);
-  });
 }
 function getStatusInfo(r) {
   if (r.loanable === false) return { key: 'local', label: 'Somente consulta local', cls: 'status-local' };
@@ -787,9 +672,8 @@ function updateStats(filtered) {
 }
 function paintHeaderSort() {
   document.querySelectorAll('thead th[data-key]').forEach(th => {
-    const raw = th.textContent.replace(/[\u2191\u2193]/g, '').trim();
-    th.innerHTML = raw;
     const key = th.dataset.key;
+    th.innerHTML = th.textContent.replace(/[\u2191\u2193]/g, '').trim();
     if (key === sortKey) {
       const span = document.createElement('span');
       span.className = 'sort-indicator';
@@ -797,65 +681,6 @@ function paintHeaderSort() {
       th.appendChild(span);
     }
   });
-}
-function getReservePresentation(r) {
-  if (!authState.user) {
-    return { show: false };
-  }
-  if (authState.activeReservations.has(String(r.id))) {
-    return {
-      show: true,
-      disabled: true,
-      buttonClass: 'reserve-btn is-success',
-      buttonLabel: 'Reservado',
-      noteClass: 'reserve-note ok',
-      note: 'Você já tem uma reserva ativa deste título.'
-    };
-  }
-  if (r.loanable === false || r._status.key === 'local') {
-    return {
-      show: true,
-      disabled: true,
-      buttonClass: 'reserve-btn is-disabled',
-      buttonLabel: 'Consulta local',
-      noteClass: 'reserve-note info',
-      note: 'Este item está liberado apenas para consulta local.'
-    };
-  }
-  if (r._status.key !== 'available') {
-    return {
-      show: true,
-      disabled: true,
-      buttonClass: 'reserve-btn is-disabled',
-      buttonLabel: 'Indisponível',
-      noteClass: 'reserve-note warn',
-      note: 'A reserva rápida só aparece para itens disponíveis agora.'
-    };
-  }
-  return {
-    show: true,
-    disabled: false,
-    buttonClass: 'reserve-btn',
-    buttonLabel: 'Reservar',
-    noteClass: 'reserve-note ok',
-    note: 'Reserva rápida disponível para este exemplar.'
-  };
-}
-function buildReserveMarkup(r, mobile = false) {
-  const presentation = getReservePresentation(r);
-  if (!presentation.show) return '';
-  return `
-    <div class="reserve-cell">
-      <button
-        class="${presentation.buttonClass} reserveActionBtn"
-        type="button"
-        data-id="${escapeHTML(String(r.id ?? ''))}"
-        data-ref="${encodeURIComponent(r.bib_ref || '')}"
-        ${presentation.disabled ? 'disabled aria-disabled="true"' : ''}
-      >${presentation.buttonLabel}</button>
-      <div class="${presentation.noteClass}">${presentation.note}</div>
-    </div>
-  `;
 }
 function buildRowMarkup(r) {
   const ref = r.bib_ref || '';
@@ -873,9 +698,15 @@ function buildRowMarkup(r) {
     ? `<button class="tag-link cdd-chip" type="button" data-cdd="${escapeHTML(r.cdd)}">${highlightHTML(r.cdd, terms)}</button>`
     : '<span class="muted">—</span>';
   const status = r._status;
-  const reserveHtml = buildReserveMarkup(r);
   return {
     ref,
+    refHtml,
+    autorHtml,
+    tituloCell,
+    anoHtml,
+    editoraHtml,
+    cddHtml,
+    status,
     rowHtml: `
       <td class="col-ref"><span class="ref-main">${refHtml}</span></td>
       <td class="col-autor">${autorHtml}</td>
@@ -884,7 +715,6 @@ function buildRowMarkup(r) {
       <td class="col-editora">${editoraHtml}</td>
       <td class="col-cdd">${cddHtml}</td>
       <td class="col-status"><span class="status-badge ${status.cls}">${status.label}</span></td>
-      <td class="col-reserva">${reserveHtml || '<span class="small">Faça login para reservar.</span>'}</td>
       <td class="col-acoes"><button class="btn-inline copyRefBtn" type="button" data-ref="${encodeURIComponent(ref)}">Copiar referência</button></td>
     `,
     mobileHtml: `
@@ -918,7 +748,6 @@ function buildRowMarkup(r) {
           </div>
         </div>
         <div class="mobile-card-actions">
-          ${reserveHtml}
           <button class="btn-inline copyRefBtn" type="button" data-ref="${encodeURIComponent(ref)}">Copiar referência</button>
         </div>
       </article>
@@ -1012,29 +841,22 @@ function clearFilters() {
   render();
   search.focus();
 }
-function getStoredSession() {
+async function getCurrentUserAndRole() {
   const tokenKey = `sb-${SUPABASE_PROJECT_REF}-auth-token`;
   let tokenRaw = null;
   try { tokenRaw = localStorage.getItem(tokenKey); } catch (e) {}
-  if (!tokenRaw) return null;
+  if (!tokenRaw) return { user: null, isLibrarian: false };
+  let session = null;
   try {
     const parsed = JSON.parse(tokenRaw);
-    const session = parsed?.access_token ? parsed : (parsed?.currentSession || parsed?.data?.session || null);
-    return session?.access_token ? session : null;
-  } catch (e) {
-    return null;
-  }
-}
-async function getCurrentUserAndRole() {
-  const session = getStoredSession();
-  if (!session?.access_token) {
-    return { user: null, accessToken: null, isLibrarian: false };
-  }
+    session = parsed?.access_token ? parsed : (parsed?.currentSession || parsed?.data?.session || null);
+  } catch (e) {}
+  if (!session?.access_token) return { user: null, isLibrarian: false };
   try {
     const userRes = await fetch(`${SUPABASE_URL}/auth/v1/user`, {
       headers: { apikey: SUPABASE_ANON_KEY, Authorization: `Bearer ${session.access_token}` }
     });
-    if (!userRes.ok) return { user: null, accessToken: null, isLibrarian: false };
+    if (!userRes.ok) return { user: null, isLibrarian: false };
     const user = await userRes.json();
     let isLibrarian = false;
     try {
@@ -1046,136 +868,18 @@ async function getCurrentUserAndRole() {
         isLibrarian = !!(Array.isArray(arr) && arr[0] && arr[0].is_librarian);
       }
     } catch (e) {}
-    return { user, accessToken: session.access_token, isLibrarian };
+    return { user, isLibrarian };
   } catch (e) {
-    return { user: null, accessToken: null, isLibrarian: false };
+    return { user: null, isLibrarian: false };
   }
-}
-function isLikelyActiveReservationStatus(status) {
-  const s = normalize(status);
-  if (!s) return true;
-  const inactive = new Set([
-    'cancelada', 'cancelado', 'cancelled', 'canceled',
-    'expirada', 'expirado', 'expired',
-    'concluida', 'concluido', 'finalizada', 'finalizado',
-    'atendida', 'atendido', 'fulfilled', 'convertida', 'convertido'
-  ]);
-  return !inactive.has(s);
-}
-async function loadActiveReservations(userId, accessToken) {
-  const active = new Set();
-  const knownStatus = new Map();
-  try {
-    const url = `${SUPABASE_URL}/rest/v1/reservas?select=book_id,status,created_at&user_id=eq.${encodeURIComponent(userId)}&order=created_at.desc&limit=500`;
-    const res = await fetch(url, {
-      headers: {
-        apikey: SUPABASE_ANON_KEY,
-        Authorization: `Bearer ${accessToken}`,
-        Accept: 'application/json'
-      }
-    });
-    if (!res.ok) {
-      return { active, knownStatus };
-    }
-    const items = await res.json();
-    for (const item of items || []) {
-      const key = String(item.book_id ?? '');
-      if (!key || knownStatus.has(key)) continue;
-      knownStatus.set(key, item.status ?? '');
-      if (isLikelyActiveReservationStatus(item.status)) {
-        active.add(key);
-      }
-    }
-    return { active, knownStatus };
-  } catch (e) {
-    return { active, knownStatus };
-  }
-}
-function updateAuthUI() {
-  if (!authState.user) {
-    contaBtn.textContent = 'Painel / minha conta';
-    authPill.textContent = 'Reserva rápida: faça login';
-    toolbarNotice.innerHTML = 'Entre na sua conta para reservar um exemplar disponível diretamente no catálogo.';
-    return;
-  }
-  contaBtn.textContent = 'Painel / minha conta';
-  authPill.textContent = `Reserva rápida: ${authState.activeReservations.size} reserva(s) ativa(s) carregada(s)`;
-  toolbarNotice.innerHTML = '<strong>Você está conectado(a).</strong> O botão “Reservar” aparece nos itens disponíveis agora.';
-}
-async function refreshAuthState() {
-  const state = await getCurrentUserAndRole();
-  authState.user = state.user;
-  authState.accessToken = state.accessToken;
-  authState.isLibrarian = state.isLibrarian;
-  authState.activeReservations = new Set();
-  authState.knownReservationStatus = new Map();
-  if (state.user && state.accessToken) {
-    const reservationState = await loadActiveReservations(state.user.id, state.accessToken);
-    authState.activeReservations = reservationState.active;
-    authState.knownReservationStatus = reservationState.knownStatus;
-  }
-  updateAuthUI();
 }
 async function handleContaClick() {
-  if (!authState.user) {
+  const state = await getCurrentUserAndRole();
+  if (!state.user) {
     location.assign(CADASTRO_URL);
     return;
   }
-  location.assign(authState.isLibrarian ? PAINEL_URL : CONTA_URL);
-}
-function findRowById(id) {
-  return rows.find(r => String(r.id) === String(id)) || null;
-}
-async function reserveBook(row, button) {
-  if (!authState.user || !authState.accessToken) {
-    location.assign(CADASTRO_URL);
-    return;
-  }
-  if (!row || !row.id) return;
-  if (row.loanable === false || row._status.key !== 'available') return;
-
-  const previous = button.textContent;
-  button.disabled = true;
-  button.textContent = 'Reservando…';
-
-  try {
-    const payload = {
-      user_id: authState.user.id,
-      book_id: row.id,
-      batch_id: generateUUID(),
-      line_no: 1
-    };
-
-    const res = await fetch(`${SUPABASE_URL}/rest/v1/reservas`, {
-      method: 'POST',
-      headers: {
-        apikey: SUPABASE_ANON_KEY,
-        Authorization: `Bearer ${authState.accessToken}`,
-        'Content-Type': 'application/json',
-        Prefer: 'return=representation'
-      },
-      body: JSON.stringify(payload)
-    });
-
-    const text = await res.text();
-    if (!res.ok) {
-      let msg = text || 'Não foi possível registrar a reserva.';
-      try {
-        const parsed = JSON.parse(text);
-        msg = parsed?.message || parsed?.error_description || parsed?.hint || parsed?.details || msg;
-      } catch (e) {}
-      throw new Error(msg);
-    }
-
-    authState.activeReservations.add(String(row.id));
-    updateAuthUI();
-    render();
-    alert(`Reserva registrada para a referência ${row.bib_ref}.`);
-  } catch (e) {
-    button.disabled = false;
-    button.textContent = previous;
-    alert(`Não foi possível reservar ${row.bib_ref}: ${e?.message || String(e)}`);
-  }
+  location.assign(state.isLibrarian ? PAINEL_URL : CONTA_URL);
 }
 search.addEventListener('input', debouncedRender);
 authorFilter.addEventListener('input', render);
@@ -1185,7 +889,7 @@ cddFilter.addEventListener('input', render);
 availabilityFilter.addEventListener('change', render);
 sortSelect.addEventListener('change', () => {
   sortKey = sortSelect.value;
-  sortDir = 'asc';
+  sortDir = sortKey === 'relevance' ? 'asc' : 'asc';
   render();
 });
 clearBtn.addEventListener('click', clearFilters);
@@ -1195,7 +899,7 @@ contaBtn.addEventListener('click', handleContaClick);
 document.querySelectorAll('thead th[data-key]').forEach(th => {
   th.addEventListener('click', () => {
     const key = th.dataset.key;
-    if (key === 'acoes' || key === 'reserva') return;
+    if (key === 'acoes') return;
     if (sortKey === key) {
       sortDir = sortDir === 'asc' ? 'desc' : 'asc';
     } else {
@@ -1207,13 +911,6 @@ document.querySelectorAll('thead th[data-key]').forEach(th => {
   });
 });
 async function handleResultActions(e) {
-  const reserveBtn = e.target.closest('.reserveActionBtn');
-  if (reserveBtn) {
-    const row = findRowById(reserveBtn.dataset.id || '');
-    await reserveBook(row, reserveBtn);
-    return;
-  }
-
   const copyBtn = e.target.closest('.copyRefBtn');
   if (copyBtn) {
     const txt = decodeURIComponent(copyBtn.dataset.ref || '');
@@ -1235,14 +932,12 @@ async function handleResultActions(e) {
     setTimeout(() => { copyBtn.textContent = prev; copyBtn.disabled = false; }, 900);
     return;
   }
-
   const authorBtn = e.target.closest('.author-chip');
   if (authorBtn) {
     authorFilter.value = authorBtn.dataset.author || '';
     render();
     return;
   }
-
   const cddBtn = e.target.closest('.cdd-chip');
   if (cddBtn) {
     cddFilter.value = cddBtn.dataset.cdd || '';
@@ -1261,14 +956,7 @@ document.addEventListener('keydown', (e) => {
     debouncedRender();
   }
 });
-window.addEventListener('storage', async (e) => {
-  if (e.key === `sb-${SUPABASE_PROJECT_REF}-auth-token`) {
-    await refreshAuthState();
-    render();
-  }
-});
 (async function init() {
-  await refreshAuthState();
   rows = await loadRowsFromSupabase();
   prepareRows();
   render();
