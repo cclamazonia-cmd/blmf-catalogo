@@ -213,10 +213,84 @@ mark { background: rgba(225,29,47,.35); color:#fff; padding:0 2px; border-radius
   .field-actions { grid-column: span 2; }
   .topbar-logo { width: 118px; }
 }
+
+.mobile-results { display:none; }
+.mobile-card {
+  border:1px solid rgba(255,255,255,.08);
+  border-radius:18px;
+  background: rgba(255,255,255,.02);
+  padding:14px;
+  display:flex;
+  flex-direction:column;
+  gap:12px;
+}
+.mobile-card-head {
+  display:flex;
+  align-items:flex-start;
+  justify-content:space-between;
+  gap:10px;
+}
+.mobile-card-title {
+  margin:0;
+  font-size:1rem;
+  line-height:1.3;
+}
+.mobile-card-title a {
+  text-decoration:none;
+  font-weight:700;
+}
+.mobile-card-grid {
+  display:grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap:10px 12px;
+}
+.mobile-meta {
+  display:flex;
+  flex-direction:column;
+  gap:4px;
+  min-width:0;
+}
+.mobile-meta-label {
+  font-size:.72rem;
+  text-transform:uppercase;
+  letter-spacing:.04em;
+  color: var(--muted);
+}
+.mobile-meta-value {
+  line-height:1.35;
+  word-break:break-word;
+  overflow-wrap:anywhere;
+}
+.mobile-card-actions {
+  display:flex;
+  flex-wrap:wrap;
+  gap:8px;
+}
 @media (max-width: 640px) {
   .wrap { padding: 14px; }
   .filters-grid { grid-template-columns: 1fr; }
   .field-actions { grid-column: auto; }
+}
+@media (max-width: 760px) {
+  .table-wrap {
+    overflow:visible;
+    max-height:none;
+  }
+  .table-wrap > table {
+    display:none;
+  }
+  .mobile-results {
+    display:grid;
+    gap:12px;
+    padding:14px;
+  }
+  .mobile-card-grid {
+    grid-template-columns: 1fr;
+  }
+  .mobile-card-head {
+    flex-direction:column;
+    align-items:flex-start;
+  }
 }
 </style>
 </head>
@@ -316,6 +390,7 @@ mark { background: rgba(225,29,47,.35); color:#fff; padding:0 2px; border-radius
         </thead>
         <tbody id="tbody"></tbody>
       </table>
+      <div id="mobileResults" class="mobile-results" aria-live="polite"></div>
       <div id="empty" class="empty" hidden>Nenhum resultado para os filtros atuais.</div>
     </div>
   </section>
@@ -339,6 +414,7 @@ let sortKey = 'relevance';
 let sortDir = 'asc';
 
 const tbody = document.getElementById('tbody');
+const mobileResults = document.getElementById('mobileResults');
 const search = document.getElementById('search');
 const authorFilter = document.getElementById('authorFilter');
 const publisherFilter = document.getElementById('publisherFilter');
@@ -590,31 +666,32 @@ function paintHeaderSort() {
     }
   });
 }
-function render() {
-  const filtered = currentRows();
-  tbody.innerHTML = '';
-  updateStats(filtered);
-  paintHeaderSort();
-  empty.hidden = filtered.length !== 0;
-
-  for (const r of filtered) {
-    const tr = document.createElement('tr');
-    const ref = r.bib_ref || '';
-    const terms = [...(lastQuery.phrases || []), ...(lastQuery.tokens || [])];
-    const refHtml = ref ? highlightHTML(ref, terms) : '<span class="muted">—</span>';
-    const autorHtml = r.autor
-      ? `<button class="tag-link author-chip" type="button" data-author="${escapeHTML(r.autor)}">${highlightHTML(r.autor, terms)}</button>`
-      : '<span class="muted">—</span>';
-    const livroUrl = ref ? `${LIVRO_URL}?ref=${encodeURIComponent(ref)}` : '#';
-    const tituloHtml = r.titulo ? highlightHTML(r.titulo, terms) : '<span class="muted">—</span>';
-    const tituloCell = ref ? `<a href="${livroUrl}" style="text-decoration:none; font-weight:700;">${tituloHtml}</a>` : tituloHtml;
-    const anoHtml = r.ano ? highlightHTML(r.ano, terms) : '<span class="muted">—</span>';
-    const editoraHtml = r.editora ? highlightHTML(r.editora, terms) : '<span class="muted">—</span>';
-    const cddHtml = r.cdd
-      ? `<button class="tag-link cdd-chip" type="button" data-cdd="${escapeHTML(r.cdd)}">${highlightHTML(r.cdd, terms)}</button>`
-      : '<span class="muted">—</span>';
-    const status = r._status;
-    tr.innerHTML = `
+function buildRowMarkup(r) {
+  const ref = r.bib_ref || '';
+  const terms = [...(lastQuery.phrases || []), ...(lastQuery.tokens || [])];
+  const refHtml = ref ? highlightHTML(ref, terms) : '<span class="muted">—</span>';
+  const autorHtml = r.autor
+    ? `<button class="tag-link author-chip" type="button" data-author="${escapeHTML(r.autor)}">${highlightHTML(r.autor, terms)}</button>`
+    : '<span class="muted">—</span>';
+  const livroUrl = ref ? `${LIVRO_URL}?ref=${encodeURIComponent(ref)}` : '#';
+  const tituloHtml = r.titulo ? highlightHTML(r.titulo, terms) : '<span class="muted">—</span>';
+  const tituloCell = ref ? `<a href="${livroUrl}" style="text-decoration:none; font-weight:700;">${tituloHtml}</a>` : tituloHtml;
+  const anoHtml = r.ano ? highlightHTML(r.ano, terms) : '<span class="muted">—</span>';
+  const editoraHtml = r.editora ? highlightHTML(r.editora, terms) : '<span class="muted">—</span>';
+  const cddHtml = r.cdd
+    ? `<button class="tag-link cdd-chip" type="button" data-cdd="${escapeHTML(r.cdd)}">${highlightHTML(r.cdd, terms)}</button>`
+    : '<span class="muted">—</span>';
+  const status = r._status;
+  return {
+    ref,
+    refHtml,
+    autorHtml,
+    tituloCell,
+    anoHtml,
+    editoraHtml,
+    cddHtml,
+    status,
+    rowHtml: `
       <td class="col-ref"><span class="ref-main">${refHtml}</span></td>
       <td class="col-autor">${autorHtml}</td>
       <td class="col-titulo">${tituloCell}</td>
@@ -623,8 +700,58 @@ function render() {
       <td class="col-cdd">${cddHtml}</td>
       <td class="col-status"><span class="status-badge ${status.cls}">${status.label}</span></td>
       <td class="col-acoes"><button class="btn-inline copyRefBtn" type="button" data-ref="${encodeURIComponent(ref)}">Copiar referência</button></td>
-    `;
+    `,
+    mobileHtml: `
+      <article class="mobile-card">
+        <div class="mobile-card-head">
+          <div>
+            <h3 class="mobile-card-title">${tituloCell}</h3>
+          </div>
+          <span class="status-badge ${status.cls}">${status.label}</span>
+        </div>
+        <div class="mobile-card-grid">
+          <div class="mobile-meta">
+            <span class="mobile-meta-label">Autor</span>
+            <div class="mobile-meta-value">${autorHtml}</div>
+          </div>
+          <div class="mobile-meta">
+            <span class="mobile-meta-label">Referência</span>
+            <div class="mobile-meta-value"><span class="ref-main">${refHtml}</span></div>
+          </div>
+          <div class="mobile-meta">
+            <span class="mobile-meta-label">Ano</span>
+            <div class="mobile-meta-value">${anoHtml}</div>
+          </div>
+          <div class="mobile-meta">
+            <span class="mobile-meta-label">CDD</span>
+            <div class="mobile-meta-value">${cddHtml}</div>
+          </div>
+          <div class="mobile-meta">
+            <span class="mobile-meta-label">Editora</span>
+            <div class="mobile-meta-value">${editoraHtml}</div>
+          </div>
+        </div>
+        <div class="mobile-card-actions">
+          <button class="btn-inline copyRefBtn" type="button" data-ref="${encodeURIComponent(ref)}">Copiar referência</button>
+        </div>
+      </article>
+    `
+  };
+}
+function render() {
+  const filtered = currentRows();
+  tbody.innerHTML = '';
+  mobileResults.innerHTML = '';
+  updateStats(filtered);
+  paintHeaderSort();
+  empty.hidden = filtered.length !== 0;
+
+  for (const r of filtered) {
+    const markup = buildRowMarkup(r);
+    const tr = document.createElement('tr');
+    tr.innerHTML = markup.rowHtml;
     tbody.appendChild(tr);
+    mobileResults.insertAdjacentHTML('beforeend', markup.mobileHtml);
   }
 }
 function debounce(fn, ms) {
@@ -767,7 +894,7 @@ document.querySelectorAll('thead th[data-key]').forEach(th => {
     render();
   });
 });
-tbody.addEventListener('click', async (e) => {
+async function handleResultActions(e) {
   const copyBtn = e.target.closest('.copyRefBtn');
   if (copyBtn) {
     const txt = decodeURIComponent(copyBtn.dataset.ref || '');
@@ -800,7 +927,9 @@ tbody.addEventListener('click', async (e) => {
     cddFilter.value = cddBtn.dataset.cdd || '';
     render();
   }
-});
+}
+tbody.addEventListener('click', handleResultActions);
+mobileResults.addEventListener('click', handleResultActions);
 document.addEventListener('keydown', (e) => {
   if (e.key === '/' && document.activeElement !== search && !e.ctrlKey && !e.metaKey && !e.altKey) {
     e.preventDefault();
