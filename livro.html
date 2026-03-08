@@ -148,6 +148,12 @@
             <div class="pill" id="langPill" style="display:none"></div>
             <div class="pill" id="pagesPill" style="display:none"></div>
             <div class="pill" id="typePill" style="display:none"></div>
+            <div class="pill" id="collectionPill" style="display:none"></div>
+            <div class="pill" id="volumePill" style="display:none"></div>
+            <div class="pill" id="translatorPill" style="display:none"></div>
+            <div class="pill" id="organizerPill" style="display:none"></div>
+            <div class="pill" id="secondaryAuthorsPill" style="display:none"></div>
+            <div class="pill" id="subjectsPill" style="display:none"></div>
             <div class="pill" id="cddPill">CDD: —</div>
           </div>
 
@@ -373,6 +379,12 @@
       const colIdi = findCol(keys, ["idioma", "language"]);
       const colPag = findCol(keys, ["paginas", "páginas", "pages"]);
       const colTipo = findCol(keys, ["tipo_material", "tipo de material", "material_type"]);
+      const colColecao = findCol(keys, ["colecao", "coleção", "series", "serie", "série", "collection"]);
+      const colVolume = findCol(keys, ["volume", "tomo", "vol"]);
+      const colTradutor = findCol(keys, ["tradutor", "translator"]);
+      const colOrganizador = findCol(keys, ["organizador", "organizadora", "organizer"]);
+      const colAutoresSec = findCol(keys, ["autores_secundarios", "autores secundários", "autores secundarios", "secondary_authors"]);
+      const colAssuntos = findCol(keys, ["assuntos", "subjects", "subject", "palavras_chave", "palavras-chave"]);
       const colCDD = findCol(keys, ["cdd", "classificacao", "classificação"]);
       const colRes = findCol(keys, ["resumo", "descricao", "descrição", "description", "obs", "observacao", "observação", "notas", "nota", "notes"]);
       const colPdf = findCol(keys, ["pdf_url", "url_pdf", "pdf", "arquivo_pdf", "link_pdf", "url"]);
@@ -408,6 +420,12 @@
       const idioma = colIdi ? (data[colIdi] || "") : "";
       const paginas = colPag ? (data[colPag] || "") : "";
       const tipoMaterial = colTipo ? (data[colTipo] || "") : "";
+      const colecao = colColecao ? (data[colColecao] || "") : "";
+      const volume = colVolume ? (data[colVolume] || "") : "";
+      const tradutor = colTradutor ? (data[colTradutor] || "") : "";
+      const organizador = colOrganizador ? (data[colOrganizador] || "") : "";
+      const autoresSecundarios = colAutoresSec ? (data[colAutoresSec] || "") : "";
+      const assuntos = colAssuntos ? (data[colAssuntos] || "") : "";
       const cdd = colCDD ? (data[colCDD] || "") : "";
       const resumo = colRes ? (data[colRes] || "") : "";
       const pdf = colPdf ? (data[colPdf] || "") : "";
@@ -441,6 +459,12 @@
       setPill("langPill", "idioma", idioma);
       setPill("pagesPill", "páginas", paginas);
       setPill("typePill", "tipo", tipoMaterial);
+      setPill("collectionPill", "coleção", colecao);
+      setPill("volumePill", "volume", volume);
+      setPill("translatorPill", "tradutor", tradutor);
+      setPill("organizerPill", "organizador", organizador);
+      setPill("secondaryAuthorsPill", "autores sec.", autoresSecundarios);
+      setPill("subjectsPill", "assuntos", assuntos);
       setPill("cddPill", "CDD", cdd, true);
 
       $("desc").textContent = resumo || "—";
