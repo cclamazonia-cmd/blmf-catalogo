@@ -233,6 +233,33 @@
       font-weight: 700;
     }
 
+    .stat-value-btn {
+      appearance: none;
+      border: 0;
+      background: transparent;
+      color: inherit;
+      font: inherit;
+      font-size: 1.55rem;
+      font-weight: 700;
+      padding: 0;
+      margin: 0;
+      cursor: pointer;
+      text-align: left;
+    }
+
+    .stat-value-btn:hover,
+    .stat-value-btn:focus-visible {
+      color: #fff2f4;
+      text-decoration: underline;
+      outline: none;
+    }
+
+    .stat-hint {
+      margin-top: 8px;
+      color: var(--muted);
+      font-size: .82rem;
+    }
+
     .sheet,
     .panel {
       border: 1px solid rgba(255,255,255,.08);
@@ -540,7 +567,10 @@
       </div>
       <div class="stat">
         <div class="label">Rascunhos ativos</div>
-        <div id="statDrafts" class="value">0</div>
+        <button id="statDraftsBtn" class="stat-value-btn" type="button">
+          <span id="statDrafts" class="value">0</span>
+        </button>
+        <div class="stat-hint">Clique no número para abrir a lista.</div>
       </div>
       <div class="stat">
         <div class="label">Livros publicados</div>
@@ -708,6 +738,7 @@
               <button id="saveBookDraftBtn" type="submit" class="button primary">Salvar rascunho</button>
               <button id="bookReadyBtn" type="button" class="button secondary">Marcar como pronto</button>
               <button id="publishBookDraftBtn" type="button" class="button success">Publicar este rascunho</button>
+              <button id="discardBookDraftBtn" type="button" class="button warning">Descartar rascunho</button>
             </div>
           </form>
         </div>
@@ -837,6 +868,7 @@
               <button id="saveAuthorDraftBtn" type="submit" class="button primary">Salvar rascunho</button>
               <button id="authorReadyBtn" type="button" class="button secondary">Marcar como pronto</button>
               <button id="publishAuthorDraftBtn" type="button" class="button success">Publicar este rascunho</button>
+              <button id="discardAuthorDraftBtn" type="button" class="button warning">Descartar rascunho</button>
             </div>
           </form>
         </div>
@@ -911,6 +943,7 @@
             <button id="saveExemplarDraftBtn" type="submit" class="button primary">Salvar rascunho</button>
             <button id="exemplarReadyBtn" type="button" class="button secondary">Marcar como pronto</button>
             <button id="publishExemplarDraftBtn" type="button" class="button success">Publicar este rascunho</button>
+            <button id="discardExemplarDraftBtn" type="button" class="button warning">Descartar rascunho</button>
           </div>
         </form>
 
@@ -955,6 +988,7 @@
             <label for="queueStatusFilter">Situação</label>
             <select id="queueStatusFilter">
               <option value="">Todas</option>
+              <option value="open">Abertos</option>
               <option value="draft">Em rascunho</option>
               <option value="ready">Pronto</option>
               <option value="published">Publicado</option>
@@ -1102,6 +1136,7 @@
       catalogMessage: el('catalogMessage'),
       statOpenBatches: el('statOpenBatches'),
       statDrafts: el('statDrafts'),
+      statDraftsBtn: el('statDraftsBtn'),
       statBooks: el('statBooks'),
       statAuthors: el('statAuthors'),
       bookCoverPreview: el('bookCoverPreview'),
@@ -1572,7 +1607,11 @@
       const targetBatchId = el('queueBatchAssign').value;
       let items = [...state.queueItems];
       if (typeFilter) items = items.filter(item => item.item_type === typeFilter);
-      if (statusFilter) items = items.filter(item => item.status === statusFilter);
+      if (statusFilter === 'open') {
+        items = items.filter(item => item.status === 'draft' || item.status === 'ready');
+      } else if (statusFilter) {
+        items = items.filter(item => item.status === statusFilter);
+      }
       if (search) {
         items = items.filter(item => [item.reference_code, item.display_title, item.display_subtitle].filter(Boolean).join(' ').toLowerCase().includes(search));
       }
@@ -1613,6 +1652,7 @@
                     <button class="btn-inline small secondary" data-action="edit-queue" data-type="${sanitize(item.item_type)}" data-id="${item.draft_id}">Editar</button>
                     <button class="btn-inline small success" data-action="publish-queue" data-type="${sanitize(item.item_type)}" data-id="${item.draft_id}">Publicar</button>
                     <button class="btn-inline small ghost" data-action="assign-queue" data-type="${sanitize(item.item_type)}" data-id="${item.draft_id}" data-batch="${sanitize(targetBatchId || '')}">Atribuir lote</button>
+                    <button class="btn-inline small warning" data-action="discard-queue" data-type="${sanitize(item.item_type)}" data-id="${item.draft_id}">Descartar</button>
                   </div>
                 </td>
               </tr>
@@ -1648,6 +1688,20 @@
           try {
             await assignDraftToBatch(btn.dataset.type, Number(btn.dataset.id), Number(batchId));
             showMessage(refs.queueMessage, 'Lote atribuído ao rascunho.', 'ok');
+          } catch (error) {
+            showMessage(refs.queueMessage, error.message, 'error');
+          }
+        });
+      });
+
+      refs.queueTableWrap.querySelectorAll('[data-action="discard-queue"]').forEach(btn => {
+        btn.addEventListener('click', async () => {
+          const tableMap = { book: 'book_drafts', author: 'author_drafts', exemplar: 'exemplar_drafts' };
+          const table = tableMap[btn.dataset.type];
+          if (!table) return;
+          try {
+            await discardDraft(table, Number(btn.dataset.id), refs.queueMessage);
+            showMessage(refs.queueMessage, 'Rascunho descartado com sucesso.', 'ok');
           } catch (error) {
             showMessage(refs.queueMessage, error.message, 'error');
           }
@@ -1939,6 +1993,16 @@
       showMessage(target, 'Rascunho marcado como pronto.', 'ok');
     }
 
+    async function discardDraft(table, id, target, resetFn) {
+      if (!id) throw new Error('Salve o rascunho antes de descartá-lo.');
+      const { error } = await supabase.from(table).update({ status: 'cancelled', updated_by: state.profile.id }).eq('id', Number(id));
+      if (error) throw error;
+      await Promise.all([loadQueue(), loadBatches()]);
+      updateStats();
+      if (typeof resetFn === 'function') resetFn();
+      showMessage(target, 'Rascunho descartado com sucesso.', 'ok');
+    }
+
     el('bookReadyBtn').addEventListener('click', async () => {
       try { await markDraftReady('book_drafts', el('bookDraftId').value, refs.bookMessage); } catch (error) { showMessage(refs.bookMessage, error.message, 'error'); }
     });
@@ -1947,6 +2011,16 @@
     });
     el('exemplarReadyBtn').addEventListener('click', async () => {
       try { await markDraftReady('exemplar_drafts', el('exemplarDraftId').value, refs.exemplarMessage); } catch (error) { showMessage(refs.exemplarMessage, error.message, 'error'); }
+    });
+
+    el('discardBookDraftBtn').addEventListener('click', async () => {
+      try { await discardDraft('book_drafts', el('bookDraftId').value, refs.bookMessage, resetBookForm); } catch (error) { showMessage(refs.bookMessage, error.message, 'error'); }
+    });
+    el('discardAuthorDraftBtn').addEventListener('click', async () => {
+      try { await discardDraft('author_drafts', el('authorDraftId').value, refs.authorMessage, resetAuthorForm); } catch (error) { showMessage(refs.authorMessage, error.message, 'error'); }
+    });
+    el('discardExemplarDraftBtn').addEventListener('click', async () => {
+      try { await discardDraft('exemplar_drafts', el('exemplarDraftId').value, refs.exemplarMessage, resetExemplarForm); } catch (error) { showMessage(refs.exemplarMessage, error.message, 'error'); }
     });
 
     el('publishBookDraftBtn').addEventListener('click', async () => {
@@ -2027,6 +2101,14 @@
     el('refreshAllBtn').addEventListener('click', refreshAll);
     el('refreshQueueBtn').addEventListener('click', loadQueue);
     el('refreshBatchesBtn').addEventListener('click', loadBatches);
+    refs.statDraftsBtn.addEventListener('click', () => {
+      setTab('queuePanel');
+      el('queueTypeFilter').value = '';
+      el('queueStatusFilter').value = 'open';
+      el('queueSearch').value = '';
+      clearMessage(refs.queueMessage);
+      renderQueue();
+    });
     el('bookDraftResetBtn').addEventListener('click', resetBookForm);
     el('authorDraftResetBtn').addEventListener('click', resetAuthorForm);
     el('exemplarDraftResetBtn').addEventListener('click', resetExemplarForm);
