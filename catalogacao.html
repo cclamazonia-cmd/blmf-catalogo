@@ -357,7 +357,7 @@
 
     select { font-weight: 600; }
     input::placeholder,
-    textarea::placeholder { color: #f0d6da; opacity: 1; }
+    textarea::placeholder { color: rgba(255,255,255,.42); opacity: 1; }
 
     input:focus,
     select:focus,
@@ -421,6 +421,11 @@
       gap: 8px;
       flex-wrap: wrap;
       justify-content: flex-end;
+    }
+
+    .contributor-controls .button.small {
+      min-width: 88px;
+      justify-content: center;
     }
 
     .checkbox-line {
@@ -555,7 +560,8 @@
 
     @media (max-width: 1100px) {
       .grid.cols-3,
-      .split {
+      .split,
+      .contributor-row {
         grid-template-columns: 1fr;
       }
     }
@@ -702,8 +708,8 @@
 
             <div class="field" style="grid-column: span 2;">
               <label for="bookAuthor">Responsabilidade principal / forma curta</label>
-              <input id="bookAuthor" type="text" placeholder="Bakunin, Mikhail" />
-              <small>Use aqui a forma curta exibida no catálogo. A lista detalhada fica logo abaixo em “Autores e outras responsabilidades”.</small>
+              <input id="bookAuthor" type="text" placeholder="BAKUNIN, Mikhail" />
+              <small>Use aqui a forma curta exibida no catálogo, no padrão Sobrenome, Nome. A lista detalhada fica logo abaixo em “Autores e outras responsabilidades”.</small>
             </div>
 
             <div class="field">
@@ -728,12 +734,12 @@
 
             <div id="bookISBNField" class="field">
               <label for="bookISBN">ISBN</label>
-              <input id="bookISBN" type="text" />
+              <input id="bookISBN" type="text" placeholder="9788576630173" inputmode="numeric" />
               <div class="isbn-tools" style="display:flex;gap:8px;flex-wrap:wrap;margin-top:4px;">
                 <button type="button" class="button secondary small" id="btnBuscarCBL">Buscar na CBL</button>
                 <button type="button" class="button secondary small" id="btnBuscarBN">Abrir na Biblioteca Nacional</button>
               </div>
-              <small id="isbnLookupHint">A CBL ajuda a localizar os dados editoriais básicos. A Biblioteca Nacional ajuda a conferir e completar a ficha.</small>
+              <small id="isbnLookupHint">Formato padrão do ISBN: digite sem hífens nem espaços. Ex.: 9788576630173. A CBL ajuda a localizar os dados editoriais básicos. A Biblioteca Nacional ajuda a conferir e completar a ficha.</small>
               <small id="isbnLookupStatus" style="display:none;"></small>
             </div>
 
@@ -783,11 +789,11 @@
                 <div class="inline">
                   <div>
                     <h4 class="section-title">Autores e outras responsabilidades</h4>
-                    <div class="hint">Para vários autores, adicione uma linha para cada pessoa e mantenha a função Autor(a) para a coautoria. Use Subir e Descer para ajustar a ordem exibida. Em cada campo Nome, use sempre o padrão Sobrenome, Nome.</div>
+                    <div class="hint">Use esta área para autor, coautor(a), organização, tradução, ilustração, prefácio e outras funções. Em cada campo Nome, use sempre o padrão Sobrenome, Nome. Os botões Subir e Descer mudam a ordem de exibição das pessoas na ficha e no catálogo.</div>
                   </div>
-                  <div class="actions">
-                    <button id="addContributorBtn" type="button" class="button secondary small">Adicionar coautor(a)</button>
-                    <button id="addResponsibilityBtn" type="button" class="button ghost small">Adicionar outra função</button>
+                  <div class="row-actions">
+                    <button id="addContributorBtn" type="button" class="button primary small">Adicionar coautor(a)</button>
+                    <button id="addOtherResponsibilityBtn" type="button" class="button primary small">Adicionar outra função</button>
                   </div>
                 </div>
                 <div id="bookContributorsWrap" class="contrib-list"></div>
@@ -889,12 +895,13 @@
 
             <div class="field" style="grid-column: span 2;">
               <label for="authorPreferredName">Nome preferido</label>
-              <input id="authorPreferredName" type="text" required />
+              <input id="authorPreferredName" type="text" required placeholder="Mikhail Bakunin" />
             </div>
 
             <div class="field">
               <label for="authorSortName">Nome para ordenação</label>
               <input id="authorSortName" type="text" placeholder="Bakunin, Mikhail" />
+              <small>Use o padrão Sobrenome, Nome, com vírgula.</small>
             </div>
 
             <div class="field">
@@ -1363,12 +1370,12 @@
     function getValidBookIsbnOrWarn() {
       const isbn = normalizeIsbnInput(el('bookISBN').value || '');
       if (!isbn) {
-        setIsbnLookupStatus('Digite um ISBN antes de abrir a busca.', true);
+        setIsbnLookupStatus('Digite um ISBN no formato padrão, sem hífens nem espaços. Ex.: 9788576630173.', true);
         el('bookISBN').focus();
         return null;
       }
       if (!isValidIsbn(isbn)) {
-        setIsbnLookupStatus('Digite um ISBN válido.', true);
+        setIsbnLookupStatus('Digite um ISBN válido no formato padrão, sem hífens nem espaços. Ex.: 9788576630173.', true);
         el('bookISBN').focus();
         return null;
       }
@@ -1380,7 +1387,7 @@
       const isbn = getValidBookIsbnOrWarn();
       if (!isbn) return;
       const urls = {
-        cbl: `https://www.cblservicos.org.br/isbn/pesquisa/?q=${encodeURIComponent(isbn)}`,
+        cbl: `https://servicos.cbl.org.br/isbn/pesquisa/?dir%5B0%5D=asc&filtrar_por%5B0%5D=todos&ord%5B0%5D=relevancia&page=1&q=${encodeURIComponent(isbn)}`,
         bn: `https://acervo.bn.gov.br/sophia_web/acervo/ISBN/${encodeURIComponent(isbn)}`,
       };
       const url = urls[source];
@@ -1443,13 +1450,36 @@
       return roles.map(([value, label]) => `<option value="${value}" ${value === selected ? 'selected' : ''}>${label}</option>`).join('');
     }
 
-    function createEmptyContributor(position = 1, role = 'autor', isPrimary = (position === 1)) {
-      return { position, name: '', role, is_primary: isPrimary };
+    function createEmptyContributor(position = 1, role = 'autor') {
+      return { position, name: '', role, is_primary: position === 1 };
+    }
+
+    function normalizeContributorsForRender(contributors = []) {
+      const rows = (contributors || []).map((item, index) => ({
+        position: index + 1,
+        name: item?.name || '',
+        role: item?.role || 'autor',
+        is_primary: !!item?.is_primary,
+      }));
+
+      if (!rows.length) return [createEmptyContributor(1, 'autor')];
+      if (!rows.some(item => item.is_primary)) rows[0].is_primary = true;
+
+      return rows.map((item, index) => ({ ...item, position: index + 1 }));
+    }
+
+    function getBookContributorsForRender() {
+      const rows = Array.from(refs.bookContributorsWrap.querySelectorAll('.contributor-row')).map((row, index) => ({
+        position: index + 1,
+        name: row.querySelector('.contrib-name')?.value || '',
+        role: row.querySelector('.contrib-role')?.value || 'autor',
+        is_primary: !!row.querySelector('.contrib-primary')?.checked,
+      }));
+      return normalizeContributorsForRender(rows);
     }
 
     function renderBookContributors(contributors = []) {
-      const rows = (contributors || []).filter(item => item && (item.name || '').trim());
-      const safeRows = rows.length ? rows : [createEmptyContributor(1)];
+      const safeRows = normalizeContributorsForRender(contributors);
       refs.bookContributorsWrap.innerHTML = safeRows.map((item, index) => `
         <div class="contributor-row" data-index="${index}">
           <div class="field" style="padding:0; background:none; border:none;">
@@ -1465,10 +1495,10 @@
             <label class="checkbox-line"><input type="radio" name="bookContributorPrimary" class="contrib-primary" ${item.is_primary ? 'checked' : ''}>Responsabilidade principal</label>
           </div>
           <div class="contributor-controls">
-            <button type="button" class="btn-inline small secondary" data-contrib-action="add-below">Adicionar abaixo</button>
-            <button type="button" class="btn-inline small ghost" data-contrib-action="up">Subir</button>
-            <button type="button" class="btn-inline small ghost" data-contrib-action="down">Descer</button>
-            <button type="button" class="btn-inline small warning" data-contrib-action="remove">Remover</button>
+            <button type="button" class="button small primary" data-contrib-action="add">Adicionar</button>
+            <button type="button" class="button small secondary" data-contrib-action="up">Subir</button>
+            <button type="button" class="button small secondary" data-contrib-action="down">Descer</button>
+            <button type="button" class="button small warning" data-contrib-action="remove">Remover</button>
           </div>
         </div>
       `).join('');
@@ -2536,13 +2566,13 @@
 
     el('bookType').addEventListener('change', syncBookTypeUI);
     el('addContributorBtn').addEventListener('click', () => {
-      const current = getBookContributorsFromForm();
-      current.push(createEmptyContributor(current.length + 1, 'autor', false));
+      const current = getBookContributorsForRender();
+      current.push(createEmptyContributor(current.length + 1, 'autor'));
       renderBookContributors(current);
     });
-    el('addResponsibilityBtn').addEventListener('click', () => {
-      const current = getBookContributorsFromForm();
-      current.push(createEmptyContributor(current.length + 1, 'organizador', false));
+    el('addOtherResponsibilityBtn').addEventListener('click', () => {
+      const current = getBookContributorsForRender();
+      current.push(createEmptyContributor(current.length + 1, 'organizador'));
       renderBookContributors(current);
     });
     refs.bookContributorsWrap.addEventListener('click', (event) => {
@@ -2551,36 +2581,32 @@
       const row = btn.closest('.contributor-row');
       if (!row) return;
 
+      const rows = getBookContributorsForRender();
+      const index = Number(row.dataset.index || 0);
       const action = btn.dataset.contribAction;
-      const index = Number(row.dataset.index || '0');
-      const current = getBookContributorsFromForm();
 
-      if (!current.length) {
-        renderBookContributors([]);
-        return;
-      }
-
-      if (action === 'add-below') {
-        current.splice(index + 1, 0, createEmptyContributor(current.length + 1, 'autor', false));
-        renderBookContributors(current);
+      if (action === 'add') {
+        const newRole = rows[index]?.role || 'autor';
+        rows.splice(index + 1, 0, createEmptyContributor(index + 2, newRole));
+        renderBookContributors(rows);
         return;
       }
 
       if (action === 'remove') {
-        current.splice(index, 1);
-        renderBookContributors(current);
+        rows.splice(index, 1);
+        renderBookContributors(rows);
         return;
       }
 
       if (action === 'up' && index > 0) {
-        [current[index - 1], current[index]] = [current[index], current[index - 1]];
-        renderBookContributors(current);
+        [rows[index - 1], rows[index]] = [rows[index], rows[index - 1]];
+        renderBookContributors(rows);
         return;
       }
 
-      if (action === 'down' && index < current.length - 1) {
-        [current[index], current[index + 1]] = [current[index + 1], current[index]];
-        renderBookContributors(current);
+      if (action === 'down' && index < rows.length - 1) {
+        [rows[index], rows[index + 1]] = [rows[index + 1], rows[index]];
+        renderBookContributors(rows);
       }
     });
 
