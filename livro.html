@@ -133,6 +133,7 @@
 
         <div class="contentbox">
           <h1 class="title" id="title">Carregando…</h1>
+          <div class="muted" id="subtitleLine" style="display:none;margin-bottom:4px"></div>
           <div class="muted" id="authorLine">—</div>
 
           <div class="meta" style="margin-top:12px">
@@ -140,6 +141,13 @@
             <div class="pill" id="tomboPill">tombo: —</div>
             <div class="pill" id="yearPill">ano: —</div>
             <div class="pill" id="pubPill">editora: —</div>
+            <div class="pill" id="placePill" style="display:none"></div>
+            <div class="pill" id="editionPill" style="display:none"></div>
+            <div class="pill" id="isbnPill" style="display:none"></div>
+            <div class="pill" id="issnPill" style="display:none"></div>
+            <div class="pill" id="langPill" style="display:none"></div>
+            <div class="pill" id="pagesPill" style="display:none"></div>
+            <div class="pill" id="typePill" style="display:none"></div>
             <div class="pill" id="cddPill">CDD: —</div>
           </div>
 
@@ -185,6 +193,36 @@
       const el = $("status");
       el.className = "status" + (cls ? " " + cls : "");
       el.textContent = msg || "";
+    }
+
+    function setPill(id, label, value, showDash = false) {
+      const el = $(id);
+      if (!el) return;
+
+      const txt = String(value ?? "").trim();
+
+      if (!txt) {
+        if (showDash) {
+          el.style.display = "inline-flex";
+          el.textContent = `${label}: —`;
+        } else {
+          el.style.display = "none";
+          el.textContent = "";
+        }
+        return;
+      }
+
+      el.style.display = "inline-flex";
+      el.textContent = `${label}: ${txt}`;
+    }
+
+    function setLine(id, value) {
+      const el = $(id);
+      if (!el) return;
+
+      const txt = String(value ?? "").trim();
+      el.textContent = txt;
+      el.style.display = txt ? "" : "none";
     }
 
     function setCover(pathOrUrl) {
@@ -324,11 +362,19 @@
 
       const colRef = findCol(keys, ["bib_ref", "bibref", "ref", "referencia", "referência"]) || "bib_ref";
       const colTit = findCol(keys, ["titulo", "título", "title", "nome"]);
+      const colSub = findCol(keys, ["subtitulo", "subtítulo", "subtitle"]);
       const colAut = findCol(keys, ["autor", "author", "autores"]);
       const colAno = findCol(keys, ["ano", "year"]);
       const colEdi = findCol(keys, ["editora", "publisher"]);
+      const colLoc = findCol(keys, ["local_publicacao", "local de publicação", "cidade", "place"]);
+      const colEdc = findCol(keys, ["edicao", "edição", "edition"]);
+      const colISBN = findCol(keys, ["isbn"]);
+      const colISSN = findCol(keys, ["issn"]);
+      const colIdi = findCol(keys, ["idioma", "language"]);
+      const colPag = findCol(keys, ["paginas", "páginas", "pages"]);
+      const colTipo = findCol(keys, ["tipo_material", "tipo de material", "material_type"]);
       const colCDD = findCol(keys, ["cdd", "classificacao", "classificação"]);
-      const colRes = findCol(keys, ["resumo", "descricao", "descrição", "description", "obs", "observacao", "observação"]);
+      const colRes = findCol(keys, ["resumo", "descricao", "descrição", "description", "obs", "observacao", "observação", "notas", "nota", "notes"]);
       const colPdf = findCol(keys, ["pdf_url", "url_pdf", "pdf", "arquivo_pdf", "link_pdf", "url"]);
       const colCover = findCol(keys, ["cover_object_path", "cover_url", "capa_url", "capa", "image_url", "imagem_url"]);
 
@@ -351,9 +397,17 @@
       }
 
       const titulo = colTit ? (data[colTit] || "") : "";
+      const subtitulo = colSub ? (data[colSub] || "") : "";
       const autor = colAut ? (data[colAut] || "") : "";
       const ano = colAno ? (data[colAno] || "") : "";
       const editora = colEdi ? (data[colEdi] || "") : "";
+      const localPublicacao = colLoc ? (data[colLoc] || "") : "";
+      const edicao = colEdc ? (data[colEdc] || "") : "";
+      const isbn = colISBN ? (data[colISBN] || "") : "";
+      const issn = colISSN ? (data[colISSN] || "") : "";
+      const idioma = colIdi ? (data[colIdi] || "") : "";
+      const paginas = colPag ? (data[colPag] || "") : "";
+      const tipoMaterial = colTipo ? (data[colTipo] || "") : "";
       const cdd = colCDD ? (data[colCDD] || "") : "";
       const resumo = colRes ? (data[colRes] || "") : "";
       const pdf = colPdf ? (data[colPdf] || "") : "";
@@ -374,11 +428,21 @@
       setCover(cover);
 
       $("title").textContent = titulo || "Sem título";
+      setLine("subtitleLine", subtitulo);
       $("authorLine").textContent = autor || "—";
-      $("bibRefPill").textContent = "ref: " + (data[colRef] || "—");
-      $("yearPill").textContent = "ano: " + (ano || "—");
-      $("pubPill").textContent = "editora: " + (editora || "—");
-      $("cddPill").textContent = "CDD: " + (cdd || "—");
+
+      setPill("bibRefPill", "ref", data[colRef] || "", true);
+      setPill("yearPill", "ano", ano, true);
+      setPill("pubPill", "editora", editora, true);
+      setPill("placePill", "local", localPublicacao);
+      setPill("editionPill", "edição", edicao);
+      setPill("isbnPill", "ISBN", isbn);
+      setPill("issnPill", "ISSN", issn);
+      setPill("langPill", "idioma", idioma);
+      setPill("pagesPill", "páginas", paginas);
+      setPill("typePill", "tipo", tipoMaterial);
+      setPill("cddPill", "CDD", cdd, true);
+
       $("desc").textContent = resumo || "—";
 
       async function loadTombosForBook(bookRow, bib_ref) {
@@ -434,7 +498,7 @@
       }
 
       const tombos = await loadTombosForBook(data, bib_ref);
-      $("tomboPill").textContent = "tombo: " + (tombos.length ? tombos.join(", ") : "—");
+      setPill("tomboPill", "tombo", tombos.length ? tombos.join(", ") : "", true);
 
       if (pdf) {
         $("btnAbrirPdf").style.display = "inline-block";
