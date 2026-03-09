@@ -78,9 +78,12 @@
     .status.ok{color:var(--ok)} .status.warn{color:var(--warn)} .status.bad{color:var(--bad)}
     .hr{height:1px;background:rgba(255,255,255,.08);margin:14px 0}
     .detail{
-      display:block;
-      width:100%;
+      display:grid;
+      grid-template-columns: 260px minmax(0,1fr);
+      gap:16px;
+      align-items:start;
     }
+    @media (max-width:820px){.detail{grid-template-columns:1fr}}
     .photobox{
       border:1px solid rgba(255,255,255,.08);
       background:rgba(255,255,255,.02);
@@ -90,8 +93,6 @@
       align-items:center;
       justify-content:center;
       min-height:320px;
-      width:min(240px, 100%);
-      margin:0 auto 18px;
     }
     .photobox.empty{display:none}
     .photoimg{
@@ -104,17 +105,10 @@
       border-radius:12px;
       box-shadow:var(--shadow);
     }
-    .contentbox{
-      min-width:0;
-      width:100%;
-      display:block;
-    }
+    .contentbox{min-width:0}
     .bio{
       white-space:pre-wrap;
-      line-height:1.6;
-      width:100%;
-      max-width:none;
-      display:block;
+      line-height:1.55;
     }
     .section-title{
       margin:0 0 12px;
@@ -193,6 +187,7 @@
           <div class="subtitle" id="sortLine" style="display:none"></div>
 
           <div class="meta" style="margin-top:12px">
+            <div class="pill" id="authorIdPill">id: —</div>
             <div class="pill" id="yearsPill" style="display:none"></div>
             <div class="pill" id="countryPill" style="display:none"></div>
             <div class="pill" id="booksCountPill" style="display:none"></div>
@@ -321,50 +316,39 @@
       return "";
     }
 
-    async function setPhoto(pathOrUrl) {
+    function setPhoto(pathOrUrl) {
       const box = $("photoBox");
       const img = $("photoImg");
-      const raw = String(pathOrUrl || "").trim();
-
-      if (!raw) {
+      if (!pathOrUrl) {
         box.classList.add("empty");
         img.removeAttribute("src");
         return;
       }
 
-      const candidates = [];
-      const pushUnique = (value) => {
-        const v = String(value || "").trim();
-        if (!v) return;
-        if (!candidates.includes(v)) candidates.push(v);
-      };
-
-      if (/^https?:\/\//i.test(raw)) {
-        pushUnique(raw);
-      } else {
-        const clean = raw.replace(/^\/+/, "");
-        pushUnique(supabase.storage.from("covers").getPublicUrl(clean)?.data?.publicUrl || "");
-        pushUnique(supabase.storage.from("covers").getPublicUrl(raw)?.data?.publicUrl || "");
-        pushUnique(supabase.storage.from("authors").getPublicUrl(clean)?.data?.publicUrl || "");
-        pushUnique(supabase.storage.from("authors").getPublicUrl(raw)?.data?.publicUrl || "");
-        pushUnique(supabase.storage.from("autor").getPublicUrl(clean)?.data?.publicUrl || "");
-        pushUnique(supabase.storage.from("autor").getPublicUrl(raw)?.data?.publicUrl || "");
+      let src = String(pathOrUrl || "").trim();
+      if (!src) {
+        box.classList.add("empty");
+        img.removeAttribute("src");
+        return;
       }
 
-      const tryLoad = (src) => new Promise((resolve) => {
-        const probe = new Image();
-        probe.onload = () => resolve(src);
-        probe.onerror = () => resolve(null);
-        probe.src = src;
-      });
+      if (!/^https?:\/\//i.test(src)) {
+        const attempts = [
+          supabase.storage.from("covers").getPublicUrl(src),
+          supabase.storage.from("authors").getPublicUrl(src),
+          supabase.storage.from("autor").getPublicUrl(src),
+        ];
 
-      let chosen = null;
-      for (const candidate of candidates) {
-        chosen = await tryLoad(candidate);
-        if (chosen) break;
+        for (const attempt of attempts) {
+          const url = attempt?.data?.publicUrl || "";
+          if (url) {
+            src = url;
+            break;
+          }
+        }
       }
 
-      if (!chosen) {
+      if (!src) {
         box.classList.add("empty");
         img.removeAttribute("src");
         return;
@@ -374,8 +358,7 @@
         box.classList.add("empty");
         img.removeAttribute("src");
       };
-
-      img.src = chosen;
+      img.src = src;
       box.classList.remove("empty");
     }
 
@@ -498,7 +481,7 @@
       setPill("authorIdPill", "id", String(author.id || ""), true);
       setPill("yearsPill", "datas", yearsLabel(author.birth_year, author.death_year));
       setPill("countryPill", "país", author.country || "");
-      setPill("booksCountPill", "livros", author.books_count != null ? String(author.books_count) : String(books.length || ""));
+      setPill("booksCountPill", "livros", String(Array.isArray(books) ? books.length : (author.books_count ?? 0)));
       setPill("viafPill", "VIAF", author.viaf_id || "");
       setPill("isniPill", "ISNI", author.isni || "");
       setPill("wikidataPill", "Wikidata", author.wikidata_id || "");
@@ -506,7 +489,7 @@
       const sourceLabel = [author.source_kind || "", author.source_label || ""].filter(Boolean).join(" · ");
       setPill("sourcePill", "fonte", sourceLabel);
 
-      await setPhoto(author.photo_object_path || "");
+      setPhoto(author.photo_object_path || "");
 
       renderBooks(books || []);
       setStatus("", "");
