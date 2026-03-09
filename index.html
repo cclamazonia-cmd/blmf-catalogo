@@ -1076,10 +1076,7 @@ async function handleResultActions(e) {
     const authorId = (authorBtn.dataset.authorId || '').trim();
     if (authorId) {
       location.assign(`${AUTOR_URL}?id=${encodeURIComponent(authorId)}`);
-      return;
     }
-    authorFilter.value = authorBtn.dataset.author || '';
-    render();
     return;
   }
   const cddBtn = e.target.closest('.cdd-chip');
