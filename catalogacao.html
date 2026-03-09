@@ -357,7 +357,7 @@
 
     select { font-weight: 600; }
     input::placeholder,
-    textarea::placeholder { color: rgba(255,255,255,.42); opacity: 1; }
+    textarea::placeholder { color: #f0d6da; opacity: 1; }
 
     input:focus,
     select:focus,
@@ -421,11 +421,6 @@
       gap: 8px;
       flex-wrap: wrap;
       justify-content: flex-end;
-    }
-
-    .contributor-controls .button.small {
-      min-width: 88px;
-      justify-content: center;
     }
 
     .checkbox-line {
@@ -560,8 +555,7 @@
 
     @media (max-width: 1100px) {
       .grid.cols-3,
-      .split,
-      .contributor-row {
+      .split {
         grid-template-columns: 1fr;
       }
     }
@@ -707,9 +701,9 @@
             </div>
 
             <div class="field" style="grid-column: span 2;">
-              <label for="bookAuthor">SOBRENOME, Nome (autoria ou organização, etc.)</label>
-              <input id="bookAuthor" type="text" placeholder="BAKUNIN, Mikhail; PROUDHON, Pierre-Joseph (Org.)" />
-              <small>Este campo é preenchido prioritariamente a partir da lista logo abaixo em “Autores e outras responsabilidades”. A ordem, os nomes e as funções definidos ali determinam o conteúdo salvo em <code>autor</code>.</small>
+              <label for="bookAuthor">Responsabilidade principal / forma curta</label>
+              <input id="bookAuthor" type="text" placeholder="Bakunin, Mikhail" />
+              <small>Use aqui a forma curta exibida no catálogo. A lista detalhada fica logo abaixo em “Autores e outras responsabilidades”.</small>
             </div>
 
             <div class="field">
@@ -734,13 +728,7 @@
 
             <div id="bookISBNField" class="field">
               <label for="bookISBN">ISBN</label>
-              <input id="bookISBN" type="text" placeholder="9788576630173" inputmode="numeric" />
-              <div class="isbn-tools" style="display:flex;gap:8px;flex-wrap:wrap;margin-top:4px;">
-                <button type="button" class="button secondary small" id="btnBuscarCBL">Buscar na CBL</button>
-                <button type="button" class="button secondary small" id="btnBuscarBN">Abrir na Biblioteca Nacional</button>
-              </div>
-              <small id="isbnLookupHint">Formato padrão do ISBN: digite sem hífens nem espaços. Ex.: 9788576630173. A CBL ajuda a localizar os dados editoriais básicos. A Biblioteca Nacional ajuda a conferir e completar a ficha.</small>
-              <small id="isbnLookupStatus" style="display:none;"></small>
+              <input id="bookISBN" type="text" />
             </div>
 
             <div id="bookISSNField" class="field">
@@ -789,12 +777,9 @@
                 <div class="inline">
                   <div>
                     <h4 class="section-title">Autores e outras responsabilidades</h4>
-                    <div class="hint">Use esta área para autor, coautor(a), organização, tradução, ilustração, prefácio e outras funções. Em cada campo Nome, use sempre o padrão Sobrenome, Nome. A ordem, os nomes e as funções definidos aqui determinam o conteúdo do campo curto acima e o valor salvo em <code>autor</code>. Os botões Subir e Descer mudam a ordem de exibição das pessoas na ficha e no catálogo.</div>
+                    <div class="hint">Use esta área para autor, organização, tradução, ilustração, prefácio e outras funções.</div>
                   </div>
-                  <div class="row-actions">
-                    <button id="addContributorBtn" type="button" class="button primary small">Adicionar pessoa</button>
-                    <button id="addOtherResponsibilityBtn" type="button" class="button primary small">Adicionar outra função</button>
-                  </div>
+                  <button id="addContributorBtn" type="button" class="button secondary small">Adicionar pessoa</button>
                 </div>
                 <div id="bookContributorsWrap" class="contrib-list"></div>
               </div>
@@ -895,13 +880,12 @@
 
             <div class="field" style="grid-column: span 2;">
               <label for="authorPreferredName">Nome preferido</label>
-              <input id="authorPreferredName" type="text" required placeholder="Mikhail Bakunin" />
+              <input id="authorPreferredName" type="text" required />
             </div>
 
             <div class="field">
               <label for="authorSortName">Nome para ordenação</label>
               <input id="authorSortName" type="text" placeholder="Bakunin, Mikhail" />
-              <small>Use o padrão Sobrenome, Nome, com vírgula.</small>
             </div>
 
             <div class="field">
@@ -1210,7 +1194,9 @@
     const SUPABASE_URL = 'https://asptfmokzykwzlshsncw.supabase.co';
     const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFzcHRmbW9renlrd3psc2hzbmN3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzI1MzcxNzcsImV4cCI6MjA4ODExMzE3N30.JkMLHPCV2AH5ELZV_1RfcoW250QEofLGvnDKSDpkcn0';
 
-    const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+      auth: { storage: window.sessionStorage, persistSession: true, autoRefreshToken: true, detectSessionInUrl: true }
+    });
 
     const state = {
       session: null,
@@ -1263,7 +1249,6 @@
       bookContributorsWrap: el('bookContributorsWrap'),
       bookCoverFileName: el('bookCoverFileName'),
       authorPhotoFileName: el('authorPhotoFileName'),
-      isbnLookupStatus: el('isbnLookupStatus'),
     };
 
     function showMessage(target, text, kind = 'info') {
@@ -1320,6 +1305,37 @@
       });
     }
 
+    let catalogacaoRefreshPromise = null;
+
+    function getActiveCatalogacaoTab() {
+      return document.querySelector('.panel.active')?.id || 'booksPanel';
+    }
+
+    async function refreshCatalogacaoForActiveTab() {
+      await requireSession();
+      await loadProfile();
+      await loadBatches();
+
+      const activeTab = getActiveCatalogacaoTab();
+      if (activeTab === 'queuePanel') {
+        await loadQueue();
+      } else if (activeTab === 'batchesPanel') {
+        await loadBatches();
+      } else if (activeTab === 'catalogPanel') {
+        await loadCatalog();
+      }
+
+      updateStats();
+    }
+
+    async function refreshCatalogacaoView() {
+      if (catalogacaoRefreshPromise) return catalogacaoRefreshPromise;
+      catalogacaoRefreshPromise = refreshCatalogacaoForActiveTab().finally(() => {
+        catalogacaoRefreshPromise = null;
+      });
+      return catalogacaoRefreshPromise;
+    }
+
     function openActiveDraftsView() {
       state.showOnlyActiveDrafts = true;
       el('queueTypeFilter').value = '';
@@ -1331,69 +1347,11 @@
     }
 
     document.querySelectorAll('.tab-btn').forEach(btn => {
-      btn.addEventListener('click', () => setTab(btn.dataset.tab));
+      btn.addEventListener('click', async () => {
+        setTab(btn.dataset.tab);
+        await refreshCatalogacaoForActiveTab();
+      });
     });
-
-    function normalizeIsbnInput(value) {
-      return String(value || '').replace(/[^0-9Xx]/g, '').toUpperCase();
-    }
-
-    function isValidIsbn10(value) {
-      if (!/^[0-9]{9}[0-9X]$/.test(value)) return false;
-      let sum = 0;
-      for (let i = 0; i < 9; i++) sum += (10 - i) * Number(value[i]);
-      sum += value[9] === 'X' ? 10 : Number(value[9]);
-      return sum % 11 === 0;
-    }
-
-    function isValidIsbn13(value) {
-      if (!/^[0-9]{13}$/.test(value)) return false;
-      let sum = 0;
-      for (let i = 0; i < 12; i++) {
-        sum += Number(value[i]) * (i % 2 === 0 ? 1 : 3);
-      }
-      const check = (10 - (sum % 10)) % 10;
-      return check === Number(value[12]);
-    }
-
-    function isValidIsbn(value) {
-      return isValidIsbn10(value) || isValidIsbn13(value);
-    }
-
-    function setIsbnLookupStatus(message = '', isError = false) {
-      if (!refs.isbnLookupStatus) return;
-      refs.isbnLookupStatus.textContent = message;
-      refs.isbnLookupStatus.style.display = message ? 'block' : 'none';
-      refs.isbnLookupStatus.style.color = isError ? '#fecaca' : 'var(--muted)';
-    }
-
-    function getValidBookIsbnOrWarn() {
-      const isbn = normalizeIsbnInput(el('bookISBN').value || '');
-      if (!isbn) {
-        setIsbnLookupStatus('Digite um ISBN no formato padrão, sem hífens nem espaços. Ex.: 9788576630173.', true);
-        el('bookISBN').focus();
-        return null;
-      }
-      if (!isValidIsbn(isbn)) {
-        setIsbnLookupStatus('Digite um ISBN válido no formato padrão, sem hífens nem espaços. Ex.: 9788576630173.', true);
-        el('bookISBN').focus();
-        return null;
-      }
-      setIsbnLookupStatus('');
-      return isbn;
-    }
-
-    function openExternalIsbnLookup(source) {
-      const isbn = getValidBookIsbnOrWarn();
-      if (!isbn) return;
-      const urls = {
-        cbl: `https://servicos.cbl.org.br/isbn/pesquisa/?dir%5B0%5D=asc&filtrar_por%5B0%5D=todos&ord%5B0%5D=relevancia&page=1&q=${encodeURIComponent(isbn)}`,
-        bn: `https://acervo.bn.gov.br/sophia_web/acervo/ISBN/${encodeURIComponent(isbn)}`,
-      };
-      const url = urls[source];
-      if (!url) return;
-      window.open(url, '_blank', 'noopener');
-    }
 
     function batchOptions(includeBlank = true) {
       const openBatches = state.batches.filter(b => b.status === 'open');
@@ -1450,41 +1408,18 @@
       return roles.map(([value, label]) => `<option value="${value}" ${value === selected ? 'selected' : ''}>${label}</option>`).join('');
     }
 
-    function createEmptyContributor(position = 1, role = 'autor') {
-      return { position, name: '', role, is_primary: position === 1 };
-    }
-
-    function normalizeContributorsForRender(contributors = []) {
-      const rows = (contributors || []).map((item, index) => ({
-        position: index + 1,
-        name: item?.name || '',
-        role: item?.role || 'autor',
-        is_primary: !!item?.is_primary,
-      }));
-
-      if (!rows.length) return [createEmptyContributor(1, 'autor')];
-      if (!rows.some(item => item.is_primary)) rows[0].is_primary = true;
-
-      return rows.map((item, index) => ({ ...item, position: index + 1 }));
-    }
-
-    function getBookContributorsForRender() {
-      const rows = Array.from(refs.bookContributorsWrap.querySelectorAll('.contributor-row')).map((row, index) => ({
-        position: index + 1,
-        name: row.querySelector('.contrib-name')?.value || '',
-        role: row.querySelector('.contrib-role')?.value || 'autor',
-        is_primary: !!row.querySelector('.contrib-primary')?.checked,
-      }));
-      return normalizeContributorsForRender(rows);
+    function createEmptyContributor(position = 1) {
+      return { position, name: '', role: 'autor', is_primary: position === 1 };
     }
 
     function renderBookContributors(contributors = []) {
-      const safeRows = normalizeContributorsForRender(contributors);
+      const rows = (contributors || []).filter(item => item && (item.name || '').trim());
+      const safeRows = rows.length ? rows : [createEmptyContributor(1)];
       refs.bookContributorsWrap.innerHTML = safeRows.map((item, index) => `
         <div class="contributor-row" data-index="${index}">
           <div class="field" style="padding:0; background:none; border:none;">
             <label>Nome</label>
-            <input type="text" class="contrib-name" value="${sanitize(item.name || '')}" placeholder="Sobrenome, Nome" />
+            <input type="text" class="contrib-name" value="${sanitize(item.name || '')}" placeholder="Nome completo" />
           </div>
           <div class="field" style="padding:0; background:none; border:none;">
             <label>Função</label>
@@ -1495,14 +1430,12 @@
             <label class="checkbox-line"><input type="radio" name="bookContributorPrimary" class="contrib-primary" ${item.is_primary ? 'checked' : ''}>Responsabilidade principal</label>
           </div>
           <div class="contributor-controls">
-            <button type="button" class="button small primary" data-contrib-action="add">Adicionar</button>
-            <button type="button" class="button small secondary" data-contrib-action="up">Subir</button>
-            <button type="button" class="button small secondary" data-contrib-action="down">Descer</button>
-            <button type="button" class="button small warning" data-contrib-action="remove">Remover</button>
+            <button type="button" class="btn-inline small ghost" data-contrib-action="up">↑</button>
+            <button type="button" class="btn-inline small ghost" data-contrib-action="down">↓</button>
+            <button type="button" class="btn-inline small warning" data-contrib-action="remove">Remover</button>
           </div>
         </div>
       `).join('');
-      syncBookAuthorFromContributors();
     }
 
     function getBookContributorsFromForm() {
@@ -1519,39 +1452,11 @@
       return contributors.map((item, index) => ({ ...item, position: index + 1 }));
     }
 
-    function roleSuffixForShortField(role) {
-      const normalized = String(role || '').trim().toLowerCase();
-      const map = {
-        autor: '',
-        organizador: 'Org.',
-        tradutor: 'Trad.',
-        ilustrador: 'Il.',
-        prefaciador: 'Pref.',
-        coordenador: 'Coord.',
-        editor: 'Ed.',
-        outro: '',
-      };
-      return map[normalized] || '';
-    }
-
     function buildShortResponsibility(contributors = []) {
-      const ordered = (contributors || [])
-        .filter(item => item && item.name && item.name.trim())
-        .sort((a, b) => (a.position || 0) - (b.position || 0));
-
-      if (!ordered.length) return '';
-
-      return ordered.map(item => {
-        const name = item.name.trim();
-        const suffix = roleSuffixForShortField(item.role);
-        return suffix ? `${name} (${suffix})` : name;
-      }).join('; ');
-    }
-
-    function syncBookAuthorFromContributors() {
-      const contributors = getBookContributorsFromForm();
-      const shortValue = buildShortResponsibility(contributors);
-      el('bookAuthor').value = shortValue || '';
+      const names = contributors.filter(item => item.name).map(item => item.name.trim()).filter(Boolean);
+      if (!names.length) return null;
+      if (names.length <= 3) return names.join('; ');
+      return `${names.slice(0, 3).join('; ')} et al.`;
     }
 
     function syncBookTypeUI() {
@@ -1719,7 +1624,7 @@
 
     function getBookDraftPayload() {
       const contributors = getBookContributorsFromForm();
-      const shortResponsibility = buildShortResponsibility(contributors) || el('bookAuthor').value.trim();
+      const shortResponsibility = el('bookAuthor').value.trim() || buildShortResponsibility(contributors);
       const materialType = el('bookType').value;
       return {
         id: el('bookDraftId').value || undefined,
@@ -1815,7 +1720,6 @@
       el('bookCoverFile').value = '';
       refs.bookCoverFileName.textContent = 'Nenhum arquivo selecionado';
       renderBookContributors([]);
-      syncBookAuthorFromContributors();
       syncBookTypeUI();
       setPreviewImage(refs.bookCoverPreview, '', 'covers');
       clearMessage(refs.bookMessage);
@@ -2000,7 +1904,6 @@
       el('bookMarcJson').value = enriched.marc_json ? JSON.stringify(enriched.marc_json, null, 2) : '';
       syncBookTypeUI();
       await loadBookContributorsForDraft(enriched.id, enriched.published_book_id, enriched.autor || '');
-      syncBookAuthorFromContributors();
       setPreviewImage(refs.bookCoverPreview, enriched.cover_object_path || '', 'covers');
       refs.bookCoverFileName.textContent = 'Nenhum arquivo selecionado';
     }
@@ -2413,13 +2316,6 @@
       setPreviewImage(refs.authorPhotoPreview, '', 'authors');
     });
 
-    el('btnBuscarCBL').addEventListener('click', () => openExternalIsbnLookup('cbl'));
-    el('btnBuscarBN').addEventListener('click', () => openExternalIsbnLookup('bn'));
-
-    el('bookISBN').addEventListener('input', () => {
-      setIsbnLookupStatus('');
-    });
-
     el('bookForm').addEventListener('submit', async (event) => {
       event.preventDefault();
       try {
@@ -2597,13 +2493,8 @@
 
     el('bookType').addEventListener('change', syncBookTypeUI);
     el('addContributorBtn').addEventListener('click', () => {
-      const current = getBookContributorsForRender();
-      current.push(createEmptyContributor(current.length + 1, 'autor'));
-      renderBookContributors(current);
-    });
-    el('addOtherResponsibilityBtn').addEventListener('click', () => {
-      const current = getBookContributorsForRender();
-      current.push(createEmptyContributor(current.length + 1, 'organizador'));
+      const current = getBookContributorsFromForm();
+      current.push(createEmptyContributor(current.length + 1));
       renderBookContributors(current);
     });
     refs.bookContributorsWrap.addEventListener('click', (event) => {
@@ -2611,45 +2502,17 @@
       if (!btn) return;
       const row = btn.closest('.contributor-row');
       if (!row) return;
-
-      const rows = getBookContributorsForRender();
-      const index = Number(row.dataset.index || 0);
       const action = btn.dataset.contribAction;
-
-      if (action === 'add') {
-        const newRole = rows[index]?.role || 'autor';
-        rows.splice(index + 1, 0, createEmptyContributor(index + 2, newRole));
-        renderBookContributors(rows);
-        return;
-      }
-
       if (action === 'remove') {
-        rows.splice(index, 1);
-        renderBookContributors(rows);
+        row.remove();
+        if (!refs.bookContributorsWrap.querySelector('.contributor-row')) renderBookContributors([]);
         return;
       }
-
-      if (action === 'up' && index > 0) {
-        [rows[index - 1], rows[index]] = [rows[index], rows[index - 1]];
-        renderBookContributors(rows);
-        return;
+      if (action === 'up' && row.previousElementSibling) {
+        row.parentNode.insertBefore(row, row.previousElementSibling);
       }
-
-      if (action === 'down' && index < rows.length - 1) {
-        [rows[index], rows[index + 1]] = [rows[index + 1], rows[index]];
-        renderBookContributors(rows);
-      }
-    });
-
-    refs.bookContributorsWrap.addEventListener('input', (event) => {
-      if (event.target.closest('.contributor-row')) {
-        syncBookAuthorFromContributors();
-      }
-    });
-
-    refs.bookContributorsWrap.addEventListener('change', (event) => {
-      if (event.target.closest('.contributor-row')) {
-        syncBookAuthorFromContributors();
+      if (action === 'down' && row.nextElementSibling) {
+        row.parentNode.insertBefore(row.nextElementSibling, row);
       }
     });
 
@@ -2684,6 +2547,12 @@
     resetAuthorForm();
     resetExemplarForm();
     refreshAll();
+
+    document.addEventListener('visibilitychange', () => {
+      if (!document.hidden) refreshCatalogacaoView();
+    });
+    window.addEventListener('focus', () => refreshCatalogacaoView());
+    window.addEventListener('pageshow', () => refreshCatalogacaoView());
   </script>
 </body>
 </html>
