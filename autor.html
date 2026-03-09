@@ -310,8 +310,12 @@
     }
 
     function yearsLabel(birth, death) {
-      const b = Number.isFinite(Number(birth)) ? String(birth) : "";
-      const d = Number.isFinite(Number(death)) ? String(death) : "";
+      const hasBirth = birth !== null && birth !== undefined && String(birth).trim() !== "" && String(birth).trim().toLowerCase() !== "null";
+      const hasDeath = death !== null && death !== undefined && String(death).trim() !== "" && String(death).trim().toLowerCase() !== "null";
+
+      const b = hasBirth ? String(birth).trim() : "";
+      const d = hasDeath ? String(death).trim() : "";
+
       if (b && d) return `${b}–${d}`;
       if (b && !d) return `${b} /`;
       if (!b && d) return `/ ${d}`;
