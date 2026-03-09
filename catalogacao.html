@@ -575,13 +575,27 @@
       table { min-width: 820px; }
     }
 
-    .tabs .tab-btn,
-    .tabs .tab-btn.active,
+    .tabs .tab-btn {
+      background: rgba(18,18,18,.96) !important;
+      border-color: rgba(255,255,255,.14) !important;
+      color: #fff !important;
+      font-weight: 600 !important;
+      font-style: normal !important;
+    }
+
     .tabs .tab-btn:hover,
     .tabs .tab-btn:focus {
+      background: rgba(18,18,18,.96) !important;
+      border-color: rgba(225,29,47,.65) !important;
+      color: #fff !important;
+    }
+
+    .tabs .tab-btn.active {
       background: linear-gradient(135deg, var(--red-2), var(--red)) !important;
       border-color: transparent !important;
-      color: #fff !important;
+      color: #000 !important;
+      font-weight: 800 !important;
+      font-style: italic !important;
     }
 
     .toolbar-actions #loginBtn.button.success {
