@@ -315,6 +315,7 @@
       if (b && d) return `${b}–${d}`;
       if (b && !d) return `${b} /`;
       if (!b && d) return `/ ${d}`;
+      if (!b && !d) return "/";
       return "";
     }
 
@@ -560,7 +561,7 @@
       $("bioLine").textContent = (author.biography || author.notes || "—").trim() || "—";
 
       setPill("authorIdPill", "id", String(author.id || ""), true);
-      setPill("yearsPill", "datas", yearsLabel(author.birth_year, author.death_year));
+      setPill("yearsPill", "nascimento - falecimento", yearsLabel(author.birth_year, author.death_year));
       setPill("countryPill", "País", author.country || "");
       setPill("booksCountPill", "livros", String(books.length || author.books_count || 0));
       setPill("viafPill", "VIAF", author.viaf_id || "");
