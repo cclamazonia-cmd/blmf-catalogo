@@ -657,7 +657,13 @@ async function loadRowsFromSupabase() {
       ano: r.ano ?? '',
       editora: r.editora ?? '',
       cdd: r.cdd ?? '',
-      author_id: Number.isFinite(Number(r.author_id)) ? Number(r.author_id) : null,
+      author_id: (() => {
+        if (r.author_id === null || r.author_id === undefined) return null;
+        const raw = String(r.author_id).trim();
+        if (!raw || raw.toLowerCase() === 'null' || raw.toLowerCase() === 'undefined') return null;
+        const n = Number(raw);
+        return Number.isInteger(n) && n > 0 ? n : null;
+      })(),
       loanable: r.loanable === false ? false : true,
       available_count: Number(r.available_count ?? 0) || 0,
       created_at: r.created_at ?? null
@@ -798,7 +804,9 @@ function buildRowMarkup(r) {
   const terms = [...(lastQuery.phrases || []), ...(lastQuery.tokens || [])];
   const refHtml = ref ? highlightHTML(ref, terms) : '<span class="muted">—</span>';
   const autorHtml = r.autor
-    ? `<button class="tag-link author-chip" type="button" data-author="${escapeHTML(r.autor)}" data-author-id="${r.author_id ?? ''}">${highlightHTML(r.autor, terms)}</button>`
+    ? (r.author_id
+        ? `<button class="tag-link author-chip" type="button" data-author="${escapeHTML(r.autor)}" data-author-id="${r.author_id}">${highlightHTML(r.autor, terms)}</button>`
+        : `<span>${highlightHTML(r.autor, terms)}</span>`)
     : '<span class="muted">—</span>';
   const livroUrl = ref ? `${LIVRO_URL}?ref=${encodeURIComponent(ref)}` : '#';
   const tituloHtml = r.titulo ? highlightHTML(r.titulo, terms) : '<span class="muted">—</span>';
@@ -1074,8 +1082,9 @@ async function handleResultActions(e) {
   const authorBtn = e.target.closest('.author-chip');
   if (authorBtn) {
     const authorId = (authorBtn.dataset.authorId || '').trim();
-    if (authorId) {
-      location.assign(`${AUTOR_URL}?id=${encodeURIComponent(authorId)}`);
+    const authorIdNum = Number(authorId);
+    if (Number.isInteger(authorIdNum) && authorIdNum > 0) {
+      location.assign(`${AUTOR_URL}?id=${encodeURIComponent(String(authorIdNum))}`);
     }
     return;
   }
