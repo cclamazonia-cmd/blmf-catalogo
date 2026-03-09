@@ -189,7 +189,6 @@
           <div class="subtitle" id="sortLine" style="display:none"></div>
 
           <div class="meta" style="margin-top:12px">
-            <div class="pill" id="authorIdPill">id: —</div>
             <div class="pill" id="yearsPill" style="display:none"></div>
             <div class="pill" id="countryPill" style="display:none"></div>
             <div class="pill" id="booksCountPill" style="display:none"></div>
@@ -314,8 +313,8 @@
       const b = Number.isFinite(Number(birth)) ? String(birth) : "";
       const d = Number.isFinite(Number(death)) ? String(death) : "";
       if (b && d) return `${b}–${d}`;
-      if (b) return `n. ${b}`;
-      if (d) return `m. ${d}`;
+      if (b && !d) return `${b} /`;
+      if (!b && d) return `/ ${d}`;
       return "";
     }
 
@@ -562,7 +561,7 @@
 
       setPill("authorIdPill", "id", String(author.id || ""), true);
       setPill("yearsPill", "datas", yearsLabel(author.birth_year, author.death_year));
-      setPill("countryPill", "país", author.country || "");
+      setPill("countryPill", "País", author.country || "");
       setPill("booksCountPill", "livros", String(books.length || author.books_count || 0));
       setPill("viafPill", "VIAF", author.viaf_id || "");
       setPill("isniPill", "ISNI", author.isni || "");
