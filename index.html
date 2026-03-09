@@ -265,6 +265,23 @@ tbody tr:hover td { background: rgba(179,0,24,.08); }
   font-size:.82rem;
   cursor:pointer;
   text-decoration:none;
+  display:inline-flex;
+  align-items:center;
+  vertical-align:top;
+  max-width:100%;
+  white-space:normal;
+  word-break:break-word;
+  overflow-wrap:anywhere;
+  line-height:1.25;
+}
+.author-chip-list{
+  display:flex;
+  flex-wrap:wrap;
+  gap:6px;
+  align-items:flex-start;
+}
+.author-chip-static{
+  cursor:default;
 }
 mark { background: rgba(225,29,47,.35); color:#fff; padding:0 2px; border-radius:4px; }
 .empty { padding:22px; color: var(--muted); }
