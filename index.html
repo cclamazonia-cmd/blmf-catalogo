@@ -466,6 +466,7 @@ const SUPABASE_URL = "https://asptfmokzykwzlshsncw.supabase.co";
 const SUPABASE_ANON_KEY = "sb_publishable_38cFV9vsGhmqMp-Z5gmV4w_HY6ReWSF";
 const GH_BASE = "https://cclamazonia-cmd.github.io";
 const LIVRO_URL = `${GH_BASE}/blmf-catalogo/livro.html`;
+const AUTOR_URL = `${GH_BASE}/blmf-catalogo/autor.html`;
 const CONTA_URL = `${GH_BASE}/blmf-conta/conta.html`;
 const CADASTRO_URL = `${GH_BASE}/blmf-conta/cadastro.html`;
 const PAINEL_URL = `${GH_BASE}/blmf-conta/painel.html`;
@@ -633,7 +634,7 @@ function prepareRows() {
 }
 async function loadRowsFromSupabase() {
   try {
-    const select = 'id,bib_ref,autor,titulo,ano,editora,cdd,loanable,available_count,created_at';
+    const select = 'id,bib_ref,autor,titulo,ano,editora,cdd,loanable,available_count,created_at,author_id';
     const url = `${SUPABASE_URL}/rest/v1/v_books_public?select=${encodeURIComponent(select)}&order=titulo.asc`;
     const res = await fetch(url, {
       headers: {
@@ -656,6 +657,7 @@ async function loadRowsFromSupabase() {
       ano: r.ano ?? '',
       editora: r.editora ?? '',
       cdd: r.cdd ?? '',
+      author_id: Number.isFinite(Number(r.author_id)) ? Number(r.author_id) : null,
       loanable: r.loanable === false ? false : true,
       available_count: Number(r.available_count ?? 0) || 0,
       created_at: r.created_at ?? null
@@ -796,7 +798,7 @@ function buildRowMarkup(r) {
   const terms = [...(lastQuery.phrases || []), ...(lastQuery.tokens || [])];
   const refHtml = ref ? highlightHTML(ref, terms) : '<span class="muted">—</span>';
   const autorHtml = r.autor
-    ? `<button class="tag-link author-chip" type="button" data-author="${escapeHTML(r.autor)}">${highlightHTML(r.autor, terms)}</button>`
+    ? `<button class="tag-link author-chip" type="button" data-author="${escapeHTML(r.autor)}" data-author-id="${r.author_id ?? ''}">${highlightHTML(r.autor, terms)}</button>`
     : '<span class="muted">—</span>';
   const livroUrl = ref ? `${LIVRO_URL}?ref=${encodeURIComponent(ref)}` : '#';
   const tituloHtml = r.titulo ? highlightHTML(r.titulo, terms) : '<span class="muted">—</span>';
@@ -1071,6 +1073,11 @@ async function handleResultActions(e) {
   }
   const authorBtn = e.target.closest('.author-chip');
   if (authorBtn) {
+    const authorId = (authorBtn.dataset.authorId || '').trim();
+    if (authorId) {
+      location.assign(`${AUTOR_URL}?id=${encodeURIComponent(authorId)}`);
+      return;
+    }
     authorFilter.value = authorBtn.dataset.author || '';
     render();
     return;
