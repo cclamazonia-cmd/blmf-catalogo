@@ -357,7 +357,7 @@
 
     select { font-weight: 600; }
     input::placeholder,
-    textarea::placeholder { color: #f0d6da; opacity: 1; }
+    textarea::placeholder { color: rgba(255,255,255,.42); opacity: 1; }
 
     input:focus,
     select:focus,
@@ -402,6 +402,43 @@
       display: flex;
       flex-direction: column;
       gap: 12px;
+    }
+
+    .generated-responsibility-lines {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      margin-top: 2px;
+    }
+
+    .generated-responsibility-line {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      align-items: flex-start;
+      padding: 10px 12px;
+      border-radius: 14px;
+      background: rgba(255,255,255,.03);
+      border: 1px solid rgba(255,255,255,.08);
+    }
+
+    .generated-responsibility-label {
+      color: #d9d9d9;
+      font-size: .82rem;
+      font-weight: 800;
+      letter-spacing: .04em;
+      text-transform: uppercase;
+      flex: 0 0 auto;
+    }
+
+    .generated-responsibility-value {
+      color: var(--text);
+      font-size: .94rem;
+      line-height: 1.4;
+      flex: 1 1 280px;
+      min-width: 0;
+      word-break: break-word;
+      overflow-wrap: anywhere;
     }
 
     .contributor-row {
@@ -732,9 +769,10 @@
             </div>
 
             <div class="field" style="grid-column: span 2;">
-              <label for="bookAuthor">Responsabilidade principal / Autoria / Org.</label>
+              <label for="bookAuthor">Autoria / Organização / etc.</label>
               <input id="bookAuthor" type="text" placeholder="BAKUNIN, Mikhail" />
-              <small>Use aqui a forma curta exibida no catálogo. A lista detalhada fica logo abaixo em “Autores e outras responsabilidades”.</small>
+              <div id="bookResponsibilityExtraWrap" class="generated-responsibility-lines is-hidden"></div>
+              <small>Quando houver nomes em “Autores e outras responsabilidades”, este campo passa a seguir automaticamente essa lista.</small>
             </div>
 
             <div class="field">
@@ -1290,6 +1328,7 @@
       bookISSNField: el('bookISSNField'),
       bookMaterialHint: el('bookMaterialHint'),
       bookContributorsWrap: el('bookContributorsWrap'),
+      bookResponsibilityExtraWrap: el('bookResponsibilityExtraWrap'),
       bookCoverFileName: el('bookCoverFileName'),
       authorPhotoFileName: el('authorPhotoFileName'),
     };
@@ -1555,6 +1594,8 @@
           </div>
         </div>
       `).join('');
+ 
+      syncBookResponsibilitySummary();
     }
 
     function getBookContributorsFromForm() {
@@ -1564,31 +1605,93 @@
     function buildShortResponsibility(contributors = []) {
       const names = contributors.filter(item => item.name).map(item => item.name.trim()).filter(Boolean);
       if (!names.length) return null;
-      if (names.length <= 3) return names.join('; ');
-      return `${names.slice(0, 3).join('; ')} et al.`;
+      return names.join('; ');
     }
 
-    function getContributorShortLabel(role = 'autor') {
+    function normalizeContributorGroup(role = 'autor') {
+      if (role === 'autor' || role === 'coautor') return 'autoria';
+      return role || 'outro';
+    }
+
+    function getContributorGroupLabel(role = 'autor') {
       const labels = {
-        autor: 'Autoria',
-        coautor: 'Autoria',
-        organizacao: 'Org.',
-        organizador: 'Org.',
-        tradutor: 'Trad.',
-        ilustrador: 'Ilust.',
-        prefaciador: 'Pref.',
-        coordenador: 'Coord.',
-        editor: 'Ed.',
-        outro: 'Resp.',
+        autoria: 'Autoria',
+        organizacao: 'Organização',
+        organizador: 'Organizador(a)',
+        tradutor: 'Tradutor(a)',
+        ilustrador: 'Ilustrador(a)',
+        prefaciador: 'Prefácio',
+        coordenador: 'Coordenação',
+        editor: 'Editor(a)',
+        outro: 'Outra responsabilidade',
       };
-      return labels[role] || 'Resp.';
+      return labels[role] || 'Outra responsabilidade';
     }
 
-    function buildPriorityResponsibilityFromContributors(contributors = []) {
-      const validContributors = contributors.filter(item => item?.name && item.name.trim());
-      if (!validContributors.length) return null;
-      const primaryContributor = validContributors.find(item => item.is_primary) || validContributors[0];
-      return `${getContributorShortLabel(primaryContributor.role)} - ${primaryContributor.name.trim()}`;
+    function summarizeContributorsForDisplay(contributors = []) {
+      const validContributors = contributors
+        .filter(item => item?.name && item.name.trim())
+        .map(item => ({
+          name: item.name.trim(),
+          role: item.role || 'autor',
+          group: normalizeContributorGroup(item.role || 'autor'),
+        }));
+
+      if (!validContributors.length) {
+        return { mainValue: '', extraLines: [] };
+      }
+
+      const groupedMap = new Map();
+      for (const item of validContributors) {
+        if (!groupedMap.has(item.group)) {
+          groupedMap.set(item.group, {
+            group: item.group,
+            label: getContributorGroupLabel(item.group),
+            names: [],
+          });
+        }
+        groupedMap.get(item.group).names.push(item.name);
+      }
+
+      const grouped = Array.from(groupedMap.values());
+      const mainGroup = grouped.find(group => group.group === 'autoria') || grouped[0];
+      const mainValue = mainGroup?.names?.join('; ') || '';
+      const extraLines = grouped
+        .filter(group => group.group !== mainGroup.group)
+        .map(group => ({ label: group.label, value: group.names.join('; ') }));
+
+      return { mainValue, extraLines };
+    }
+
+    function renderBookResponsibilitySummary(contributors = []) {
+      const { mainValue, extraLines } = summarizeContributorsForDisplay(contributors);
+      if (mainValue) {
+        el('bookAuthor').value = mainValue;
+      }
+
+      if (!extraLines.length) {
+        refs.bookResponsibilityExtraWrap.innerHTML = '';
+        refs.bookResponsibilityExtraWrap.classList.add('is-hidden');
+        return;
+      }
+
+      refs.bookResponsibilityExtraWrap.innerHTML = extraLines.map(line => `
+        <div class="generated-responsibility-line">
+          <span class="generated-responsibility-label">${sanitize(line.label)}</span>
+          <span class="generated-responsibility-value">${sanitize(line.value)}</span>
+        </div>
+      `).join('');
+      refs.bookResponsibilityExtraWrap.classList.remove('is-hidden');
+    }
+
+    function syncBookResponsibilitySummary() {
+      const contributors = getBookContributorsFromForm();
+      if (!contributors.length) {
+        refs.bookResponsibilityExtraWrap.innerHTML = '';
+        refs.bookResponsibilityExtraWrap.classList.add('is-hidden');
+        return;
+      }
+      renderBookResponsibilitySummary(contributors);
     }
 
     function syncBookTypeUI() {
@@ -1756,11 +1859,12 @@
 
     function getBookDraftPayload() {
       const contributors = getBookContributorsFromForm();
-      const generatedResponsibility = buildPriorityResponsibilityFromContributors(contributors);
-      const shortResponsibility = generatedResponsibility || el('bookAuthor').value.trim() || buildShortResponsibility(contributors);
-      if (generatedResponsibility) {
-        el('bookAuthor').value = generatedResponsibility;
+      const { mainValue } = summarizeContributorsForDisplay(contributors);
+      const shortResponsibility = mainValue || el('bookAuthor').value.trim() || buildShortResponsibility(contributors);
+      if (mainValue) {
+        el('bookAuthor').value = mainValue;
       }
+      renderBookResponsibilitySummary(contributors);
       const materialType = el('bookType').value;
       return {
         id: el('bookDraftId').value || undefined,
@@ -1856,6 +1960,8 @@
       el('bookCoverFile').value = '';
       refs.bookCoverFileName.textContent = 'Nenhum arquivo selecionado';
       renderBookContributors([]);
+      refs.bookResponsibilityExtraWrap.innerHTML = '';
+      refs.bookResponsibilityExtraWrap.classList.add('is-hidden');
       syncBookTypeUI();
       setPreviewImage(refs.bookCoverPreview, '', 'covers');
       clearMessage(refs.bookMessage);
@@ -2067,6 +2173,7 @@
       el('bookMarcJson').value = enriched.marc_json ? JSON.stringify(enriched.marc_json, null, 2) : '';
       syncBookTypeUI();
       await loadBookContributorsForDraft(enriched.id, enriched.published_book_id, enriched.autor || '');
+      syncBookResponsibilitySummary();
       setPreviewImage(refs.bookCoverPreview, enriched.cover_object_path || '', 'covers');
       refs.bookCoverFileName.textContent = 'Nenhum arquivo selecionado';
     }
@@ -2681,6 +2788,7 @@
       if (action === 'remove') {
         row.remove();
         if (!refs.bookContributorsWrap.querySelector('.contributor-row')) renderBookContributors([]);
+        syncBookResponsibilitySummary();
         return;
       }
       if (action === 'up' && row.previousElementSibling) {
@@ -2689,6 +2797,15 @@
       if (action === 'down' && row.nextElementSibling) {
         row.parentNode.insertBefore(row.nextElementSibling, row);
       }
+      syncBookResponsibilitySummary();
+    });
+
+    refs.bookContributorsWrap.addEventListener('input', (event) => {
+      if (event.target.closest('.contributor-row')) syncBookResponsibilitySummary();
+    });
+
+    refs.bookContributorsWrap.addEventListener('change', (event) => {
+      if (event.target.closest('.contributor-row')) syncBookResponsibilitySummary();
     });
 
     ['queueTypeFilter', 'queueStatusFilter', 'queueSearch'].forEach(id => {
