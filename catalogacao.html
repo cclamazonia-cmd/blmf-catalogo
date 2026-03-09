@@ -1568,6 +1568,29 @@
       return `${names.slice(0, 3).join('; ')} et al.`;
     }
 
+    function getContributorShortLabel(role = 'autor') {
+      const labels = {
+        autor: 'Autoria',
+        coautor: 'Autoria',
+        organizacao: 'Org.',
+        organizador: 'Org.',
+        tradutor: 'Trad.',
+        ilustrador: 'Ilust.',
+        prefaciador: 'Pref.',
+        coordenador: 'Coord.',
+        editor: 'Ed.',
+        outro: 'Resp.',
+      };
+      return labels[role] || 'Resp.';
+    }
+
+    function buildPriorityResponsibilityFromContributors(contributors = []) {
+      const validContributors = contributors.filter(item => item?.name && item.name.trim());
+      if (!validContributors.length) return null;
+      const primaryContributor = validContributors.find(item => item.is_primary) || validContributors[0];
+      return `${getContributorShortLabel(primaryContributor.role)} - ${primaryContributor.name.trim()}`;
+    }
+
     function syncBookTypeUI() {
       const isPeriodico = el('bookType').value === 'periodico';
       refs.periodicalFields.classList.toggle('is-hidden', !isPeriodico);
@@ -1733,7 +1756,11 @@
 
     function getBookDraftPayload() {
       const contributors = getBookContributorsFromForm();
-      const shortResponsibility = el('bookAuthor').value.trim() || buildShortResponsibility(contributors);
+      const generatedResponsibility = buildPriorityResponsibilityFromContributors(contributors);
+      const shortResponsibility = generatedResponsibility || el('bookAuthor').value.trim() || buildShortResponsibility(contributors);
+      if (generatedResponsibility) {
+        el('bookAuthor').value = generatedResponsibility;
+      }
       const materialType = el('bookType').value;
       return {
         id: el('bookDraftId').value || undefined,
@@ -2246,9 +2273,13 @@
 
     function renderCatalogBooks() {
       const search = el('catalogSearch').value.trim().toLowerCase();
+      const authorSearch = el('catalogAuthorSearch').value.trim().toLowerCase();
       let items = [...state.books];
       if (search) {
         items = items.filter(book => [book.bib_ref, book.titulo, book.autor, book.editora, book.ano].filter(Boolean).join(' ').toLowerCase().includes(search));
+      }
+      if (authorSearch) {
+        items = items.filter(book => [book.autor, book.titulo, book.subtitulo].filter(Boolean).join(' ').toLowerCase().includes(authorSearch));
       }
       if (!items.length) {
         refs.catalogBooksWrap.innerHTML = '<div class="empty">Nenhum livro encontrado.</div>';
@@ -2679,7 +2710,10 @@
       }
     });
     el('catalogSearch').addEventListener('input', renderCatalogBooks);
-    el('catalogAuthorSearch').addEventListener('input', renderCatalogAuthors);
+    el('catalogAuthorSearch').addEventListener('input', () => {
+      renderCatalogBooks();
+      renderCatalogAuthors();
+    });
     el('catalogExemplarSearch').addEventListener('input', renderCatalogExemplars);
 
     supabase.auth.onAuthStateChange(async (_event, session) => {
