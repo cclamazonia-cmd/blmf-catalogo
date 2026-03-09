@@ -49,7 +49,7 @@ html, body {
   background-repeat: no-repeat;
 }
 a { color: inherit; }
-.wrap { max-width: 1680px; margin: 0 auto; padding: 24px; }
+.wrap { width: 100%; max-width: none; margin: 0 auto; padding: 24px; }
 .hero {
   background: linear-gradient(135deg, rgba(179,0,24,.95), rgba(90,0,12,.96));
   border: 1px solid rgba(255,255,255,.08);
@@ -96,6 +96,7 @@ a { color: inherit; }
   flex-wrap:wrap;
   gap:10px;
   align-items:center;
+  width:100%;
 }
 
 .input, .select, .button {
@@ -259,6 +260,37 @@ tbody tr:hover td { background: rgba(179,0,24,.08); }
   cursor:pointer;
   text-decoration:none;
 }
+.author-chip-list {
+  display:flex;
+  flex-wrap:wrap;
+  gap:8px;
+  align-items:flex-start;
+}
+.author-chip-static {
+  display:inline-flex;
+  align-items:center;
+}
+#clearBtn,
+#pdfBtn,
+#contaBtn,
+#blogBtn,
+#csvAdvancedLink {
+  background: linear-gradient(135deg, var(--red-2), var(--red));
+  color:#fff;
+  border:none;
+  font-weight:700;
+}
+#csvAdvancedLink {
+  margin-left:auto;
+}
+#clearBtn:hover,
+#pdfBtn:hover,
+#contaBtn:hover,
+#blogBtn:hover,
+#csvAdvancedLink:hover {
+  color:#fff;
+  border:none;
+}
 mark { background: rgba(225,29,47,.35); color:#fff; padding:0 2px; border-radius:4px; }
 .empty { padding:22px; color: var(--muted); }
 .footer { margin-top:16px; color: var(--muted); font-size:.9rem; }
@@ -267,12 +299,14 @@ mark { background: rgba(225,29,47,.35); color:#fff; padding:0 2px; border-radius
     grid-template-columns: repeat(4, minmax(210px, 1fr));
   }
   .toolbar-actions { justify-content:flex-start; }
+  #csvAdvancedLink { margin-left:0; }
 }
 @media (max-width: 980px) {
   .filters-grid {
     grid-template-columns: repeat(2, minmax(220px, 1fr));
   }
   .toolbar-actions { justify-content:flex-start; }
+  #csvAdvancedLink { margin-left:0; }
   .topbar-logo { width: 118px; }
 }
 
@@ -332,6 +366,7 @@ mark { background: rgba(225,29,47,.35); color:#fff; padding:0 2px; border-radius
   .wrap { padding: 14px; }
   .filters-grid { grid-template-columns: 1fr; }
   .toolbar-actions { justify-content:flex-start; }
+  #csvAdvancedLink { margin-left:0; }
 }
 @media (max-width: 760px) {
   .table-wrap {
@@ -614,6 +649,43 @@ function matchYearField(fieldValue, raw) {
   if (digitsOnly.length >= 4) return y === digitsOnly.slice(0,4);
   return y.startsWith(digitsOnly);
 }
+function normalizeAuthorIdValue(value) {
+  if (value === null || value === undefined) return null;
+  const raw = String(value).trim();
+  if (!raw || raw.toLowerCase() === 'null' || raw.toLowerCase() === 'undefined') return null;
+  const n = Number(raw);
+  return Number.isInteger(n) && n > 0 ? n : null;
+}
+function splitAuthorNames(value) {
+  return String(value || '')
+    .split(/\s*;\s*/)
+    .map(part => part.trim())
+    .filter(Boolean);
+}
+function splitAuthorIds(value) {
+  if (value === null || value === undefined) return [];
+  return String(value)
+    .split(/\s*;\s*/)
+    .map(part => part.trim())
+    .filter(Boolean);
+}
+function buildAuthorMarkup(authorValue, authorIdsValue, terms) {
+  const names = splitAuthorNames(authorValue);
+  if (!names.length) return '<span class="muted">—</span>';
+
+  const ids = splitAuthorIds(authorIdsValue);
+  const parts = names.map((name, idx) => {
+    const candidate = ids[idx] ?? (names.length === 1 ? authorIdsValue : '');
+    const authorId = normalizeAuthorIdValue(candidate);
+    const label = highlightHTML(name, terms);
+    if (authorId) {
+      return `<button class="tag-link author-chip" type="button" data-author="${escapeHTML(name)}" data-author-id="${authorId}">${label}</button>`;
+    }
+    return `<span class="tag-link author-chip-static">${label}</span>`;
+  });
+
+  return parts.length === 1 ? parts[0] : `<div class="author-chip-list">${parts.join('')}</div>`;
+}
 function prepareRows() {
   for (const r of rows) {
     const status = getStatusInfo(r);
@@ -657,13 +729,8 @@ async function loadRowsFromSupabase() {
       ano: r.ano ?? '',
       editora: r.editora ?? '',
       cdd: r.cdd ?? '',
-      author_id: (() => {
-        if (r.author_id === null || r.author_id === undefined) return null;
-        const raw = String(r.author_id).trim();
-        if (!raw || raw.toLowerCase() === 'null' || raw.toLowerCase() === 'undefined') return null;
-        const n = Number(raw);
-        return Number.isInteger(n) && n > 0 ? n : null;
-      })(),
+      author_id_raw: r.author_id ?? null,
+      author_id: normalizeAuthorIdValue(r.author_id),
       loanable: r.loanable === false ? false : true,
       available_count: Number(r.available_count ?? 0) || 0,
       created_at: r.created_at ?? null
@@ -803,11 +870,7 @@ function buildRowMarkup(r) {
   const ref = r.bib_ref || '';
   const terms = [...(lastQuery.phrases || []), ...(lastQuery.tokens || [])];
   const refHtml = ref ? highlightHTML(ref, terms) : '<span class="muted">—</span>';
-  const autorHtml = r.autor
-    ? (r.author_id
-        ? `<button class="tag-link author-chip" type="button" data-author="${escapeHTML(r.autor)}" data-author-id="${r.author_id}">${highlightHTML(r.autor, terms)}</button>`
-        : `<span>${highlightHTML(r.autor, terms)}</span>`)
-    : '<span class="muted">—</span>';
+  const autorHtml = buildAuthorMarkup(r.autor, r.author_id_raw ?? r.author_id, terms);
   const livroUrl = ref ? `${LIVRO_URL}?ref=${encodeURIComponent(ref)}` : '#';
   const tituloHtml = r.titulo ? highlightHTML(r.titulo, terms) : '<span class="muted">—</span>';
   const tituloCell = ref ? `<a href="${livroUrl}" style="text-decoration:none; font-weight:700;">${tituloHtml}</a>` : tituloHtml;
@@ -1081,9 +1144,8 @@ async function handleResultActions(e) {
   }
   const authorBtn = e.target.closest('.author-chip');
   if (authorBtn) {
-    const authorId = (authorBtn.dataset.authorId || '').trim();
-    const authorIdNum = Number(authorId);
-    if (Number.isInteger(authorIdNum) && authorIdNum > 0) {
+    const authorIdNum = normalizeAuthorIdValue(authorBtn.dataset.authorId || '');
+    if (authorIdNum) {
       location.assign(`${AUTOR_URL}?id=${encodeURIComponent(String(authorIdNum))}`);
     }
     return;
