@@ -139,6 +139,7 @@
           <div class="meta" style="margin-top:12px">
             <div class="pill" id="bibRefPill">ref: —</div>
             <div class="pill" id="tomboPill">tombo: —</div>
+            <div class="pill" id="exemplaresPill" style="display:none"></div>
             <div class="pill" id="yearPill">ano: —</div>
             <div class="pill" id="pubPill">editora: —</div>
             <div class="pill" id="placePill" style="display:none"></div>
@@ -476,15 +477,15 @@
         if (inBook && bookRow?.[inBook] != null) {
           const raw = bookRow[inBook];
           if (Array.isArray(raw)) {
-            tombos = raw.map(v => String(v || "").trim()).filter(Boolean);
+            tombos = raw
+              .flatMap(v => String(v || "").split(/[;,\n]+/))
+              .map(v => String(v || "").trim())
+              .filter(Boolean);
           } else {
-            const v = String(raw || "").trim();
-            if (v) {
-              tombos = v
-                .split(/\s*[\n\r,;|]+\s*/g)
-                .map(part => String(part || "").trim())
-                .filter(Boolean);
-            }
+            tombos = String(raw || "")
+              .split(/[;,\n]+/)
+              .map(v => String(v || "").trim())
+              .filter(Boolean);
           }
         }
 
@@ -528,6 +529,7 @@
 
       const tombos = await loadTombosForBook(data, bib_ref);
       setPill("tomboPill", "tombo", tombos.length ? tombos.join(", ") : "", true);
+      setPill("exemplaresPill", "exemplares", tombos.length > 1 ? String(tombos.length) : "");
 
       if (pdf) {
         $("btnAbrirPdf").style.display = "inline-block";
