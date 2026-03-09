@@ -541,6 +541,7 @@
 
       const tombos = await loadTombosForBook(data, bib_ref);
       setPill("tomboPill", "tombo", tombos.length ? tombos.join(", ") : "", true);
+      setPill("exemplaresPill", "exemplares", tombos.length > 1 ? String(tombos.length) : "");
 
       if (pdf) {
         $("btnAbrirPdf").style.display = "inline-block";
