@@ -152,7 +152,6 @@
             <div class="pill" id="volumePill" style="display:none"></div>
             <div class="pill" id="translatorPill" style="display:none"></div>
             <div class="pill" id="organizerPill" style="display:none"></div>
-            <div class="pill" id="orgOutroPill" style="display:none"></div>
             <div class="pill" id="secondaryAuthorsPill" style="display:none"></div>
             <div class="pill" id="subjectsPill" style="display:none"></div>
             <div class="pill" id="cddPill">CDD: —</div>
@@ -230,20 +229,6 @@
       const txt = String(value ?? "").trim();
       el.textContent = txt;
       el.style.display = txt ? "" : "none";
-    }
-
-    function normalizeInlineList(value) {
-      const txt = String(value ?? "").trim();
-      if (!txt) return "";
-
-      return txt
-        .replace(/\s*[\n\r]+\s*/g, "; ")
-        .replace(/\s*\|\s*/g, "; ")
-        .replace(/\s*\/\s*/g, "; ")
-        .replace(/\s*;\s*/g, "; ")
-        .replace(/(?:\s*;\s*){2,}/g, "; ")
-        .trim()
-        .replace(/^;\s*|\s*;$/g, "");
     }
 
     function setCover(pathOrUrl) {
@@ -398,7 +383,6 @@
       const colVolume = findCol(keys, ["volume", "tomo", "vol"]);
       const colTradutor = findCol(keys, ["tradutor", "translator"]);
       const colOrganizador = findCol(keys, ["organizador", "organizadora", "organizer"]);
-      const colOrgOutro = findCol(keys, ["org_outro", "org/outro", "org_outros", "org outro", "organizacao_outro", "organização_outro", "outras_responsabilidades", "outras responsabilidades", "outro", "other_contributors"]);
       const colAutoresSec = findCol(keys, ["autores_secundarios", "autores secundários", "autores secundarios", "secondary_authors"]);
       const colAssuntos = findCol(keys, ["assuntos", "subjects", "subject", "palavras_chave", "palavras-chave"]);
       const colCDD = findCol(keys, ["cdd", "classificacao", "classificação"]);
@@ -440,7 +424,6 @@
       const volume = colVolume ? (data[colVolume] || "") : "";
       const tradutor = colTradutor ? (data[colTradutor] || "") : "";
       const organizador = colOrganizador ? (data[colOrganizador] || "") : "";
-      const orgOutro = colOrgOutro ? (data[colOrgOutro] || "") : "";
       const autoresSecundarios = colAutoresSec ? (data[colAutoresSec] || "") : "";
       const assuntos = colAssuntos ? (data[colAssuntos] || "") : "";
       const cdd = colCDD ? (data[colCDD] || "") : "";
@@ -464,7 +447,7 @@
 
       $("title").textContent = titulo || "Sem título";
       setLine("subtitleLine", subtitulo);
-      $("authorLine").textContent = normalizeInlineList(autor) || "—";
+      $("authorLine").textContent = autor || "—";
 
       setPill("bibRefPill", "ref", data[colRef] || "", true);
       setPill("yearPill", "ano", ano, true);
@@ -479,9 +462,8 @@
       setPill("collectionPill", "coleção", colecao);
       setPill("volumePill", "volume", volume);
       setPill("translatorPill", "tradutor", tradutor);
-      setPill("organizerPill", "organizador", normalizeInlineList(organizador));
-      setPill("orgOutroPill", "org./outro", normalizeInlineList(orgOutro));
-      setPill("secondaryAuthorsPill", "autores sec.", normalizeInlineList(autoresSecundarios));
+      setPill("organizerPill", "organizador", organizador);
+      setPill("secondaryAuthorsPill", "autores sec.", autoresSecundarios);
       setPill("subjectsPill", "assuntos", assuntos);
       setPill("cddPill", "CDD", cdd, true);
 
@@ -497,7 +479,12 @@
             tombos = raw.map(v => String(v || "").trim()).filter(Boolean);
           } else {
             const v = String(raw || "").trim();
-            if (v) tombos = [v];
+            if (v) {
+              tombos = v
+                .split(/\s*[\n\r,;|]+\s*/g)
+                .map(part => String(part || "").trim())
+                .filter(Boolean);
+            }
           }
         }
 
@@ -541,7 +528,6 @@
 
       const tombos = await loadTombosForBook(data, bib_ref);
       setPill("tomboPill", "tombo", tombos.length ? tombos.join(", ") : "", true);
-      setPill("exemplaresPill", "exemplares", tombos.length > 1 ? String(tombos.length) : "");
 
       if (pdf) {
         $("btnAbrirPdf").style.display = "inline-block";
