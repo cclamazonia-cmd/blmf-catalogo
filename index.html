@@ -259,37 +259,6 @@ tbody tr:hover td { background: rgba(179,0,24,.08); }
   cursor:pointer;
   text-decoration:none;
 }
-.author-chip-list {
-  display:flex;
-  flex-wrap:wrap;
-  gap:8px;
-  align-items:flex-start;
-}
-.author-chip-static {
-  display:inline-flex;
-  align-items:center;
-}
-#clearBtn,
-#pdfBtn,
-#contaBtn,
-#blogBtn,
-#csvAdvancedLink {
-  background: linear-gradient(135deg, var(--red-2), var(--red));
-  color:#fff;
-  border:none;
-  font-weight:700;
-}
-#csvAdvancedLink {
-  margin-left:auto;
-}
-#clearBtn:hover,
-#pdfBtn:hover,
-#contaBtn:hover,
-#blogBtn:hover,
-#csvAdvancedLink:hover {
-  color:#fff;
-  border:none;
-}
 mark { background: rgba(225,29,47,.35); color:#fff; padding:0 2px; border-radius:4px; }
 .empty { padding:22px; color: var(--muted); }
 .footer { margin-top:16px; color: var(--muted); font-size:.9rem; }
@@ -298,14 +267,12 @@ mark { background: rgba(225,29,47,.35); color:#fff; padding:0 2px; border-radius
     grid-template-columns: repeat(4, minmax(210px, 1fr));
   }
   .toolbar-actions { justify-content:flex-start; }
-  #csvAdvancedLink { margin-left:0; }
 }
 @media (max-width: 980px) {
   .filters-grid {
     grid-template-columns: repeat(2, minmax(220px, 1fr));
   }
   .toolbar-actions { justify-content:flex-start; }
-  #csvAdvancedLink { margin-left:0; }
   .topbar-logo { width: 118px; }
 }
 
@@ -365,7 +332,6 @@ mark { background: rgba(225,29,47,.35); color:#fff; padding:0 2px; border-radius
   .wrap { padding: 14px; }
   .filters-grid { grid-template-columns: 1fr; }
   .toolbar-actions { justify-content:flex-start; }
-  #csvAdvancedLink { margin-left:0; }
 }
 @media (max-width: 760px) {
   .table-wrap {
@@ -450,9 +416,9 @@ mark { background: rgba(225,29,47,.35); color:#fff; padding:0 2px; border-radius
     <div class="toolbar-actions">
       <button id="clearBtn" class="button secondary" type="button">Limpar filtros</button>
       <button id="pdfBtn" class="button" type="button">Exportar PDF</button>
+      <a id="csvAdvancedLink" class="action-link" href="#" role="button">CSV (avançado)</a>
       <button id="contaBtn" class="button secondary" type="button">Painel / minha conta</button>
       <a id="blogBtn" class="button secondary" href="https://cclamazonia.noblogs.org">Voltar ao blogue</a>
-      <a id="csvAdvancedLink" class="action-link" href="#" role="button">CSV (avançado)</a>
     </div>
   </section>
 
@@ -684,37 +650,45 @@ function buildAuthorMarkup(authorValue, authorIdsValue, terms) {
 
   return parts.length === 1 ? parts[0] : `<div class="author-chip-list">${parts.join('')}</div>`;
 }
-
-async function loadAuthorRelationsFromSupabase() {
+async function fetchAuthorRelationsFromSchema(schemaName) {
   try {
     const select = 'book_id,author_id,role,ord';
     const url = `${SUPABASE_URL}/rest/v1/author_books_public?select=${encodeURIComponent(select)}&order=book_id.asc,ord.asc,author_id.asc`;
-    const res = await fetch(url, {
-      headers: {
-        apikey: SUPABASE_ANON_KEY,
-        Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
-        Accept: 'application/json'
-      }
-    });
-    if (!res.ok) return new Map();
-    const data = await res.json();
-    const map = new Map();
-    for (const row of (data || [])) {
-      const bookId = row?.book_id;
-      const authorId = normalizeAuthorIdValue(row?.author_id);
-      const roleNorm = normalize(row?.role || 'autor');
-      if (!bookId || !authorId) continue;
-      if (!(roleNorm.startsWith('autor') || roleNorm.startsWith('autoria') || roleNorm.startsWith('author') || roleNorm.startsWith('coautor') || roleNorm.startsWith('coauthor') || roleNorm.startsWith('co-author'))) continue;
-      const key = String(bookId);
-      if (!map.has(key)) map.set(key, []);
-      map.get(key).push(authorId);
-    }
-    return map;
+    const headers = {
+      apikey: SUPABASE_ANON_KEY,
+      Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
+      Accept: 'application/json'
+    };
+    if (schemaName && schemaName !== 'public') headers['Accept-Profile'] = schemaName;
+    const res = await fetch(url, { headers });
+    if (!res.ok) return [];
+    const text = await res.text();
+    return text ? JSON.parse(text) : [];
   } catch (e) {
-    return new Map();
+    return [];
   }
 }
-
+async function loadAuthorRelationsFromSupabase() {
+  const [apiRows, publicRows] = await Promise.all([
+    fetchAuthorRelationsFromSchema('api'),
+    fetchAuthorRelationsFromSchema('public')
+  ]);
+  const apiCount = Array.isArray(apiRows) ? apiRows.length : 0;
+  const publicCount = Array.isArray(publicRows) ? publicRows.length : 0;
+  const data = apiCount >= publicCount ? apiRows : publicRows;
+  const map = new Map();
+  for (const row of (data || [])) {
+    const bookId = row?.book_id;
+    const authorId = normalizeAuthorIdValue(row?.author_id);
+    const roleNorm = normalize(row?.role || 'autor');
+    if (!bookId || !authorId) continue;
+    if (!(roleNorm.startsWith('autor') || roleNorm.startsWith('autoria') || roleNorm.startsWith('author') || roleNorm.startsWith('coautor') || roleNorm.startsWith('coauthor') || roleNorm.startsWith('co-author'))) continue;
+    const key = String(bookId);
+    if (!map.has(key)) map.set(key, []);
+    map.get(key).push(authorId);
+  }
+  return map;
+}
 function prepareRows() {
   for (const r of rows) {
     const status = getStatusInfo(r);
@@ -735,9 +709,11 @@ function prepareRows() {
 }
 async function loadRowsFromSupabase() {
   try {
-    const [authorRelations, booksResponse] = await Promise.all([
+    const select = 'id,bib_ref,autor,titulo,ano,editora,cdd,loanable,available_count,created_at,author_id';
+    const url = `${SUPABASE_URL}/rest/v1/v_books_public?select=${encodeURIComponent(select)}&order=titulo.asc`;
+    const [authorRelations, res] = await Promise.all([
       loadAuthorRelationsFromSupabase(),
-      fetch(`${SUPABASE_URL}/rest/v1/v_books_public?select=${encodeURIComponent('id,bib_ref,autor,titulo,ano,editora,cdd,loanable,available_count,created_at,author_id')}&order=titulo.asc`, {
+      fetch(url, {
         headers: {
           apikey: SUPABASE_ANON_KEY,
           Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
@@ -745,9 +721,9 @@ async function loadRowsFromSupabase() {
         }
       })
     ]);
-    const text = await booksResponse.text();
-    if (!booksResponse.ok) {
-      alert('Erro ao carregar catálogo: ' + booksResponse.status + ' — ' + text);
+    const text = await res.text();
+    if (!res.ok) {
+      alert('Erro ao carregar catálogo: ' + res.status + ' — ' + text);
       return [];
     }
     const data = text ? JSON.parse(text) : [];
@@ -763,7 +739,6 @@ async function loadRowsFromSupabase() {
         ano: r.ano ?? '',
         editora: r.editora ?? '',
         cdd: r.cdd ?? '',
-        author_id_raw: r.author_id ?? null,
         author_id: authorId,
         author_ids: authorIds,
         loanable: r.loanable === false ? false : true,
@@ -906,7 +881,7 @@ function buildRowMarkup(r) {
   const ref = r.bib_ref || '';
   const terms = [...(lastQuery.phrases || []), ...(lastQuery.tokens || [])];
   const refHtml = ref ? highlightHTML(ref, terms) : '<span class="muted">—</span>';
-  const autorHtml = buildAuthorMarkup(r.autor, r.author_ids || r.author_id_raw || r.author_id, terms);
+  const autorHtml = buildAuthorMarkup(r.autor, r.author_ids || r.author_id, terms);
   const livroUrl = ref ? `${LIVRO_URL}?ref=${encodeURIComponent(ref)}` : '#';
   const tituloHtml = r.titulo ? highlightHTML(r.titulo, terms) : '<span class="muted">—</span>';
   const tituloCell = ref ? `<a href="${livroUrl}" style="text-decoration:none; font-weight:700;">${tituloHtml}</a>` : tituloHtml;
@@ -1180,9 +1155,9 @@ async function handleResultActions(e) {
   }
   const authorBtn = e.target.closest('.author-chip');
   if (authorBtn) {
-    const authorIdNum = normalizeAuthorIdValue(authorBtn.dataset.authorId || '');
-    if (authorIdNum) {
-      location.assign(`${AUTOR_URL}?id=${encodeURIComponent(String(authorIdNum))}`);
+    const authorId = (authorBtn.dataset.authorId || '').trim();
+    if (authorId) {
+      location.assign(`${AUTOR_URL}?id=${encodeURIComponent(authorId)}`);
     }
     return;
   }
