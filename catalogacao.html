@@ -746,6 +746,10 @@
             <div id="bookISBNField" class="field">
               <label for="bookISBN">ISBN</label>
               <input id="bookISBN" type="text" placeholder="8527100053 ou 9788527409453" />
+              <div class="row-actions">
+                <button id="openIsbnBnBtn" type="button" class="btn-inline small secondary">Abrir BN</button>
+                <button id="openIsbnCblBtn" type="button" class="btn-inline small secondary">Abrir CBL</button>
+              </div>
             </div>
 
             <div id="bookISSNField" class="field">
@@ -1417,6 +1421,43 @@
       if (value === '' || value === null || value === undefined) return null;
       const n = Number(value);
       return Number.isFinite(n) ? n : null;
+    }
+
+    function normalizeISBN(value) {
+      return String(value || '').replace(/[^0-9Xx]/g, '').toUpperCase();
+    }
+
+    async function copyIsbnIfPossible(isbn) {
+      try {
+        if (!navigator.clipboard?.writeText) return false;
+        await navigator.clipboard.writeText(isbn);
+        return true;
+      } catch {
+        return false;
+      }
+    }
+
+    async function openIsbnLookup(source) {
+      const raw = el('bookISBN')?.value || '';
+      const isbn = normalizeISBN(raw);
+
+      if (!isbn) {
+        showMessage(refs.bookMessage, 'Informe um ISBN antes de abrir a busca.', 'error');
+        return;
+      }
+
+      const copied = await copyIsbnIfPossible(isbn);
+      const url = source === 'bn'
+        ? 'https://www.isbn.bn.br/website'
+        : 'https://www.cblservicos.org.br/isbn/pesquisa/';
+
+      window.open(url, '_blank', 'noopener');
+
+      if (copied) {
+        showMessage(refs.bookMessage, `ISBN copiado. Cole em ${source === 'bn' ? 'BN' : 'CBL'} para abrir a ficha.`, 'info');
+      } else {
+        showMessage(refs.bookMessage, `Abra a busca em ${source === 'bn' ? 'BN' : 'CBL'} e pesquise o ISBN informado.`, 'info');
+      }
     }
 
     function contributorRoleOptions(selected = 'autor') {
@@ -2573,6 +2614,8 @@
     el('exemplarDraftResetBtn').addEventListener('click', resetExemplarForm);
 
     el('bookType').addEventListener('change', syncBookTypeUI);
+    el('openIsbnBnBtn').addEventListener('click', () => openIsbnLookup('bn'));
+    el('openIsbnCblBtn').addEventListener('click', () => openIsbnLookup('cbl'));
     el('addContributorBtn').addEventListener('click', () => addTypedContributor('outro'));
     el('addAuthorContributorBtn').addEventListener('click', () => addTypedContributor('autor'));
     el('addCoauthorContributorBtn').addEventListener('click', () => addTypedContributor('coautor'));
