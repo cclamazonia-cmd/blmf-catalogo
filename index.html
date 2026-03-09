@@ -49,7 +49,7 @@ html, body {
   background-repeat: no-repeat;
 }
 a { color: inherit; }
-.wrap { max-width: 1680px; margin: 0 auto; padding: 24px; }
+.wrap { max-width: none; width: 100%; margin: 0; padding: 24px; }
 .hero {
   background: linear-gradient(135deg, rgba(179,0,24,.95), rgba(90,0,12,.96));
   border: 1px solid rgba(255,255,255,.08);
@@ -152,16 +152,23 @@ a { color: inherit; }
   padding:12px 16px;
   font-size:.95rem;
 }
+.toolbar-actions .button,
+.toolbar-actions .button.secondary,
+.toolbar-actions .action-link {
+  background: linear-gradient(135deg, var(--red-2), var(--red));
+  border: none;
+  color: #fff;
+  font-weight: 700;
+}
 .toolbar-actions .action-link {
   display:inline-flex;
   align-items:center;
   justify-content:center;
   border-radius:14px;
-  border:1px solid rgba(255,255,255,.14);
-  background: rgba(18,18,18,.96);
-  color:#fff;
-  font-weight:600;
   text-decoration:none;
+}
+#csvAdvancedLink {
+  margin-left: auto;
 }
 .stats { display:flex; flex-wrap:wrap; gap:10px; margin:0 0 16px; }
 .pill {
@@ -332,6 +339,7 @@ mark { background: rgba(225,29,47,.35); color:#fff; padding:0 2px; border-radius
   .wrap { padding: 14px; }
   .filters-grid { grid-template-columns: 1fr; }
   .toolbar-actions { justify-content:flex-start; }
+  #csvAdvancedLink { margin-left: 0; }
 }
 @media (max-width: 760px) {
   .table-wrap {
@@ -416,9 +424,9 @@ mark { background: rgba(225,29,47,.35); color:#fff; padding:0 2px; border-radius
     <div class="toolbar-actions">
       <button id="clearBtn" class="button secondary" type="button">Limpar filtros</button>
       <button id="pdfBtn" class="button" type="button">Exportar PDF</button>
-      <a id="csvAdvancedLink" class="action-link" href="#" role="button">CSV (avançado)</a>
       <button id="contaBtn" class="button secondary" type="button">Painel / minha conta</button>
       <a id="blogBtn" class="button secondary" href="https://cclamazonia.noblogs.org">Voltar ao blogue</a>
+      <a id="csvAdvancedLink" class="action-link" href="#" role="button">CSV (avançado)</a>
     </div>
   </section>
 
@@ -628,19 +636,20 @@ function splitAuthorNames(value) {
     .filter(Boolean);
 }
 function splitAuthorIds(value) {
+  if (Array.isArray(value)) return value.map(part => normalizeAuthorIdValue(part));
   if (value === null || value === undefined) return [];
   return String(value)
-    .split(/\s*;\s*/)
-    .map(part => normalizeAuthorIdValue(part))
-    .filter(Boolean);
+    .split(';')
+    .map(part => normalizeAuthorIdValue(part));
 }
 function buildAuthorMarkup(authorValue, authorIdsValue, terms) {
   const names = splitAuthorNames(authorValue);
   if (!names.length) return '<span class="muted">—</span>';
 
   const ids = splitAuthorIds(authorIdsValue);
+  const singleId = names.length === 1 ? normalizeAuthorIdValue(authorIdsValue) : null;
   const parts = names.map((name, idx) => {
-    const authorId = ids[idx] ?? (names.length === 1 ? normalizeAuthorIdValue(authorIdsValue) : null);
+    const authorId = ids[idx] ?? singleId ?? null;
     const label = highlightHTML(name, terms);
     if (authorId) {
       return `<button class="tag-link author-chip" type="button" data-author="${escapeHTML(name)}" data-author-id="${authorId}">${label}</button>`;
@@ -650,17 +659,15 @@ function buildAuthorMarkup(authorValue, authorIdsValue, terms) {
 
   return parts.length === 1 ? parts[0] : `<div class="author-chip-list">${parts.join('')}</div>`;
 }
-async function fetchAuthorRelationsFromSchema(schemaName) {
+async function fetchRestRows(path, schemaName) {
   try {
-    const select = 'book_id,author_id,role,ord';
-    const url = `${SUPABASE_URL}/rest/v1/author_books_public?select=${encodeURIComponent(select)}&order=book_id.asc,ord.asc,author_id.asc`;
     const headers = {
       apikey: SUPABASE_ANON_KEY,
       Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
       Accept: 'application/json'
     };
     if (schemaName && schemaName !== 'public') headers['Accept-Profile'] = schemaName;
-    const res = await fetch(url, { headers });
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/${path}`, { headers });
     if (!res.ok) return [];
     const text = await res.text();
     return text ? JSON.parse(text) : [];
@@ -668,26 +675,75 @@ async function fetchAuthorRelationsFromSchema(schemaName) {
     return [];
   }
 }
+function chooseLargestDataset(...datasets) {
+  let chosen = [];
+  for (const dataset of datasets) {
+    if (Array.isArray(dataset) && dataset.length > chosen.length) chosen = dataset;
+  }
+  return chosen;
+}
+function isAuthorRole(roleValue) {
+  const roleNorm = normalize(roleValue || 'autor');
+  return roleNorm.startsWith('autor')
+    || roleNorm.startsWith('autoria')
+    || roleNorm.startsWith('author')
+    || roleNorm.startsWith('coautor')
+    || roleNorm.startsWith('coauthor')
+    || roleNorm.startsWith('co-author');
+}
+async function loadAuthorLookupFromSupabase() {
+  const [vAuthorsPublic, authorsPublicApi, authorsPublicPublic] = await Promise.all([
+    fetchRestRows(`v_authors_public?select=${encodeURIComponent('id,preferred_name,sort_name')}&order=id.asc`, 'public'),
+    fetchRestRows(`authors_public?select=${encodeURIComponent('id,preferred_name,sort_name')}&order=id.asc`, 'api'),
+    fetchRestRows(`authors_public?select=${encodeURIComponent('id,preferred_name,sort_name')}&order=id.asc`, 'public')
+  ]);
+  const data = chooseLargestDataset(vAuthorsPublic, authorsPublicApi, authorsPublicPublic);
+  const map = new Map();
+  for (const row of (data || [])) {
+    const authorId = normalizeAuthorIdValue(row?.id);
+    if (!authorId) continue;
+    const keys = [normalize(row?.sort_name), normalize(row?.preferred_name)].filter(Boolean);
+    for (const key of keys) {
+      if (!map.has(key)) map.set(key, new Set());
+      map.get(key).add(authorId);
+    }
+  }
+  return map;
+}
 async function loadAuthorRelationsFromSupabase() {
   const [apiRows, publicRows] = await Promise.all([
-    fetchAuthorRelationsFromSchema('api'),
-    fetchAuthorRelationsFromSchema('public')
+    fetchRestRows(`author_books_public?select=${encodeURIComponent('book_id,author_id,role,ord')}&order=book_id.asc,ord.asc,author_id.asc`, 'api'),
+    fetchRestRows(`author_books_public?select=${encodeURIComponent('book_id,author_id,role,ord')}&order=book_id.asc,ord.asc,author_id.asc`, 'public')
   ]);
-  const apiCount = Array.isArray(apiRows) ? apiRows.length : 0;
-  const publicCount = Array.isArray(publicRows) ? publicRows.length : 0;
-  const data = apiCount >= publicCount ? apiRows : publicRows;
+  const data = chooseLargestDataset(apiRows, publicRows);
   const map = new Map();
   for (const row of (data || [])) {
     const bookId = row?.book_id;
     const authorId = normalizeAuthorIdValue(row?.author_id);
-    const roleNorm = normalize(row?.role || 'autor');
-    if (!bookId || !authorId) continue;
-    if (!(roleNorm.startsWith('autor') || roleNorm.startsWith('autoria') || roleNorm.startsWith('author') || roleNorm.startsWith('coautor') || roleNorm.startsWith('coauthor') || roleNorm.startsWith('co-author'))) continue;
+    if (!bookId || !authorId || !isAuthorRole(row?.role)) continue;
     const key = String(bookId);
     if (!map.has(key)) map.set(key, []);
     map.get(key).push(authorId);
   }
   return map;
+}
+function resolveAuthorIdsForRow(authorValue, relationIds, authorLookup, fallbackAuthorId) {
+  const names = splitAuthorNames(authorValue);
+  if (!names.length) return [];
+
+  if (Array.isArray(relationIds) && relationIds.length === names.length) {
+    return relationIds.map(id => normalizeAuthorIdValue(id));
+  }
+
+  const resolved = names.map(name => {
+    const matches = authorLookup.get(normalize(name));
+    if (!matches || matches.size !== 1) return null;
+    return normalizeAuthorIdValue([...matches][0]);
+  });
+
+  if (resolved.some(Boolean)) return resolved;
+  if (names.length === 1 && fallbackAuthorId) return [normalizeAuthorIdValue(fallbackAuthorId)];
+  return [];
 }
 function prepareRows() {
   for (const r of rows) {
@@ -711,8 +767,9 @@ async function loadRowsFromSupabase() {
   try {
     const select = 'id,bib_ref,autor,titulo,ano,editora,cdd,loanable,available_count,created_at,author_id';
     const url = `${SUPABASE_URL}/rest/v1/v_books_public?select=${encodeURIComponent(select)}&order=titulo.asc`;
-    const [authorRelations, res] = await Promise.all([
+    const [authorRelations, authorLookup, res] = await Promise.all([
       loadAuthorRelationsFromSupabase(),
+      loadAuthorLookupFromSupabase(),
       fetch(url, {
         headers: {
           apikey: SUPABASE_ANON_KEY,
@@ -730,7 +787,7 @@ async function loadRowsFromSupabase() {
     return (data || []).map(r => {
       const authorId = normalizeAuthorIdValue(r.author_id);
       const relationIds = authorRelations.get(String(r.id ?? '')) || [];
-      const authorIds = relationIds.length ? relationIds.join('; ') : (authorId ? String(authorId) : '');
+      const authorIdsList = resolveAuthorIdsForRow(r.autor ?? '', relationIds, authorLookup, authorId);
       return {
         id: r.id ?? null,
         bib_ref: r.bib_ref ?? '',
@@ -740,7 +797,8 @@ async function loadRowsFromSupabase() {
         editora: r.editora ?? '',
         cdd: r.cdd ?? '',
         author_id: authorId,
-        author_ids: authorIds,
+        author_ids: authorIdsList.length ? authorIdsList.join('; ') : (authorId ? String(authorId) : ''),
+        author_ids_list: authorIdsList,
         loanable: r.loanable === false ? false : true,
         available_count: Number(r.available_count ?? 0) || 0,
         created_at: r.created_at ?? null
@@ -881,7 +939,7 @@ function buildRowMarkup(r) {
   const ref = r.bib_ref || '';
   const terms = [...(lastQuery.phrases || []), ...(lastQuery.tokens || [])];
   const refHtml = ref ? highlightHTML(ref, terms) : '<span class="muted">—</span>';
-  const autorHtml = buildAuthorMarkup(r.autor, r.author_ids || r.author_id, terms);
+  const autorHtml = buildAuthorMarkup(r.autor, r.author_ids_list ?? r.author_ids ?? r.author_id, terms);
   const livroUrl = ref ? `${LIVRO_URL}?ref=${encodeURIComponent(ref)}` : '#';
   const tituloHtml = r.titulo ? highlightHTML(r.titulo, terms) : '<span class="muted">—</span>';
   const tituloCell = ref ? `<a href="${livroUrl}" style="text-decoration:none; font-weight:700;">${tituloHtml}</a>` : tituloHtml;
