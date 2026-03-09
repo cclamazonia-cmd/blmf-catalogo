@@ -140,10 +140,28 @@
     }
 
     .button.primary,
-    .tab-btn.active,
     .btn-inline.primary {
       background: linear-gradient(135deg, var(--red-2), var(--red));
       border-color: transparent;
+    }
+
+    .tab-btn {
+      background: linear-gradient(135deg, var(--red-2), var(--red));
+      border-color: transparent;
+      color: #fff;
+    }
+
+    .tab-btn:hover {
+      border-color: transparent;
+      color: #fff;
+      box-shadow: 0 0 0 2px rgba(255,255,255,.14), var(--shadow);
+    }
+
+    .tab-btn.active {
+      background: linear-gradient(135deg, #8f0014, #7a0011);
+      border-color: rgba(255,255,255,.18);
+      color: #fff;
+      box-shadow: 0 0 0 2px rgba(255,255,255,.12), var(--shadow);
     }
 
     .button.secondary,
@@ -592,6 +610,7 @@
       <div class="toolbar-actions">
         <span id="userEmail" class="pill info">Sem sessão</span>
         <span id="rolePill" class="pill warn">Verificando acesso…</span>
+        <button id="loginBtn" class="button primary">Fazer login</button>
         <button id="refreshAllBtn" class="button secondary">Atualizar</button>
       </div>
     </section>
@@ -777,9 +796,13 @@
                 <div class="inline">
                   <div>
                     <h4 class="section-title">Autores e outras responsabilidades</h4>
-                    <div class="hint">Use esta área para autor, organização, tradução, ilustração, prefácio e outras funções.</div>
+                    <div class="hint">Use esta área para autor, coautor, organização, tradução, ilustração, prefácio e outras funções.</div>
                   </div>
-                  <button id="addContributorBtn" type="button" class="button secondary small">Adicionar pessoa</button>
+                  <div class="row-actions">
+                    <button id="addContributorBtn" type="button" class="button secondary small">Adicionar autor(a)</button>
+                    <button id="addCoauthorBtn" type="button" class="button secondary small">Adicionar coautor(a)</button>
+                    <button id="addOrgContributorBtn" type="button" class="button secondary small">Adicionar organização</button>
+                  </div>
                 </div>
                 <div id="bookContributorsWrap" class="contrib-list"></div>
               </div>
@@ -1210,12 +1233,19 @@
       showOnlyActiveDrafts: false,
     };
 
+    const ROUTES = {
+      CADASTRO: 'https://cclamazonia-cmd.github.io/blmf-conta/cadastro.html',
+      PAINEL: 'https://cclamazonia-cmd.github.io/blmf-conta/painel.html',
+      CONTA: 'https://cclamazonia-cmd.github.io/blmf-conta/conta.html',
+    };
+
     const el = (id) => document.getElementById(id);
 
     const refs = {
       globalMessage: el('globalMessage'),
       userEmail: el('userEmail'),
       rolePill: el('rolePill'),
+      loginBtn: el('loginBtn'),
       bookMessage: el('bookMessage'),
       authorMessage: el('authorMessage'),
       exemplarMessage: el('exemplarMessage'),
@@ -1250,6 +1280,29 @@
       bookCoverFileName: el('bookCoverFileName'),
       authorPhotoFileName: el('authorPhotoFileName'),
     };
+
+    function getCatalogacaoRelativePath() {
+      const pathname = window.location.pathname || '';
+      const file = pathname.split('/').pop() || 'catalogacao.html';
+      return file.includes('.html') ? file : 'catalogacao.html';
+    }
+
+    function getLoginUrl() {
+      return `${ROUTES.CADASTRO}?next=${encodeURIComponent(getCatalogacaoRelativePath())}`;
+    }
+
+    function updateLoginButton() {
+      if (!refs.loginBtn) return;
+      if (state.session?.user) {
+        refs.loginBtn.textContent = 'Sessão ativa';
+        refs.loginBtn.disabled = true;
+        refs.loginBtn.title = 'A sessão atual já está ativa nesta página.';
+      } else {
+        refs.loginBtn.textContent = 'Fazer login';
+        refs.loginBtn.disabled = false;
+        refs.loginBtn.title = 'Abrir a página de login da BLMF.';
+      }
+    }
 
     function showMessage(target, text, kind = 'info') {
       target.textContent = text;
@@ -1397,19 +1450,25 @@
     function contributorRoleOptions(selected = 'autor') {
       const roles = [
         ['autor', 'Autor(a)'],
+        ['coautor', 'Coautor(a)'],
+        ['organizacao', 'Organização / coletivo'],
         ['organizador', 'Organizador(a)'],
         ['tradutor', 'Tradutor(a)'],
         ['ilustrador', 'Ilustrador(a)'],
         ['prefaciador', 'Prefácio'],
         ['coordenador', 'Coordenação'],
         ['editor', 'Editor(a)'],
+        ['instituicao', 'Instituição'],
         ['outro', 'Outro'],
       ];
+      if (selected && !roles.some(([value]) => value === selected)) {
+        roles.push([selected, selected]);
+      }
       return roles.map(([value, label]) => `<option value="${value}" ${value === selected ? 'selected' : ''}>${label}</option>`).join('');
     }
 
-    function createEmptyContributor(position = 1) {
-      return { position, name: '', role: 'autor', is_primary: position === 1 };
+    function createEmptyContributor(position = 1, role = 'autor') {
+      return { position, name: '', role, is_primary: position === 1 && role === 'autor' };
     }
 
     function renderBookContributors(contributors = []) {
@@ -1418,8 +1477,8 @@
       refs.bookContributorsWrap.innerHTML = safeRows.map((item, index) => `
         <div class="contributor-row" data-index="${index}">
           <div class="field" style="padding:0; background:none; border:none;">
-            <label>Nome</label>
-            <input type="text" class="contrib-name" value="${sanitize(item.name || '')}" placeholder="Nome completo" />
+            <label>Nome / organização</label>
+            <input type="text" class="contrib-name" value="${sanitize(item.name || '')}" placeholder="Nome completo ou nome da organização" />
           </div>
           <div class="field" style="padding:0; background:none; border:none;">
             <label>Função</label>
@@ -1748,6 +1807,16 @@
       clearMessage(refs.exemplarMessage);
     }
 
+    function appendContributor(role = 'autor') {
+      const current = getBookContributorsFromForm();
+      if (!current.length && role !== 'autor') {
+        current.push(createEmptyContributor(1, 'autor'));
+        current[0].is_primary = true;
+      }
+      current.push(createEmptyContributor(current.length + 1, role));
+      renderBookContributors(current);
+    }
+
     function updateLabelPreview() {
       refs.labelPrevTombo.textContent = el('exemplarTombo').value || '—';
       refs.labelPrevBibRef.textContent = el('exemplarBibRef').value || '—';
@@ -1775,6 +1844,7 @@
       const { data, error } = await supabase.auth.getSession();
       if (error) throw error;
       state.session = data.session;
+      updateLoginButton();
       if (!state.session) {
         refs.userEmail.textContent = 'Sem sessão';
         refs.rolePill.textContent = 'Faça login para usar a catalogação';
@@ -1792,6 +1862,7 @@
       if (error) throw error;
       state.profile = data;
       state.isLibrarian = !!data?.is_librarian;
+      updateLoginButton();
 
       if (state.isLibrarian) {
         refs.rolePill.textContent = 'Acesso bibliotecário confirmado';
@@ -1837,14 +1908,27 @@
       renderCatalogExemplars();
     }
 
-    async function refreshAll() {
+    async function refreshAll(showFeedback = false) {
+      clearMessage(refs.globalMessage);
+      refs.userEmail.textContent = 'Verificando sessão…';
+      refs.rolePill.textContent = 'Atualizando…';
+      refs.rolePill.className = 'pill warn';
+
       try {
         await requireSession();
         await loadProfile();
         await Promise.all([loadBatches(), loadQueue(), loadCatalog()]);
         updateStats();
+        updateLoginButton();
+        if (showFeedback) showMessage(refs.globalMessage, 'Dados atualizados com sucesso.', 'ok');
+        return true;
       } catch (error) {
         console.error(error);
+        updateLoginButton();
+        if (showFeedback && error?.message && error.message !== 'Sem sessão') {
+          showMessage(refs.globalMessage, error.message, 'error');
+        }
+        return false;
       }
     }
 
@@ -2484,7 +2568,10 @@
       }
     });
 
-    el('refreshAllBtn').addEventListener('click', refreshAll);
+    el('loginBtn').addEventListener('click', () => {
+      window.location.href = getLoginUrl();
+    });
+    el('refreshAllBtn').addEventListener('click', () => refreshAll(true));
     el('refreshQueueBtn').addEventListener('click', loadQueue);
     el('refreshBatchesBtn').addEventListener('click', loadBatches);
     el('bookDraftResetBtn').addEventListener('click', resetBookForm);
@@ -2492,11 +2579,9 @@
     el('exemplarDraftResetBtn').addEventListener('click', resetExemplarForm);
 
     el('bookType').addEventListener('change', syncBookTypeUI);
-    el('addContributorBtn').addEventListener('click', () => {
-      const current = getBookContributorsFromForm();
-      current.push(createEmptyContributor(current.length + 1));
-      renderBookContributors(current);
-    });
+    el('addContributorBtn').addEventListener('click', () => appendContributor('autor'));
+    el('addCoauthorBtn').addEventListener('click', () => appendContributor('coautor'));
+    el('addOrgContributorBtn').addEventListener('click', () => appendContributor('organizacao'));
     refs.bookContributorsWrap.addEventListener('click', (event) => {
       const btn = event.target.closest('[data-contrib-action]');
       if (!btn) return;
@@ -2540,12 +2625,20 @@
 
     supabase.auth.onAuthStateChange(async (_event, session) => {
       state.session = session;
-      if (session) refs.userEmail.textContent = session.user.email || 'Usuário autenticado';
+      if (session) {
+        refs.userEmail.textContent = session.user.email || 'Usuário autenticado';
+      } else {
+        refs.userEmail.textContent = 'Sem sessão';
+        refs.rolePill.textContent = 'Faça login para usar a catalogação';
+        refs.rolePill.className = 'pill danger';
+      }
+      updateLoginButton();
     });
 
     resetBookForm();
     resetAuthorForm();
     resetExemplarForm();
+    updateLoginButton();
     refreshAll();
 
     document.addEventListener('visibilitychange', () => {
