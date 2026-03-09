@@ -574,6 +574,22 @@
       .table-wrap { max-height: none; }
       table { min-width: 820px; }
     }
+
+    .tabs .tab-btn,
+    .tabs .tab-btn.active,
+    .tabs .tab-btn:hover,
+    .tabs .tab-btn:focus {
+      background: linear-gradient(135deg, var(--red-2), var(--red)) !important;
+      border-color: transparent !important;
+      color: #fff !important;
+    }
+
+    .toolbar-actions #loginBtn.button.success {
+      background: linear-gradient(135deg, #166534, #16a34a);
+      border-color: transparent;
+      color: #fff;
+    }
+
   </style>
 </head>
 <body>
@@ -592,6 +608,7 @@
       <div class="toolbar-actions">
         <span id="userEmail" class="pill info">Sem sessão</span>
         <span id="rolePill" class="pill warn">Verificando acesso…</span>
+        <button id="loginBtn" class="button primary">Fazer login</button>
         <button id="refreshAllBtn" class="button secondary">Atualizar</button>
       </div>
     </section>
@@ -777,9 +794,14 @@
                 <div class="inline">
                   <div>
                     <h4 class="section-title">Autores e outras responsabilidades</h4>
-                    <div class="hint">Use esta área para autor, organização, tradução, ilustração, prefácio e outras funções.</div>
+                    <div class="hint">Use esta área para autor(a), coautor(a), organização, tradução, ilustração, prefácio e outras funções.</div>
                   </div>
-                  <button id="addContributorBtn" type="button" class="button secondary small">Adicionar pessoa</button>
+                  <div class="row-actions">
+                    <button id="addAuthorContributorBtn" type="button" class="button secondary small">Adicionar autor(a)</button>
+                    <button id="addCoauthorContributorBtn" type="button" class="button secondary small">Adicionar coautor(a)</button>
+                    <button id="addOrganizationContributorBtn" type="button" class="button secondary small">Adicionar organização</button>
+                    <button id="addContributorBtn" type="button" class="button secondary small">Adicionar pessoa</button>
+                  </div>
                 </div>
                 <div id="bookContributorsWrap" class="contrib-list"></div>
               </div>
@@ -1198,6 +1220,8 @@
       auth: { storage: window.sessionStorage, persistSession: true, autoRefreshToken: true, detectSessionInUrl: true }
     });
 
+    const LOGIN_URL = 'https://cclamazonia-cmd.github.io/blmf-conta/cadastro.html';
+
     const state = {
       session: null,
       profile: null,
@@ -1216,6 +1240,7 @@
       globalMessage: el('globalMessage'),
       userEmail: el('userEmail'),
       rolePill: el('rolePill'),
+      loginBtn: el('loginBtn'),
       bookMessage: el('bookMessage'),
       authorMessage: el('authorMessage'),
       exemplarMessage: el('exemplarMessage'),
@@ -1397,6 +1422,8 @@
     function contributorRoleOptions(selected = 'autor') {
       const roles = [
         ['autor', 'Autor(a)'],
+        ['coautor', 'Coautor(a)'],
+        ['organizacao', 'Organização'],
         ['organizador', 'Organizador(a)'],
         ['tradutor', 'Tradutor(a)'],
         ['ilustrador', 'Ilustrador(a)'],
@@ -1408,8 +1435,33 @@
       return roles.map(([value, label]) => `<option value="${value}" ${value === selected ? 'selected' : ''}>${label}</option>`).join('');
     }
 
-    function createEmptyContributor(position = 1) {
-      return { position, name: '', role: 'autor', is_primary: position === 1 };
+    function createEmptyContributor(position = 1, role = 'autor') {
+      return { position, name: '', role, is_primary: position === 1 };
+    }
+
+    function getBookContributorsSnapshot({ keepEmpty = true } = {}) {
+      const rows = Array.from(refs.bookContributorsWrap.querySelectorAll('.contributor-row'));
+      const contributors = rows.map((row, index) => ({
+        position: index + 1,
+        name: row.querySelector('.contrib-name')?.value.trim() || '',
+        role: row.querySelector('.contrib-role')?.value || 'autor',
+        is_primary: !!row.querySelector('.contrib-primary')?.checked,
+      }));
+
+      const normalized = keepEmpty ? contributors : contributors.filter(item => item.name);
+      if (!normalized.length) return [];
+      if (!normalized.some(item => item.is_primary)) normalized[0].is_primary = true;
+      return normalized.map((item, index) => ({ ...item, position: index + 1 }));
+    }
+
+    function addTypedContributor(role = 'autor') {
+      const current = getBookContributorsSnapshot({ keepEmpty: true });
+      const next = current.length + 1;
+      current.push(createEmptyContributor(next, role));
+      if (!current.some(item => item.is_primary)) current[0].is_primary = true;
+      renderBookContributors(current);
+      const lastRow = refs.bookContributorsWrap.querySelector('.contributor-row:last-child .contrib-name');
+      if (lastRow) lastRow.focus();
     }
 
     function renderBookContributors(contributors = []) {
@@ -1451,17 +1503,7 @@
     }
 
     function getBookContributorsFromForm() {
-      const rows = Array.from(refs.bookContributorsWrap.querySelectorAll('.contributor-row'));
-      const contributors = rows.map((row, index) => ({
-        position: index + 1,
-        name: row.querySelector('.contrib-name')?.value.trim() || '',
-        role: row.querySelector('.contrib-role')?.value || 'autor',
-        is_primary: !!row.querySelector('.contrib-primary')?.checked,
-      })).filter(item => item.name);
-
-      if (!contributors.length) return [];
-      if (!contributors.some(item => item.is_primary)) contributors[0].is_primary = true;
-      return contributors.map((item, index) => ({ ...item, position: index + 1 }));
+      return getBookContributorsSnapshot({ keepEmpty: false });
     }
 
     function buildShortResponsibility(contributors = []) {
@@ -1783,6 +1825,17 @@
       refs.authorPhotoFileName.textContent = file ? file.name : 'Nenhum arquivo selecionado';
     });
 
+    function updateLoginButton() {
+      if (!refs.loginBtn) return;
+      if (state.session?.user?.id) {
+        refs.loginBtn.textContent = 'Sessão ativa';
+        refs.loginBtn.className = 'button success';
+      } else {
+        refs.loginBtn.textContent = 'Fazer login';
+        refs.loginBtn.className = 'button primary';
+      }
+    }
+
     async function requireSession() {
       const { data, error } = await supabase.auth.getSession();
       if (error) throw error;
@@ -1791,10 +1844,12 @@
         refs.userEmail.textContent = 'Sem sessão';
         refs.rolePill.textContent = 'Faça login para usar a catalogação';
         refs.rolePill.className = 'pill danger';
+        updateLoginButton();
         showMessage(refs.globalMessage, 'Você precisa entrar com um usuário bibliotecário para usar esta página.', 'error');
         throw new Error('Sem sessão');
       }
       refs.userEmail.textContent = state.session.user.email || 'Usuário autenticado';
+      updateLoginButton();
     }
 
     async function loadProfile() {
@@ -1804,6 +1859,7 @@
       if (error) throw error;
       state.profile = data;
       state.isLibrarian = !!data?.is_librarian;
+      updateLoginButton();
 
       if (state.isLibrarian) {
         refs.rolePill.textContent = 'Acesso bibliotecário confirmado';
@@ -1849,14 +1905,27 @@
       renderCatalogExemplars();
     }
 
-    async function refreshAll() {
+    async function refreshAll(showSuccess = false) {
+      refs.userEmail.textContent = 'Verificando sessão…';
+      refs.rolePill.textContent = 'Verificando acesso…';
+      refs.rolePill.className = 'pill warn';
+
       try {
+        clearMessage(refs.globalMessage);
         await requireSession();
         await loadProfile();
         await Promise.all([loadBatches(), loadQueue(), loadCatalog()]);
         updateStats();
+        updateLoginButton();
+        if (showSuccess) {
+          showMessage(refs.globalMessage, 'Sessão, perfil e dados atualizados.', 'ok');
+        }
       } catch (error) {
+        updateLoginButton();
         console.error(error);
+        if (state.session?.user?.id && error?.message) {
+          showMessage(refs.globalMessage, error.message, 'error');
+        }
       }
     }
 
@@ -2496,7 +2565,7 @@
       }
     });
 
-    el('refreshAllBtn').addEventListener('click', refreshAll);
+    el('refreshAllBtn').addEventListener('click', () => refreshAll(true));
     el('refreshQueueBtn').addEventListener('click', loadQueue);
     el('refreshBatchesBtn').addEventListener('click', loadBatches);
     el('bookDraftResetBtn').addEventListener('click', resetBookForm);
@@ -2504,10 +2573,16 @@
     el('exemplarDraftResetBtn').addEventListener('click', resetExemplarForm);
 
     el('bookType').addEventListener('change', syncBookTypeUI);
-    el('addContributorBtn').addEventListener('click', () => {
-      const current = getBookContributorsFromForm();
-      current.push(createEmptyContributor(current.length + 1));
-      renderBookContributors(current);
+    el('addContributorBtn').addEventListener('click', () => addTypedContributor('outro'));
+    el('addAuthorContributorBtn').addEventListener('click', () => addTypedContributor('autor'));
+    el('addCoauthorContributorBtn').addEventListener('click', () => addTypedContributor('coautor'));
+    el('addOrganizationContributorBtn').addEventListener('click', () => addTypedContributor('organizacao'));
+    refs.loginBtn.addEventListener('click', () => {
+      if (state.session?.user?.id) {
+        refreshAll(true);
+        return;
+      }
+      window.location.href = LOGIN_URL;
     });
     refs.bookContributorsWrap.addEventListener('click', (event) => {
       const btn = event.target.closest('[data-contrib-action]');
@@ -2552,12 +2627,18 @@
 
     supabase.auth.onAuthStateChange(async (_event, session) => {
       state.session = session;
-      if (session) refs.userEmail.textContent = session.user.email || 'Usuário autenticado';
+      if (session) {
+        refs.userEmail.textContent = session.user.email || 'Usuário autenticado';
+      } else {
+        refs.userEmail.textContent = 'Sem sessão';
+      }
+      updateLoginButton();
     });
 
     resetBookForm();
     resetAuthorForm();
     resetExemplarForm();
+    updateLoginButton();
     refreshAll();
 
     document.addEventListener('visibilitychange', () => {
