@@ -1529,7 +1529,7 @@
       <div class="panel-header">
         <div>
           <h3>Fila editorial</h3>
-          <p>Consulte rascunhos de livros, autores e exemplares. Você pode abrir para edição, atribuir lote e publicar individualmente.</p>
+          <p>Consulte somente os rascunhos ativos de livros, autores e exemplares. Itens publicados saem desta fila e ficam no catálogo já publicado; itens descartados ficam na lixeira.</p>
         </div>
         <div class="inline">
           <button id="refreshQueueBtn" class="button secondary">Atualizar fila</button>
@@ -1549,11 +1549,9 @@
           <div class="field">
             <label for="queueStatusFilter">Situação</label>
             <select id="queueStatusFilter">
-              <option value="">Todas</option>
+              <option value="">Todas as situações ativas</option>
               <option value="draft">Em rascunho</option>
               <option value="ready">Pronto</option>
-              <option value="published">Publicado</option>
-              <option value="cancelled">Cancelado</option>
             </select>
           </div>
           <div class="field">
@@ -3616,7 +3614,7 @@
       const statusFilter = el('queueStatusFilter').value;
       const search = el('queueSearch').value.trim().toLowerCase();
       const targetBatchId = el('queueBatchAssign').value;
-      let items = [...state.queueItems];
+      let items = [...state.queueItems].filter(item => item.status === 'draft' || item.status === 'ready');
       if (state.showOnlyActiveDrafts) {
         items = items.filter(item => item.status === 'draft' || item.status === 'ready');
       }
@@ -3627,7 +3625,7 @@
       }
 
       if (!items.length) {
-        refs.queueTableWrap.innerHTML = '<div class="empty">Nenhum rascunho encontrado com os filtros atuais.</div>';
+        refs.queueTableWrap.innerHTML = '<div class="empty">Nenhum rascunho ativo encontrado com os filtros atuais.</div>';
         return;
       }
 
@@ -4419,6 +4417,9 @@
         renderQueue();
       });
     });
+    if (!['', 'draft', 'ready'].includes(el('queueStatusFilter').value)) {
+      el('queueStatusFilter').value = '';
+    }
     el('queueBatchAssign').addEventListener('change', renderQueue);
     el('statDrafts').addEventListener('click', openActiveDraftsView);
     el('statDrafts').addEventListener('keydown', (event) => {
