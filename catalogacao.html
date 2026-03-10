@@ -4239,21 +4239,11 @@
       const publishedAuthorId = Number(authorId);
       if (!publishedAuthorId) throw new Error('Autor inválido para edição.');
 
-      const { data: existingDrafts, error: existingDraftsError } = await supabase
-        .from('author_drafts')
-        .select('id, status, updated_at')
-        .eq('published_author_id', publishedAuthorId)
-        .neq('status', 'cancelled')
-        .order('updated_at', { ascending: false })
-        .limit(1);
-
-      if (existingDraftsError) throw existingDraftsError;
-
-      const existingDraft = Array.isArray(existingDrafts) ? existingDrafts[0] : null;
-      if (existingDraft?.id) {
-        await fetchDraftAndEdit('author', Number(existingDraft.id));
-        showMessage(refs.catalogMessage, `Rascunho de autor já aberto (#${existingDraft.id}).`, 'ok');
-        return Number(existingDraft.id);
+      const existingDraftId = await findExistingActiveDraftId('author_drafts', 'published_author_id', publishedAuthorId);
+      if (existingDraftId) {
+        await fetchDraftAndEdit('author', existingDraftId);
+        showMessage(refs.catalogMessage, `Rascunho de autor já aberto (#${existingDraftId}).`, 'ok');
+        return existingDraftId;
       }
 
       const batchId = el('catalogBatchId').value || null;
@@ -4300,8 +4290,7 @@
                 <td>${sanitize(author.source_label || author.source_kind || '—')}</td>
                 <td>
                   <div class="row-actions">
-                    <button class="btn-inline small secondary" data-action="load-author-edit" data-author-id="${author.id}">Carregar para editar</button>
-                    <button class="btn-inline small ghost" data-action="draft-author" data-author-id="${author.id}">Criar novo rascunho</button>
+                    <button class="btn-inline small secondary" data-action="draft-author-edit" data-author-id="${author.id}">Criar rascunho de edição</button>
                   </div>
                 </td>
               </tr>`).join('')}
@@ -4310,27 +4299,10 @@
 
       bindCatalogSortButtons(refs.catalogAuthorsWrap, renderCatalogAuthors);
 
-      refs.catalogAuthorsWrap.querySelectorAll('[data-action="load-author-edit"]').forEach(btn => {
+      refs.catalogAuthorsWrap.querySelectorAll('[data-action="draft-author-edit"]').forEach(btn => {
         btn.addEventListener('click', async () => {
           try {
             await loadOrCreateAuthorDraftFromCatalog(btn.dataset.authorId);
-          } catch (error) {
-            showMessage(refs.catalogMessage, error.message, 'error');
-          }
-        });
-      });
-
-      refs.catalogAuthorsWrap.querySelectorAll('[data-action="draft-author"]').forEach(btn => {
-        btn.addEventListener('click', async () => {
-          try {
-            const currentTab = getActiveCatalogacaoTab();
-            const batchId = el('catalogBatchId').value || null;
-            const { data, error } = await supabase.rpc('create_author_draft_from_author', { p_author_id: Number(btn.dataset.authorId), p_batch_id: batchId ? Number(batchId) : null });
-            if (error) throw error;
-            await Promise.all([loadQueue(), loadCatalog(), loadBatches()]);
-            setTab(currentTab);
-            updateStats();
-            showMessage(refs.catalogMessage, `Novo rascunho de edição de autor criado (#${data}). O rascunho ficou na fila editorial sem mudar a aba atual.`, 'ok');
           } catch (error) {
             showMessage(refs.catalogMessage, error.message, 'error');
           }
@@ -4592,6 +4564,29 @@
       }
     });
 
+    async function persistAuthorDraftBeforePublish() {
+      const payload = await reuseExistingDraftIdIfNeeded('author_drafts', getAuthorDraftPayload(), 'published_author_id');
+      if (!payload.preferred_name) throw new Error('Informe o nome do autor em Nome, SOBRENOME.');
+      const dbPayload = { ...payload };
+      const isUpdate = !!dbPayload.id;
+      if (!dbPayload.id) delete dbPayload.id;
+
+      let result;
+      if (isUpdate) {
+        const id = dbPayload.id;
+        delete dbPayload.id;
+        result = await supabase.from('author_drafts').update(dbPayload).eq('id', id).select().single();
+      } else {
+        result = await supabase.from('author_drafts').insert(dbPayload).select().single();
+      }
+
+      if (result.error) throw result.error;
+      await Promise.all([loadQueue(), loadBatches(), loadCatalog()]);
+      updateStats();
+      fillAuthorForm(result.data);
+      return result.data;
+    }
+
     el('exemplarForm').addEventListener('submit', async (event) => {
       event.preventDefault();
       try {
@@ -4741,28 +4736,27 @@
 
     el('publishAuthorDraftBtn').addEventListener('click', async () => {
       const currentTab = getActiveCatalogacaoTab();
-      if (state.publishLocks.author || authorDraftStableState === 'published' || el('authorPublishedId').value) {
-        showPublishedPopup('author');
-        showMessage(refs.authorMessage, 'autor já existente', 'error');
+      if (state.publishLocks.author) {
+        showMessage(refs.authorMessage, 'A publicação deste rascunho já está em andamento.', 'info');
         return;
       }
       try {
-        const draftId = el('authorDraftId').value;
-        if (!draftId) throw new Error('Salve o rascunho antes de publicar.');
         setPublishLock('author', true);
+        const savedDraft = await persistAuthorDraftBeforePublish();
+        const draftId = savedDraft?.id || el('authorDraftId').value;
+        if (!draftId) throw new Error('Não foi possível salvar o rascunho antes de publicar.');
         const { data: draftState, error: draftStateError } = await supabase
           .from('author_drafts')
-          .select('id, published_author_id, status')
+          .select('id, status')
           .eq('id', Number(draftId))
           .single();
         if (draftStateError) throw draftStateError;
-        if (draftState?.published_author_id || draftState?.status === 'published') {
-          if (draftState?.published_author_id) el('authorPublishedId').value = draftState.published_author_id;
+        if (draftState?.status === 'published') {
           authorDraftStableState = 'published';
           authorDraftBaseline = serializeAuthorFormState();
           setAuthorDraftVisualState('published');
           showPublishedPopup('author');
-          showMessage(refs.authorMessage, 'autor já existente', 'error');
+          showMessage(refs.authorMessage, 'Este rascunho já foi publicado.', 'info');
           return;
         }
         const { error } = await supabase.rpc('publish_author_draft', { p_draft_id: Number(draftId) });
@@ -4789,12 +4783,7 @@
         const message = /duplicate|already exists|já existe|unique/i.test(String(error?.message || ''))
           ? 'autor já existente'
           : error.message;
-        if (message === 'autor já existente') {
-          authorDraftStableState = 'published';
-          authorDraftBaseline = serializeAuthorFormState();
-          setAuthorDraftVisualState('published');
-          showPublishedPopup('author');
-        }
+        hidePublishedPopup('author');
         showMessage(refs.authorMessage, message, 'error');
       } finally {
         setPublishLock('author', false);
