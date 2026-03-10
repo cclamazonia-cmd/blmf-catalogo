@@ -810,6 +810,20 @@
       box-shadow: var(--shadow);
     }
 
+
+    .label-sheet-page.is-clickable {
+      cursor: pointer;
+      transition: transform .16s ease, box-shadow .16s ease;
+    }
+
+    .label-sheet-page.is-clickable:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 22px 46px rgba(0,0,0,.55);
+    }
+
+    .trash-card {
+      margin-top: 16px;
+    }
     .label-sheet-grid {
       display: grid;
       grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -1252,7 +1266,7 @@
 
             <div class="field" style="grid-column: span 2;">
               <label for="authorPreferredName">Nome, SOBRENOME</label>
-              <input id="authorPreferredName" type="text" placeholder="Mikhail, BAKUNIN" required />
+              <input id="authorPreferredName" type="text" placeholder="Mikhail BAKUNIN" required />
             </div>
 
             <div class="field">
@@ -1446,6 +1460,7 @@
             </div>
             <div class="actions" style="justify-content:flex-start;">
               <button id="refreshLabelSheetBtn" type="button" class="button secondary">Atualizar prévia dos rótulos validados</button>
+              <button id="openLabelSheetPdfBtn" type="button" class="button ghost">Abrir PDF desta plancha</button>
             </div>
           </div>
           <div id="labelSheetSummary" class="hint" style="margin-bottom:12px;"></div>
@@ -1497,6 +1512,18 @@
 
         <div id="queueMessage" class="message"></div>
         <div id="queueTableWrap" class="table-wrap"></div>
+
+        <div class="card trash-card">
+          <div class="inline" style="justify-content:space-between; gap:12px; margin-bottom:12px;">
+            <div>
+              <h4 style="margin:0 0 6px;">Lixeira de rascunhos</h4>
+              <p class="small">Aqui aparecem somente os rascunhos descartados de livros, autores e exemplares. Você pode restaurar ou restaurar e abrir para continuar a edição.</p>
+            </div>
+            <button id="refreshTrashBtn" class="button secondary">Atualizar lixeira</button>
+          </div>
+          <div id="trashMessage" class="message"></div>
+          <div id="trashTableWrap" class="table-wrap"></div>
+        </div>
       </div>
     </section>
 
@@ -1593,6 +1620,7 @@
     </section>
   </div>
 
+  <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
   <script type="module">
     import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
@@ -1616,6 +1644,8 @@
       exemplars: [],
       batchExemplarItems: [],
       showOnlyActiveDrafts: false,
+      labelPreviewBatchId: '',
+      labelPreviewItems: [],
     };
 
     const el = (id) => document.getElementById(id);
@@ -1664,8 +1694,12 @@
       exemplarBatchQueueWrap: el('exemplarBatchQueueWrap'),
       exemplarLotImportId: el('exemplarLotImportId'),
       refreshLabelSheetBtn: el('refreshLabelSheetBtn'),
+      openLabelSheetPdfBtn: el('openLabelSheetPdfBtn'),
       labelSheetSummary: el('labelSheetSummary'),
       labelSheetWrap: el('labelSheetWrap'),
+      trashMessage: el('trashMessage'),
+      trashTableWrap: el('trashTableWrap'),
+      refreshTrashBtn: el('refreshTrashBtn'),
     };
 
     function showMessage(target, text, kind = 'info') {
@@ -2852,6 +2886,177 @@
       return `<span class="queue-status-badge ${config.cls}">${sanitize(config.label)}</span>`;
     }
 
+    function getItemTypeLabel(type = '') {
+      const map = {
+        book: 'Livro',
+        author: 'Autor',
+        exemplar: 'Exemplar',
+      };
+      return map[type] || (type || '—');
+    }
+
+    function getDraftTableName(type = '') {
+      const map = {
+        book: 'book_drafts',
+        author: 'author_drafts',
+        exemplar: 'exemplar_drafts',
+      };
+      return map[type] || null;
+    }
+
+    async function restoreQueueDraft(type, id) {
+      const table = getDraftTableName(type);
+      if (!table) throw new Error('Tipo de rascunho inválido para restauração.');
+      const { error } = await supabase.from(table).update({ status: 'draft', updated_by: state.profile.id }).eq('id', Number(id));
+      if (error) throw error;
+      await Promise.all([loadQueue(), loadBatches(), loadCatalog()]);
+      updateStats();
+    }
+
+    function renderTrash() {
+      if (!refs.trashTableWrap) return;
+      const items = [...state.queueItems]
+        .filter(item => item.status === 'cancelled')
+        .sort((a, b) => String(b.updated_at || '').localeCompare(String(a.updated_at || '')));
+
+      if (!items.length) {
+        refs.trashTableWrap.innerHTML = '<div class="empty">A lixeira está vazia no momento.</div>';
+        return;
+      }
+
+      refs.trashTableWrap.innerHTML = `
+        <table>
+          <thead>
+            <tr>
+              <th>Tipo</th>
+              <th>Referência</th>
+              <th>Título / nome</th>
+              <th>Complemento</th>
+              <th>Lote</th>
+              <th>Descartado / atualizado em</th>
+              <th>Operações</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${items.map(item => `
+              <tr>
+                <td>${sanitize(getItemTypeLabel(item.item_type))}</td>
+                <td>${sanitize(item.reference_code || '—')}</td>
+                <td>${sanitize(item.display_title || '—')}</td>
+                <td>${sanitize(item.display_subtitle || '—')}</td>
+                <td>${item.batch_id ? '#' + sanitize(item.batch_id) : '—'}</td>
+                <td>${sanitize(formatDate(item.updated_at))}</td>
+                <td>
+                  <div class="row-actions">
+                    <button class="btn-inline small secondary" data-action="restore-trash" data-type="${sanitize(item.item_type)}" data-id="${item.draft_id}">Restaurar</button>
+                    <button class="btn-inline small success" data-action="restore-open-trash" data-type="${sanitize(item.item_type)}" data-id="${item.draft_id}">Restaurar e abrir</button>
+                  </div>
+                </td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>`;
+
+      refs.trashTableWrap.querySelectorAll('[data-action="restore-trash"]').forEach(btn => {
+        btn.addEventListener('click', async () => {
+          try {
+            await restoreQueueDraft(btn.dataset.type, Number(btn.dataset.id));
+            showMessage(refs.trashMessage, 'Rascunho restaurado com sucesso.', 'ok');
+          } catch (error) {
+            showMessage(refs.trashMessage, error.message, 'error');
+          }
+        });
+      });
+
+      refs.trashTableWrap.querySelectorAll('[data-action="restore-open-trash"]').forEach(btn => {
+        btn.addEventListener('click', async () => {
+          try {
+            await restoreQueueDraft(btn.dataset.type, Number(btn.dataset.id));
+            await fetchDraftAndEdit(btn.dataset.type, Number(btn.dataset.id));
+            showMessage(refs.trashMessage, 'Rascunho restaurado e aberto para edição.', 'ok');
+          } catch (error) {
+            showMessage(refs.trashMessage, error.message, 'error');
+          }
+        });
+      });
+    }
+
+    function getLabelPages(labels = []) {
+      const pages = [];
+      for (let index = 0; index < labels.length; index += 27) {
+        const chunk = labels.slice(index, index + 27);
+        while (chunk.length < 27) chunk.push(null);
+        pages.push(chunk);
+      }
+      return pages;
+    }
+
+    function openLabelSheetPdfInNewTab() {
+      const labels = Array.isArray(state.labelPreviewItems) ? [...state.labelPreviewItems] : [];
+      const batchId = state.labelPreviewBatchId || refs.labelBatchPreviewId?.value || '';
+      if (!labels.length) {
+        showMessage(refs.exemplarMessage, 'Não há rótulos validados nesta prévia para abrir em PDF.', 'error');
+        return;
+      }
+      const jsPDFCtor = window.jspdf?.jsPDF;
+      if (!jsPDFCtor) {
+        showMessage(refs.exemplarMessage, 'A biblioteca de PDF não carregou. Atualize a página e tente novamente.', 'error');
+        return;
+      }
+
+      const doc = new jsPDFCtor({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+      const pageWidth = 210;
+      const pageHeight = 297;
+      const marginX = 8;
+      const marginTop = 12;
+      const marginBottom = 12;
+      const cols = 3;
+      const rows = 9;
+      const cellW = (pageWidth - (marginX * 2)) / cols;
+      const cellH = (pageHeight - marginTop - marginBottom) / rows;
+      const pages = getLabelPages(labels);
+      const batch = state.batches.find(item => String(item.id) === String(batchId));
+      const batchLabel = batch ? `${batch.name} (#${batch.id})` : (batchId ? `Lote #${batchId}` : 'Lote');
+
+      pages.forEach((page, pageIndex) => {
+        if (pageIndex > 0) doc.addPage('a4', 'portrait');
+        doc.setFont('helvetica', 'normal');
+        doc.setFontSize(10);
+        doc.text(batchLabel, marginX, 7);
+
+        page.forEach((label, index) => {
+          const col = index % cols;
+          const row = Math.floor(index / cols);
+          const x = marginX + (col * cellW);
+          const y = marginTop + (row * cellH);
+          doc.setDrawColor(150, 150, 150);
+          doc.setLineDashPattern([1, 1], 0);
+          doc.rect(x, y, cellW, cellH);
+          doc.setLineDashPattern([], 0);
+          if (!label) return;
+          const padX = 2.8;
+          let cursorY = y + 7;
+          doc.setTextColor(17, 17, 17);
+          doc.setFont('helvetica', 'bold');
+          doc.setFontSize(16);
+          doc.text(String(label.authorCode || '---'), x + padX, cursorY);
+          cursorY += 8;
+          doc.setFontSize(12);
+          const tomboLines = doc.splitTextToSize(String(label.tombo || '—'), cellW - (padX * 2));
+          doc.text(tomboLines, x + padX, cursorY);
+          cursorY += Math.max(7, tomboLines.length * 5);
+          doc.setFont('helvetica', 'normal');
+          doc.setFontSize(9);
+          const cddText = `CDD ${String(label.cdd || '—')}`;
+          const cddLines = doc.splitTextToSize(cddText, cellW - (padX * 2));
+          doc.text(cddLines, x + padX, cursorY);
+        });
+      });
+
+      const url = doc.output('bloburl');
+      window.open(url, '_blank', 'noopener');
+    }
+
     function buildSuggestedTombo({ bibRef = '', publishedBookId = '', draftId = '' }, copyNo = 1) {
       const currentYear = new Date().getFullYear();
       const cleanRef = String(bibRef || '').trim();
@@ -3221,6 +3426,8 @@
           }
         });
       });
+
+      renderTrash();
     }
 
     function renderBatchList() {
@@ -3508,6 +3715,8 @@
     }
 
     function renderLabelSheet(labels = [], batchId = '') {
+      state.labelPreviewItems = Array.isArray(labels) ? [...labels] : [];
+      state.labelPreviewBatchId = batchId || '';
       const batch = state.batches.find(item => String(item.id) === String(batchId));
       const batchLabel = batch ? `${batch.name} (#${batch.id})` : (batchId ? `Lote #${batchId}` : 'Sem lote');
 
@@ -3517,18 +3726,13 @@
         return;
       }
 
-      const pages = [];
-      for (let index = 0; index < labels.length; index += 27) {
-        const chunk = labels.slice(index, index + 27);
-        while (chunk.length < 27) chunk.push(null);
-        pages.push(chunk);
-      }
+      const pages = getLabelPages(labels);
 
-      refs.labelSheetSummary.textContent = `${batchLabel} — ${labels.length} rótulo(s) validado(s) distribuído(s) em ${pages.length} página(s) de 27 posições.`;
+      refs.labelSheetSummary.textContent = `${batchLabel} — ${labels.length} rótulo(s) validado(s) distribuído(s) em ${pages.length} página(s) de 27 posições. Clique na plancha ou use o botão para abrir o PDF.`;
       refs.labelSheetWrap.innerHTML = pages.map((page, pageIndex) => `
         <div class="label-sheet-page-frame">
           <div class="label-sheet-page-meta">Página ${pageIndex + 1} · ${sanitize(batchLabel)}</div>
-          <div class="label-sheet-page">
+          <div class="label-sheet-page is-clickable" data-action="open-label-pdf" role="button" tabindex="0" aria-label="Abrir PDF da plancha de rótulos">
             <div class="label-sheet-grid">
               ${page.map(label => label ? `
                 <div class="label-sheet-cell" title="${sanitize(label.authorName)} · ${sanitize(label.bibRef)}">
@@ -3541,6 +3745,16 @@
           </div>
         </div>
       `).join('');
+
+      refs.labelSheetWrap.querySelectorAll('[data-action="open-label-pdf"]').forEach(node => {
+        node.addEventListener('click', openLabelSheetPdfInNewTab);
+        node.addEventListener('keydown', (event) => {
+          if (event.key === 'Enter' || event.key === ' ') {
+            event.preventDefault();
+            openLabelSheetPdfInNewTab();
+          }
+        });
+      });
     }
 
     async function loadLabelSheetPreview() {
@@ -3885,6 +4099,15 @@
         }
       });
     }
+    if (refs.openLabelSheetPdfBtn) {
+      refs.openLabelSheetPdfBtn.addEventListener('click', openLabelSheetPdfInNewTab);
+    }
+    if (refs.refreshTrashBtn) {
+      refs.refreshTrashBtn.addEventListener('click', () => {
+        clearMessage(refs.trashMessage);
+        renderTrash();
+      });
+    }
     if (refs.labelBatchPreviewId) {
       refs.labelBatchPreviewId.addEventListener('change', async () => {
         try {
@@ -3936,6 +4159,7 @@
     resetExemplarForm();
     renderExemplarBatchQueue();
     renderLabelSheet([], '');
+    renderTrash();
     updateLoginButton();
     refreshAll();
 
