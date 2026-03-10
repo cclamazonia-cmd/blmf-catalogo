@@ -9,12 +9,12 @@
   <meta property="og:locale" content="pt_BR" />
   <meta property="og:type" content="website" />
   <meta property="og:site_name" content="BLMF" />
-  <meta property="og:title" content="Catalogação interna da BLMF" />
+  <meta property="og:title" content="Catalogação interna da BLMF - ANARBIB" />
   <meta property="og:description" content="Área bibliotecária da Biblioteca Libertária Maxwell Ferreira para rascunhos, lotes, capas, autores e etiquetas." />
   <meta property="og:image" content="https://cclamazonia.noblogs.org/files/2026/03/logo_detoure_BLMF.png" />
   <meta property="og:image:alt" content="Logotipo da Biblioteca Libertária Maxwell Ferreira" />
   <meta name="twitter:card" content="summary" />
-  <meta name="twitter:title" content="Catalogação interna da BLMF - ANARBIB" />
+  <meta name="twitter:title" content="Catalogação interna da BLMF" />
   <meta name="twitter:description" content="Área bibliotecária da BLMF para gestão editorial do catálogo." />
   <meta name="twitter:image" content="https://cclamazonia.noblogs.org/files/2026/03/logo_detoure_BLMF.png" />
   <link rel="icon" type="image/png" href="https://cclamazonia.noblogs.org/files/2026/03/logo_detoure_BLMF.png" />
@@ -240,7 +240,8 @@
       font-weight: 700;
     }
 
-    #statDrafts[role="button"] {
+    #statDrafts[role="button"],
+    #statOpenBatches[role="button"] {
       cursor: pointer;
     }
 
@@ -1063,7 +1064,7 @@
     <div class="statusbar">
       <div class="stat">
         <div class="label">Lotes abertos</div>
-        <div id="statOpenBatches" class="value">0</div>
+        <div id="statOpenBatches" class="value" role="button" tabindex="0" title="Clique para ver a lista de lotes abertos">0</div>
       </div>
       <div class="stat">
         <div class="label">Rascunhos ativos</div>
@@ -2353,6 +2354,37 @@
       setTab('queuePanel');
       renderQueue();
       clearMessage(refs.queueMessage);
+    }
+
+    function openOpenBatchesView() {
+      setTab('batchesPanel');
+      clearMessage(refs.batchMessage);
+      renderBatchList();
+    }
+
+    async function findExistingActiveDraftId(table, publishedField, publishedId, excludeDraftId = '') {
+      if (!publishedId) return null;
+      const { data, error } = await supabase
+        .from(table)
+        .select('id, status, updated_at')
+        .eq(publishedField, Number(publishedId))
+        .neq('status', 'cancelled')
+        .order('updated_at', { ascending: false })
+        .limit(1);
+
+      if (error) throw error;
+
+      const existingDraft = Array.isArray(data) ? data.find(item => String(item.id) !== String(excludeDraftId || '')) : null;
+      return existingDraft?.id ? Number(existingDraft.id) : null;
+    }
+
+    async function reuseExistingDraftIdIfNeeded(table, payload, publishedField) {
+      if (payload?.id || !payload?.[publishedField]) return payload;
+      const existingDraftId = await findExistingActiveDraftId(table, publishedField, payload[publishedField]);
+      if (existingDraftId) {
+        payload.id = existingDraftId;
+      }
+      return payload;
     }
 
     document.querySelectorAll('.tab-btn').forEach(btn => {
@@ -4171,19 +4203,36 @@
       refs.catalogBooksWrap.querySelectorAll('[data-action="draft-book"]').forEach(btn => {
         btn.addEventListener('click', async () => {
           try {
-            const currentTab = getActiveCatalogacaoTab();
-            const batchId = el('catalogBatchId').value || null;
-            const { data, error } = await supabase.rpc('create_book_draft_from_book', { p_book_id: Number(btn.dataset.bookId), p_batch_id: batchId ? Number(batchId) : null });
-            if (error) throw error;
-            await Promise.all([loadQueue(), loadCatalog(), loadBatches()]);
-            setTab(currentTab);
-            updateStats();
-            showMessage(refs.catalogMessage, `Rascunho de edição criado (#${data}). O rascunho ficou na fila editorial sem mudar a aba atual.`, 'ok');
+            await loadOrCreateBookDraftFromCatalog(btn.dataset.bookId);
           } catch (error) {
             showMessage(refs.catalogMessage, error.message, 'error');
           }
         });
       });
+    }
+
+    async function loadOrCreateBookDraftFromCatalog(bookId) {
+      const publishedBookId = Number(bookId);
+      if (!publishedBookId) throw new Error('Livro inválido para edição.');
+
+      const existingDraftId = await findExistingActiveDraftId('book_drafts', 'published_book_id', publishedBookId);
+      if (existingDraftId) {
+        await fetchDraftAndEdit('book', existingDraftId);
+        showMessage(refs.catalogMessage, `Rascunho de livro já aberto (#${existingDraftId}).`, 'ok');
+        return existingDraftId;
+      }
+
+      const batchId = el('catalogBatchId').value || null;
+      const { data, error } = await supabase.rpc('create_book_draft_from_book', {
+        p_book_id: publishedBookId,
+        p_batch_id: batchId ? Number(batchId) : null
+      });
+      if (error) throw error;
+      await Promise.all([loadQueue(), loadCatalog(), loadBatches()]);
+      updateStats();
+      showMessage(refs.catalogMessage, `Rascunho de edição de livro criado (#${data}).`, 'ok');
+      await fetchDraftAndEdit('book', Number(data));
+      return Number(data);
     }
 
     async function loadOrCreateAuthorDraftFromCatalog(authorId) {
@@ -4289,6 +4338,30 @@
       });
     }
 
+    async function loadOrCreateExemplarDraftFromCatalog(exemplarId) {
+      const publishedExemplarId = Number(exemplarId);
+      if (!publishedExemplarId) throw new Error('Exemplar inválido para edição.');
+
+      const existingDraftId = await findExistingActiveDraftId('exemplar_drafts', 'published_exemplar_id', publishedExemplarId);
+      if (existingDraftId) {
+        await fetchDraftAndEdit('exemplar', existingDraftId);
+        showMessage(refs.catalogMessage, `Rascunho de exemplar já aberto (#${existingDraftId}).`, 'ok');
+        return existingDraftId;
+      }
+
+      const batchId = el('catalogBatchId').value || null;
+      const { data, error } = await supabase.rpc('create_exemplar_draft_from_exemplar', {
+        p_exemplar_id: publishedExemplarId,
+        p_batch_id: batchId ? Number(batchId) : null
+      });
+      if (error) throw error;
+      await Promise.all([loadQueue(), loadCatalog(), loadBatches()]);
+      updateStats();
+      showMessage(refs.catalogMessage, `Rascunho de edição de exemplar criado (#${data}).`, 'ok');
+      await fetchDraftAndEdit('exemplar', Number(data));
+      return Number(data);
+    }
+
     function renderCatalogExemplars() {
 
       const search = normalizeForSearch(el('catalogExemplarSearch').value);
@@ -4331,14 +4404,7 @@
       refs.catalogExemplarsWrap.querySelectorAll('[data-action="draft-exemplar"]').forEach(btn => {
         btn.addEventListener('click', async () => {
           try {
-            const currentTab = getActiveCatalogacaoTab();
-            const batchId = el('catalogBatchId').value || null;
-            const { data, error } = await supabase.rpc('create_exemplar_draft_from_exemplar', { p_exemplar_id: Number(btn.dataset.exemplarId), p_batch_id: batchId ? Number(batchId) : null });
-            if (error) throw error;
-            await Promise.all([loadQueue(), loadCatalog(), loadBatches()]);
-            setTab(currentTab);
-            updateStats();
-            showMessage(refs.catalogMessage, `Rascunho de edição de exemplar criado (#${data}). O rascunho ficou na fila editorial sem mudar a aba atual.`, 'ok');
+            await loadOrCreateExemplarDraftFromCatalog(btn.dataset.exemplarId);
           } catch (error) {
             showMessage(refs.catalogMessage, error.message, 'error');
           }
@@ -4498,7 +4564,7 @@
     el('bookForm').addEventListener('submit', async (event) => {
       event.preventDefault();
       try {
-        const payload = getBookDraftPayload();
+        const payload = await reuseExistingDraftIdIfNeeded('book_drafts', getBookDraftPayload(), 'published_book_id');
         if (!payload.titulo) throw new Error('Informe o título do livro.');
         const saved = await saveDraft('book_drafts', payload, refs.bookMessage, 'Rascunho de livro salvo com sucesso.');
         try {
@@ -4517,7 +4583,7 @@
     el('authorForm').addEventListener('submit', async (event) => {
       event.preventDefault();
       try {
-        const payload = getAuthorDraftPayload();
+        const payload = await reuseExistingDraftIdIfNeeded('author_drafts', getAuthorDraftPayload(), 'published_author_id');
         if (!payload.preferred_name) throw new Error('Informe o nome do autor em Nome, SOBRENOME.');
         const saved = await saveDraft('author_drafts', payload, refs.authorMessage, 'Rascunho de autor salvo com sucesso.');
         fillAuthorForm(saved);
@@ -4529,7 +4595,7 @@
     el('exemplarForm').addEventListener('submit', async (event) => {
       event.preventDefault();
       try {
-        const payload = getExemplarDraftPayload();
+        const payload = await reuseExistingDraftIdIfNeeded('exemplar_drafts', getExemplarDraftPayload(), 'published_exemplar_id');
         if (!payload.target_bib_ref || !payload.tombo) throw new Error('Informe a referência do livro e o tombo do exemplar.');
         const saved = await saveDraft('exemplar_drafts', payload, refs.exemplarMessage, 'Rascunho de exemplar salvo com sucesso.');
         fillExemplarForm(saved);
@@ -4542,7 +4608,7 @@
       event.preventDefault();
       try {
         if (!el('exemplarBibRef').value.trim() || !el('exemplarTombo').value.trim()) throw new Error('Carregue primeiro um exemplar para editar o rótulo.');
-        const payload = getExemplarDraftPayload('draft');
+        const payload = await reuseExistingDraftIdIfNeeded('exemplar_drafts', getExemplarDraftPayload('draft'), 'published_exemplar_id');
         const saved = await saveDraft('exemplar_drafts', payload, refs.labelMessage, 'Rótulo salvo com sucesso.');
         fillExemplarForm(saved, { switchTab: false, syncLabel: false });
         fillLabelForm(saved, { switchTab: false });
@@ -4905,6 +4971,25 @@
       el('queueStatusFilter').value = '';
     }
     el('queueBatchAssign').addEventListener('change', renderQueue);
+    el('statOpenBatches').addEventListener('click', async () => {
+      openOpenBatchesView();
+      try {
+        await loadBatches();
+      } catch (error) {
+        showMessage(refs.batchMessage, error.message, 'error');
+      }
+    });
+    el('statOpenBatches').addEventListener('keydown', async (event) => {
+      if (event.key === 'Enter' || event.key === ' ') {
+        event.preventDefault();
+        openOpenBatchesView();
+        try {
+          await loadBatches();
+        } catch (error) {
+          showMessage(refs.batchMessage, error.message, 'error');
+        }
+      }
+    });
     el('statDrafts').addEventListener('click', openActiveDraftsView);
     el('statDrafts').addEventListener('keydown', (event) => {
       if (event.key === 'Enter' || event.key === ' ') {
