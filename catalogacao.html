@@ -697,7 +697,80 @@
       gap: 12px;
     }
 
+    .batch-exemplar-book {
+      border: 1px solid rgba(255,255,255,.08);
+      border-radius: 20px;
+      background: rgba(255,255,255,.02);
+      padding: 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+
+    .batch-exemplar-book-head {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      gap: 12px;
+      align-items: flex-start;
+    }
+
+    .batch-exemplar-book-copy-note {
+      margin-top: 6px;
+      color: #fde5b6;
+      font-size: .9rem;
+      font-weight: 700;
+    }
+
+    .batch-exemplar-copy-list {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .batch-exemplar-copy-row {
+      border: 1px solid rgba(255,255,255,.08);
+      border-radius: 18px;
+      background: rgba(255,255,255,.025);
+      padding: 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .batch-exemplar-copy-row.copy-extra {
+      background: linear-gradient(180deg, rgba(180,83,9,.18), rgba(255,255,255,.03));
+      border-color: rgba(217,119,6,.32);
+    }
+
+    .batch-exemplar-copy-head {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+    }
+
+    .batch-exemplar-copy-index {
+      font-size: .96rem;
+      font-weight: 800;
+      color: #fff;
+    }
+
+    .batch-exemplar-copy-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 12px;
+    }
+
+    .batch-exemplar-copy-row .field {
+      min-width: 0;
+    }
+
     @media (max-width: 900px) {
+      .batch-exemplar-copy-grid {
+        grid-template-columns: 1fr;
+      }
       .button.discard-edge,
       .btn-inline.discard-edge {
         margin-left: 0;
@@ -1179,7 +1252,7 @@
 
             <div class="field" style="grid-column: span 2;">
               <label for="authorPreferredName">Nome, SOBRENOME</label>
-              <input id="authorPreferredName" type="text" placeholder="Mikhail BAKUNIN" required />
+              <input id="authorPreferredName" type="text" placeholder="Mikhail, BAKUNIN" required />
             </div>
 
             <div class="field">
@@ -1334,7 +1407,7 @@
 
         <div class="card" style="margin-top:16px;">
           <h4>Importação de lote para exemplares</h4>
-          <p class="hint" style="margin:0 0 12px;">Aqui aparecem somente fichas de livros do lote escolhido. O sistema sugere o tombo, pré-preenche os campos do rótulo e permite salvar um rascunho de exemplar livro por livro.</p>
+          <p class="hint" style="margin:0 0 12px;">Aqui aparecem somente fichas de livros do lote escolhido. Cada exemplar gera 1 rótulo: se um livro tiver 1 exemplar, aparece 1 linha para validar; se tiver 2 exemplares, aparecem 2 linhas, cada uma com seu próprio rótulo para validar.</p>
           <div class="grid cols-3" style="align-items:end;">
             <div class="field">
               <label for="exemplarLotImportId">Lote de livros</label>
@@ -1365,14 +1438,14 @@
 
         <div class="card" style="margin-top:16px;">
           <h4>Prévia da folha A4 3 × 9</h4>
-          <p class="hint" style="margin:0 0 12px;">Selecione um lote para visualizar os rótulos em uma folha padrão com 27 posições. Cada rótulo mostra o código de 3 letras do sobrenome, o tombo e o CDD quando houver.</p>
+          <p class="hint" style="margin:0 0 12px;">Selecione um lote para visualizar numa folha A4 apenas os rótulos já validados. Cada exemplar validado gera 1 posição na folha: 1 exemplar = 1 etiqueta, 2 exemplares = 2 etiquetas.</p>
           <div class="grid cols-2" style="margin-bottom:16px; align-items:end;">
             <div class="field">
               <label for="labelBatchPreviewId">Lote da prévia</label>
               <select id="labelBatchPreviewId"></select>
             </div>
             <div class="actions" style="justify-content:flex-start;">
-              <button id="refreshLabelSheetBtn" type="button" class="button secondary">Atualizar prévia dos rótulos</button>
+              <button id="refreshLabelSheetBtn" type="button" class="button secondary">Atualizar prévia dos rótulos validados</button>
             </div>
           </div>
           <div id="labelSheetSummary" class="hint" style="margin-bottom:12px;"></div>
@@ -1476,7 +1549,7 @@
       <div class="panel-header">
         <div>
           <h3>Catálogo publicado</h3>
-          <p>Busque fichas já publicadas e gere ou recarregue um rascunho de edição sem alterar imediatamente a versão do catálogo.</p>
+          <p>Busque fichas já publicadas e gere um rascunho de edição sem alterar imediatamente a versão do catálogo.</p>
         </div>
       </div>
       <div class="panel-body">
@@ -1979,7 +2052,7 @@
         ['tradutor', 'Tradutor(a)'],
         ['ilustrador', 'Ilustrador(a)'],
         ['prefaciador', 'Prefácio'],
-        ['coordenador', 'Coordenador(a)'],
+        ['coordenador', 'Coordenação'],
         ['editor', 'Editor(a)'],
         ['outro', 'Outro'],
       ];
@@ -2792,21 +2865,55 @@
       return state.books.find(item => String(item.bib_ref || '') === String(bibRef || '')) || null;
     }
 
-    function countExistingExemplarsForBibRef(bibRef = '') {
-      const publishedCount = state.exemplars.filter(item => String(item.bib_ref || '') === String(bibRef || '')).length;
-      const draftCount = state.queueItems.filter(item => item.item_type === 'exemplar' && item.status !== 'cancelled' && String(item.reference_code || '') === String(bibRef || '')).length;
-      return publishedCount + draftCount;
+    function countPublishedExemplarsForBibRef(bibRef = '') {
+      return state.exemplars.filter(item => String(item.bib_ref || '') === String(bibRef || '')).length;
     }
 
-    function createImportedExemplarItem(bookDraft) {
+    function getRequestedExemplarCount(bookDraft = {}) {
+      const candidates = [
+        bookDraft.exemplares,
+        bookDraft.quantidade_exemplares,
+        bookDraft.exemplar_count,
+        bookDraft.requested_exemplars,
+      ];
+      for (const candidate of candidates) {
+        const value = Number(candidate);
+        if (Number.isFinite(value) && value > 0) return Math.max(1, Math.trunc(value));
+      }
+      return 1;
+    }
+
+    function buildImportedExemplarBookItem(bookDraft, exemplarDrafts = []) {
       const published = getPublishedBookForBibRef(bookDraft.bib_ref);
-      const existingCount = countExistingExemplarsForBibRef(bookDraft.bib_ref);
-      const nextCopy = existingCount + 1;
-      const suggestedTombo = buildSuggestedTombo({
-        bibRef: bookDraft.bib_ref,
-        publishedBookId: bookDraft.published_book_id || published?.id || '',
-        draftId: bookDraft.id,
-      }, nextCopy);
+      const publishedCount = countPublishedExemplarsForBibRef(bookDraft.bib_ref);
+      const activeDrafts = [...(exemplarDrafts || [])]
+        .filter(item => item && item.status !== 'cancelled')
+        .sort((a, b) => String(a.created_at || a.updated_at || '').localeCompare(String(b.created_at || b.updated_at || '')));
+      const requestedCopies = Math.max(getRequestedExemplarCount(bookDraft), activeDrafts.length || 0, 1);
+      const copies = [];
+
+      for (let index = 0; index < requestedCopies; index += 1) {
+        const existingDraft = activeDrafts[index] || null;
+        copies.push({
+          slotIndex: index + 1,
+          draftId: existingDraft?.id || null,
+          batchId: bookDraft.batch_id || '',
+          bibRef: bookDraft.bib_ref || '',
+          title: existingDraft?.label_title_override || bookDraft.titulo || published?.titulo || '—',
+          subtitle: bookDraft.subtitulo || published?.subtitulo || '',
+          author: existingDraft?.label_author_override || bookDraft.autor || published?.autor || '',
+          cdd: existingDraft?.label_cdd_override || bookDraft.cdd || published?.cdd || '',
+          note: existingDraft?.label_note || '',
+          shelf: existingDraft?.shelf_location || '',
+          tombo: existingDraft?.tombo || buildSuggestedTombo({
+            bibRef: bookDraft.bib_ref,
+            publishedBookId: bookDraft.published_book_id || published?.id || '',
+            draftId: bookDraft.id,
+          }, publishedCount + index + 1),
+          status: existingDraft?.status || 'draft',
+          isExtraCopy: index > 0,
+        });
+      }
 
       return {
         draftId: bookDraft.id,
@@ -2816,12 +2923,9 @@
         title: bookDraft.titulo || published?.titulo || '—',
         subtitle: bookDraft.subtitulo || published?.subtitulo || '',
         author: bookDraft.autor || published?.autor || '',
-        cdd: bookDraft.cdd || published?.cdd || '',
-        shelf: '',
-        note: '',
-        existingCount,
-        nextCopy,
-        suggestedTombo,
+        publishedCount,
+        requestedCopies,
+        copies,
       };
     }
 
@@ -2833,113 +2937,153 @@
         return;
       }
 
-      const { data, error } = await supabase
-        .from('book_drafts')
-        .select('id, published_book_id, batch_id, status, bib_ref, titulo, subtitulo, autor, cdd, action, updated_at')
-        .eq('batch_id', Number(batchId))
-        .order('updated_at', { ascending: true });
+      const [{ data: booksData, error: booksError }, { data: exemplarDraftsData, error: exemplarDraftsError }] = await Promise.all([
+        supabase
+          .from('book_drafts')
+          .select('*')
+          .eq('batch_id', Number(batchId))
+          .order('updated_at', { ascending: true }),
+        supabase
+          .from('exemplar_drafts')
+          .select('id, batch_id, status, target_bib_ref, tombo, shelf_location, label_title_override, label_author_override, label_cdd_override, label_note, created_at, updated_at')
+          .eq('batch_id', Number(batchId))
+          .order('created_at', { ascending: true }),
+      ]);
 
-      if (error) throw error;
+      if (booksError) throw booksError;
+      if (exemplarDraftsError) throw exemplarDraftsError;
 
-      state.batchExemplarItems = (data || [])
+      const exemplarDraftsByBibRef = new Map();
+      (exemplarDraftsData || []).forEach(item => {
+        const key = String(item.target_bib_ref || '').trim();
+        if (!key) return;
+        if (!exemplarDraftsByBibRef.has(key)) exemplarDraftsByBibRef.set(key, []);
+        exemplarDraftsByBibRef.get(key).push(item);
+      });
+
+      state.batchExemplarItems = (booksData || [])
         .filter(item => item.status !== 'cancelled')
-        .map(createImportedExemplarItem);
+        .map(item => buildImportedExemplarBookItem(item, exemplarDraftsByBibRef.get(String(item.bib_ref || '').trim()) || []));
 
       renderExemplarBatchQueue();
 
       if (!state.batchExemplarItems.length) {
         showMessage(refs.exemplarBatchMessage, 'Este lote não tem fichas de livros ativas para importar em exemplares.', 'info');
       } else {
-        showMessage(refs.exemplarBatchMessage, `${state.batchExemplarItems.length} ficha(s) de livro importada(s) para a fila de exemplares.`, 'ok');
+        const totalLabels = state.batchExemplarItems.reduce((sum, item) => sum + (item.copies?.length || 0), 0);
+        showMessage(refs.exemplarBatchMessage, `${state.batchExemplarItems.length} ficha(s) de livro importada(s), gerando ${totalLabels} linha(s) de exemplar/rótulo para validar.`, 'ok');
       }
     }
 
     function renderExemplarBatchQueue() {
       if (!refs.exemplarBatchQueueWrap) return;
       if (!state.batchExemplarItems.length) {
-        refs.exemplarBatchQueueWrap.innerHTML = '<div class="empty">Escolha um lote e clique em importar para gerar a fila de exemplares livro por livro.</div>';
+        refs.exemplarBatchQueueWrap.innerHTML = '<div class="empty">Escolha um lote e clique em importar para gerar as linhas de exemplar e rótulo livro por livro.</div>';
         return;
       }
 
-      refs.exemplarBatchQueueWrap.innerHTML = state.batchExemplarItems.map((item, index) => `
-        <div class="batch-exemplar-row" data-batch-exemplar-index="${index}">
-          <div class="batch-exemplar-row-head">
+      refs.exemplarBatchQueueWrap.innerHTML = state.batchExemplarItems.map((bookItem, bookIndex) => `
+        <div class="batch-exemplar-book" data-batch-book-index="${bookIndex}">
+          <div class="batch-exemplar-book-head">
             <div>
-              <strong>${sanitize(item.title || '—')}</strong>
-              <div class="hint" style="margin-top:4px;">${sanitize(item.subtitle || item.author || 'Sem subtítulo')}</div>
+              <strong>${sanitize(bookItem.title || '—')}</strong>
+              <div class="hint" style="margin-top:4px;">${sanitize(bookItem.subtitle || bookItem.author || 'Sem subtítulo')}</div>
+              <div class="batch-exemplar-book-copy-note">${bookItem.requestedCopies} exemplar(es) previstos neste lote = ${bookItem.requestedCopies} rótulo(s) a validar.</div>
             </div>
             <div class="batch-exemplar-meta">
-              <span class="pill info">Ref. ${sanitize(item.bibRef || '—')}</span>
-              ${getQueueStatusBadge(item.bookStatus || 'draft')}
-              <span class="pill warn">Exemplares já cadastrados: ${sanitize(item.existingCount)}</span>
+              <span class="pill info">Ref. ${sanitize(bookItem.bibRef || '—')}</span>
+              ${getQueueStatusBadge(bookItem.bookStatus || 'draft')}
+              <span class="pill warn">Exemplares já cadastrados: ${sanitize(bookItem.publishedCount)}</span>
             </div>
           </div>
 
-          <div class="batch-exemplar-grid">
-            <div class="field">
-              <label>Tombo sugerido</label>
-              <input type="text" data-field="tombo" value="${sanitize(item.suggestedTombo)}" />
-            </div>
-            <div class="field">
-              <label>Localização</label>
-              <input type="text" data-field="shelf" value="${sanitize(item.shelf || '')}" placeholder="Estante A / Prateleira 3" />
-            </div>
-            <div class="field">
-              <label>CDD no rótulo</label>
-              <input type="text" data-field="cdd" value="${sanitize(item.cdd || '')}" placeholder="CDD se disponível" />
-            </div>
-            <div class="field">
-              <label>Nota curta do rótulo</label>
-              <input type="text" data-field="note" value="${sanitize(item.note || '')}" placeholder="Opcional" />
-            </div>
-          </div>
+          <div class="batch-exemplar-copy-list">
+            ${(bookItem.copies || []).map((copy, copyIndex) => `
+              <div class="batch-exemplar-copy-row ${copy.isExtraCopy ? 'copy-extra' : ''}" data-batch-book-index="${bookIndex}" data-batch-copy-index="${copyIndex}">
+                <div class="batch-exemplar-copy-head">
+                  <span class="batch-exemplar-copy-index">Exemplar ${copy.slotIndex}${copy.isExtraCopy ? ' · linha adicional' : ''}</span>
+                  <div class="batch-exemplar-meta">
+                    ${copy.status === 'ready' ? '<span class="pill ok">Rótulo validado</span>' : '<span class="pill info">A validar</span>'}
+                    ${copy.draftId ? `<span class="pill info">Rascunho #${sanitize(copy.draftId)}</span>` : ''}
+                  </div>
+                </div>
 
-          <div class="batch-exemplar-label-preview">
-            <span class="batch-exemplar-label-code">${sanitize(getAuthorTrigram(item.author || ''))}</span>
-            <span><strong>Tombo:</strong> <span data-preview="tombo">${sanitize(item.suggestedTombo)}</span></span>
-            <span><strong>CDD:</strong> <span data-preview="cdd">${sanitize(item.cdd || '—')}</span></span>
-            <span><strong>Autor:</strong> ${sanitize(item.author || '—')}</span>
-          </div>
+                <div class="batch-exemplar-copy-grid">
+                  <div class="field">
+                    <label>Tombo</label>
+                    <input type="text" data-field="tombo" value="${sanitize(copy.tombo || '')}" />
+                  </div>
+                  <div class="field">
+                    <label>Localização</label>
+                    <input type="text" data-field="shelf" value="${sanitize(copy.shelf || '')}" placeholder="Estante A / Prateleira 3" />
+                  </div>
+                  <div class="field">
+                    <label>Autor no rótulo</label>
+                    <input type="text" data-field="author" value="${sanitize(copy.author || '')}" />
+                  </div>
+                  <div class="field">
+                    <label>Título no rótulo</label>
+                    <input type="text" data-field="title" value="${sanitize(copy.title || '')}" />
+                  </div>
+                  <div class="field">
+                    <label>CDD no rótulo</label>
+                    <input type="text" data-field="cdd" value="${sanitize(copy.cdd || '')}" placeholder="CDD se disponível" />
+                  </div>
+                  <div class="field">
+                    <label>Nota curta do rótulo</label>
+                    <input type="text" data-field="note" value="${sanitize(copy.note || '')}" placeholder="Opcional" />
+                  </div>
+                </div>
 
-          <div class="row-actions">
-            <button type="button" class="button secondary small" data-action="fill-imported-exemplar" data-index="${index}">Preencher formulário</button>
-            <button type="button" class="button success small" data-action="save-imported-exemplar" data-index="${index}">Salvar rascunho deste exemplar</button>
+                <div class="batch-exemplar-label-preview">
+                  <span class="batch-exemplar-label-code" data-preview="code">${sanitize(getAuthorTrigram(copy.author || ''))}</span>
+                  <span><strong>Tombo:</strong> <span data-preview="tombo">${sanitize(copy.tombo || '—')}</span></span>
+                  <span><strong>CDD:</strong> <span data-preview="cdd">${sanitize(copy.cdd || '—')}</span></span>
+                  <span><strong>Autor:</strong> <span data-preview="author">${sanitize(copy.author || '—')}</span></span>
+                </div>
+
+                <div class="row-actions">
+                  <button type="button" class="button success small" data-action="validate-imported-exemplar" data-book-index="${bookIndex}" data-copy-index="${copyIndex}">Validar exemplar e rótulo</button>
+                </div>
+              </div>
+            `).join('')}
           </div>
         </div>
       `).join('');
 
-      refs.exemplarBatchQueueWrap.querySelectorAll('.batch-exemplar-row').forEach(row => {
+      refs.exemplarBatchQueueWrap.querySelectorAll('.batch-exemplar-copy-row').forEach(row => {
         row.querySelectorAll('input[data-field]').forEach(input => {
           input.addEventListener('input', () => {
-            const index = Number(row.dataset.batchExemplarIndex);
-            const item = state.batchExemplarItems[index];
-            if (!item) return;
-            item.suggestedTombo = row.querySelector('[data-field="tombo"]').value.trim();
-            item.shelf = row.querySelector('[data-field="shelf"]').value.trim();
-            item.cdd = row.querySelector('[data-field="cdd"]').value.trim();
-            item.note = row.querySelector('[data-field="note"]').value.trim();
+            const bookIndex = Number(row.dataset.batchBookIndex);
+            const copyIndex = Number(row.dataset.batchCopyIndex);
+            const bookItem = state.batchExemplarItems[bookIndex];
+            const copy = bookItem?.copies?.[copyIndex];
+            if (!copy) return;
+            copy.tombo = row.querySelector('[data-field="tombo"]').value.trim();
+            copy.shelf = row.querySelector('[data-field="shelf"]').value.trim();
+            copy.author = row.querySelector('[data-field="author"]').value.trim();
+            copy.title = row.querySelector('[data-field="title"]').value.trim();
+            copy.cdd = row.querySelector('[data-field="cdd"]').value.trim();
+            copy.note = row.querySelector('[data-field="note"]').value.trim();
+            const codePreview = row.querySelector('[data-preview="code"]');
             const tomboPreview = row.querySelector('[data-preview="tombo"]');
             const cddPreview = row.querySelector('[data-preview="cdd"]');
-            if (tomboPreview) tomboPreview.textContent = item.suggestedTombo || '—';
-            if (cddPreview) cddPreview.textContent = item.cdd || '—';
+            const authorPreview = row.querySelector('[data-preview="author"]');
+            if (codePreview) codePreview.textContent = getAuthorTrigram(copy.author || '');
+            if (tomboPreview) tomboPreview.textContent = copy.tombo || '—';
+            if (cddPreview) cddPreview.textContent = copy.cdd || '—';
+            if (authorPreview) authorPreview.textContent = copy.author || '—';
           });
         });
       });
 
-      refs.exemplarBatchQueueWrap.querySelectorAll('[data-action="fill-imported-exemplar"]').forEach(btn => {
-        btn.addEventListener('click', () => {
-          const item = state.batchExemplarItems[Number(btn.dataset.index)];
-          if (!item) return;
-          fillExemplarFormFromImportedItem(item);
-        });
-      });
-
-      refs.exemplarBatchQueueWrap.querySelectorAll('[data-action="save-imported-exemplar"]').forEach(btn => {
+      refs.exemplarBatchQueueWrap.querySelectorAll('[data-action="validate-imported-exemplar"]').forEach(btn => {
         btn.addEventListener('click', async () => {
-          const item = state.batchExemplarItems[Number(btn.dataset.index)];
-          if (!item) return;
+          const bookItem = state.batchExemplarItems[Number(btn.dataset.bookIndex)];
+          const copy = bookItem?.copies?.[Number(btn.dataset.copyIndex)];
+          if (!copy) return;
           try {
-            await saveImportedExemplarItem(item);
+            await validateImportedExemplarCopy(copy);
           } catch (error) {
             showMessage(refs.exemplarBatchMessage, error.message, 'error');
           }
@@ -2947,51 +3091,30 @@
       });
     }
 
-    function fillExemplarFormFromImportedItem(item) {
-      el('exemplarDraftId').value = '';
-      el('exemplarPublishedId').value = '';
-      el('exemplarAction').value = 'create';
-      el('exemplarBatchId').value = item.batchId || '';
-      el('exemplarBibRef').value = item.bibRef || '';
-      el('exemplarTombo').value = item.suggestedTombo || '';
-      el('exemplarShelf').value = item.shelf || '';
-      el('exemplarLabelTitle').value = item.title || '';
-      el('exemplarLabelAuthor').value = item.author || '';
-      el('exemplarLabelCDD').value = item.cdd || '';
-      el('exemplarLabelNote').value = item.note || '';
-      el('exemplarNotes').value = item.subtitle ? `Subtítulo: ${item.subtitle}` : '';
-      if (refs.labelBatchPreviewId) refs.labelBatchPreviewId.value = item.batchId || '';
-      updateLabelPreview();
-      exemplarDraftStableState = 'new';
-      exemplarDraftBaseline = serializeExemplarFormState();
-      setExemplarDraftVisualState('dirty');
-      setTab('exemplarsPanel');
-      clearMessage(refs.exemplarMessage);
-    }
-
-    async function saveImportedExemplarItem(item) {
+    async function validateImportedExemplarCopy(copy) {
       const payload = {
+        id: copy.draftId || undefined,
         published_exemplar_id: null,
-        batch_id: item.batchId || null,
+        batch_id: copy.batchId || null,
         action: 'create',
-        status: 'draft',
-        target_bib_ref: item.bibRef || '',
-        tombo: item.suggestedTombo || '',
-        shelf_location: item.shelf || null,
-        label_title_override: item.title || null,
-        label_author_override: item.author || null,
-        label_cdd_override: item.cdd || null,
-        label_note: item.note || null,
-        notes: item.subtitle ? `Subtítulo: ${item.subtitle}` : null,
+        status: 'ready',
+        target_bib_ref: copy.bibRef || '',
+        tombo: copy.tombo || '',
+        shelf_location: copy.shelf || null,
+        label_title_override: copy.title || null,
+        label_author_override: copy.author || null,
+        label_cdd_override: copy.cdd || null,
+        label_note: copy.note || null,
+        notes: copy.subtitle ? `Subtítulo: ${copy.subtitle}` : null,
         created_by: state.profile.id,
         updated_by: state.profile.id,
       };
       if (!payload.target_bib_ref || !payload.tombo) {
-        throw new Error('Cada exemplar importado precisa ter referência e tombo antes de salvar.');
+        throw new Error('Cada exemplar precisa ter referência e tombo antes da validação.');
       }
-      await saveDraft('exemplar_drafts', payload, refs.exemplarBatchMessage, 'Rascunho de exemplar salvo a partir do lote.');
+      await saveDraft('exemplar_drafts', payload, refs.exemplarBatchMessage, 'Exemplar e rótulo validados a partir do lote.');
       await loadExemplarBatchQueue();
-      if (refs.labelBatchPreviewId) refs.labelBatchPreviewId.value = item.batchId || '';
+      if (refs.labelBatchPreviewId) refs.labelBatchPreviewId.value = copy.batchId || '';
       await loadLabelSheetPreview();
     }
 
@@ -3298,6 +3421,7 @@
     }
 
     function renderCatalogExemplars() {
+
       const search = normalizeForSearch(el('catalogExemplarSearch').value);
       let items = [...state.exemplars];
       if (search) {
@@ -3365,7 +3489,7 @@
       });
 
       return exemplarDrafts
-        .filter(item => item && item.status !== 'cancelled')
+        .filter(item => item && (item.status === 'ready' || item.status === 'published'))
         .map(item => {
           const bibRef = String(item.target_bib_ref || '').trim();
           const bookDraft = bookDraftMap.get(bibRef);
@@ -3388,8 +3512,8 @@
       const batchLabel = batch ? `${batch.name} (#${batch.id})` : (batchId ? `Lote #${batchId}` : 'Sem lote');
 
       if (!labels.length) {
-        refs.labelSheetSummary.textContent = batchId ? `${batchLabel} — nenhum rótulo disponível para prévia.` : '';
-        refs.labelSheetWrap.innerHTML = '<div class="empty">Escolha um lote com exemplares para ver a prévia dos rótulos.</div>';
+        refs.labelSheetSummary.textContent = batchId ? `${batchLabel} — nenhum rótulo validado disponível para prévia.` : '';
+        refs.labelSheetWrap.innerHTML = '<div class="empty">Escolha um lote com exemplares validados para ver a prévia dos rótulos em folha A4.</div>';
         return;
       }
 
@@ -3400,7 +3524,7 @@
         pages.push(chunk);
       }
 
-      refs.labelSheetSummary.textContent = `${batchLabel} — ${labels.length} rótulo(s) distribuído(s) em ${pages.length} página(s) de 27 posições.`;
+      refs.labelSheetSummary.textContent = `${batchLabel} — ${labels.length} rótulo(s) validado(s) distribuído(s) em ${pages.length} página(s) de 27 posições.`;
       refs.labelSheetWrap.innerHTML = pages.map((page, pageIndex) => `
         <div class="label-sheet-page-frame">
           <div class="label-sheet-page-meta">Página ${pageIndex + 1} · ${sanitize(batchLabel)}</div>
@@ -3423,7 +3547,7 @@
       const batchId = refs.labelBatchPreviewId?.value || '';
       if (!batchId) {
         refs.labelSheetSummary.textContent = '';
-        refs.labelSheetWrap.innerHTML = '<div class="empty">Escolha um lote para ver a prévia dos rótulos em folha A4 3 × 9.</div>';
+        refs.labelSheetWrap.innerHTML = '<div class="empty">Escolha um lote para ver a prévia dos rótulos validados em folha A4 3 × 9.</div>';
         return;
       }
 
