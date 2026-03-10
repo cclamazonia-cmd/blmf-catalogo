@@ -575,6 +575,139 @@
       box-shadow: var(--shadow);
     }
 
+    .button.discard-edge,
+    .btn-inline.discard-edge {
+      margin-left: auto;
+    }
+
+    .button.manual-link {
+      background: linear-gradient(135deg, rgba(255,255,255,.15), rgba(255,255,255,.05)), linear-gradient(135deg, #7f1d1d, #dc2626);
+      border-color: rgba(255,255,255,.28);
+      color: #fff;
+    }
+
+    .pill.draft-new {
+      background: rgba(29, 78, 216, 0.16);
+      color: #dbeafe;
+    }
+
+    .pill.draft-editing {
+      background: rgba(180, 83, 9, 0.18);
+      color: #fde5b6;
+    }
+
+    .pill.draft-saved {
+      background: rgba(88, 28, 135, 0.22);
+      color: #f3e8ff;
+    }
+
+    .pill.draft-ready,
+    .pill.draft-published {
+      background: rgba(21, 128, 61, 0.18);
+      color: #d8ffe4;
+    }
+
+    .pill.draft-cancelled {
+      background: rgba(127, 29, 29, 0.22);
+      color: #ffe0e0;
+    }
+
+    .queue-status-badge {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 116px;
+      border-radius: 999px;
+      padding: 8px 12px;
+      font-size: .82rem;
+      font-weight: 800;
+      letter-spacing: .02em;
+      border: 1px solid rgba(255,255,255,.10);
+    }
+
+    .queue-status-draft {
+      background: rgba(29, 78, 216, 0.16);
+      color: #dbeafe;
+    }
+
+    .queue-status-ready {
+      background: rgba(21, 128, 61, 0.18);
+      color: #d8ffe4;
+    }
+
+    .queue-status-published {
+      background: rgba(20, 83, 45, 0.22);
+      color: #dcfce7;
+    }
+
+    .queue-status-cancelled {
+      background: rgba(127, 29, 29, 0.22);
+      color: #ffe0e0;
+    }
+
+    .queue-status-unknown {
+      background: rgba(255,255,255,.08);
+      color: #f5f5f5;
+    }
+
+    .batch-exemplar-row {
+      border: 1px solid rgba(255,255,255,.08);
+      border-radius: 18px;
+      background: rgba(255,255,255,.02);
+      padding: 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .batch-exemplar-row-head {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+    }
+
+    .batch-exemplar-meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .batch-exemplar-label-preview {
+      padding: 12px 14px;
+      border-radius: 16px;
+      background: rgba(255,255,255,.03);
+      border: 1px dashed rgba(255,255,255,.14);
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      align-items: center;
+    }
+
+    .batch-exemplar-label-code {
+      font-weight: 900;
+      letter-spacing: .08em;
+      font-size: 1.1rem;
+    }
+
+    .batch-exemplar-grid {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 12px;
+    }
+
+    @media (max-width: 900px) {
+      .button.discard-edge,
+      .btn-inline.discard-edge {
+        margin-left: 0;
+      }
+
+      .batch-exemplar-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
     .label-sheet-wrap {
       display: flex;
       flex-direction: column;
@@ -735,6 +868,9 @@
         <div>
           <h1>Catalogação interna da BLMF</h1>
           <p>Biblioteca Libertária Maxwell Ferreira · CCLA · Rascunhos, lotes, capas, autores, exemplares e publicação editorial do catálogo.</p>
+          <div class="row-actions" style="margin-top:14px;">
+            <a id="manualBtn" class="button manual-link" href="./Manual_do_AnarBib.pdf" target="_blank" rel="noopener noreferrer">Manual do AnarBib</a>
+          </div>
         </div>
         <img src="https://cclamazonia.noblogs.org/files/2026/03/logo_detoure_BLMF.png" alt="Logotipo da Biblioteca Libertária Maxwell Ferreira" class="topbar-logo">
       </div>
@@ -935,12 +1071,12 @@
                 <div class="inline">
                   <div>
                     <h4 class="section-title">Autores e outras responsabilidades</h4>
-                    <div class="hint">Use esta área para autor(a), coautor(a), organização, tradução, ilustração, prefácio e outras funções.</div>
+                    <div class="hint">Use esta área para autor(a), coautor(a), coletivo, tradução, ilustração, prefácio e outras funções.</div>
                   </div>
                   <div class="row-actions">
                     <button id="addAuthorContributorBtn" type="button" class="button secondary small">Adicionar autor(a)</button>
                     <button id="addCoauthorContributorBtn" type="button" class="button secondary small">Adicionar coautor(a)</button>
-                    <button id="addOrganizationContributorBtn" type="button" class="button secondary small">Adicionar organização</button>
+                    <button id="addOrganizationContributorBtn" type="button" class="button secondary small">Adicionar coletivo</button>
                     <button id="addContributorBtn" type="button" class="button secondary small">Adicionar pessoa</button>
                   </div>
                 </div>
@@ -987,7 +1123,7 @@
               <button id="saveBookDraftBtn" type="submit" class="button primary">Salvar rascunho</button>
               <button id="bookReadyBtn" type="button" class="button secondary">Marcar como pronto</button>
               <button id="publishBookDraftBtn" type="button" class="button success">Publicar este rascunho</button>
-              <button id="discardBookDraftBtn" type="button" class="button warning">Descartar rascunho</button>
+              <button id="discardBookDraftBtn" type="button" class="button warning discard-edge">Descartar rascunho</button>
             </div>
           </form>
         </div>
@@ -1116,8 +1252,8 @@
             <div class="actions" style="grid-column: span 3;">
               <button id="saveAuthorDraftBtn" type="submit" class="button primary">Salvar rascunho</button>
               <button id="authorReadyBtn" type="button" class="button secondary">Marcar como pronto</button>
-              <button id="discardAuthorDraftBtn" type="button" class="button warning">Descartar rascunho</button>
               <button id="publishAuthorDraftBtn" type="button" class="button success">Publicar este rascunho</button>
+              <button id="discardAuthorDraftBtn" type="button" class="button warning discard-edge">Descartar rascunho</button>
             </div>
           </form>
         </div>
@@ -1191,10 +1327,27 @@
           <div class="actions" style="grid-column: span 3;">
             <button id="saveExemplarDraftBtn" type="submit" class="button primary">Salvar rascunho</button>
             <button id="exemplarReadyBtn" type="button" class="button secondary">Marcar como pronto</button>
-            <button id="discardExemplarDraftBtn" type="button" class="button warning">Descartar rascunho</button>
             <button id="publishExemplarDraftBtn" type="button" class="button success">Publicar este rascunho</button>
+            <button id="discardExemplarDraftBtn" type="button" class="button warning discard-edge">Descartar rascunho</button>
           </div>
         </form>
+
+        <div class="card" style="margin-top:16px;">
+          <h4>Importação de lote para exemplares</h4>
+          <p class="hint" style="margin:0 0 12px;">Aqui aparecem somente fichas de livros do lote escolhido. O sistema sugere o tombo, pré-preenche os campos do rótulo e permite salvar um rascunho de exemplar livro por livro.</p>
+          <div class="grid cols-3" style="align-items:end;">
+            <div class="field">
+              <label for="exemplarLotImportId">Lote de livros</label>
+              <select id="exemplarLotImportId"></select>
+            </div>
+            <div class="actions" style="grid-column: span 2; justify-content:flex-start;">
+              <button id="loadExemplarBatchBtn" type="button" class="button secondary">Importar lote</button>
+              <button id="clearExemplarBatchBtn" type="button" class="button ghost">Limpar fila do lote</button>
+            </div>
+          </div>
+          <div id="exemplarBatchMessage" class="message"></div>
+          <div id="exemplarBatchQueueWrap" class="label-sheet-wrap"></div>
+        </div>
 
         <div class="card" style="margin-top:16px;">
           <h4>Prévia do rótulo</h4>
@@ -1388,6 +1541,7 @@
       books: [],
       authors: [],
       exemplars: [],
+      batchExemplarItems: [],
       showOnlyActiveDrafts: false,
     };
 
@@ -1433,6 +1587,9 @@
       bookCoverFileName: el('bookCoverFileName'),
       authorPhotoFileName: el('authorPhotoFileName'),
       labelBatchPreviewId: el('labelBatchPreviewId'),
+      exemplarBatchMessage: el('exemplarBatchMessage'),
+      exemplarBatchQueueWrap: el('exemplarBatchQueueWrap'),
+      exemplarLotImportId: el('exemplarLotImportId'),
       refreshLabelSheetBtn: el('refreshLabelSheetBtn'),
       labelSheetSummary: el('labelSheetSummary'),
       labelSheetWrap: el('labelSheetWrap'),
@@ -1523,15 +1680,76 @@
       refs.statAuthors.textContent = state.authors.length;
     }
 
-    const AUTHOR_DRAFT_STATE_MAP = {
-      new: { text: 'Novo rascunho', kind: 'info' },
-      dirty: { text: 'Rascunho modificado', kind: 'warn' },
-      saved: { text: 'Rascunho salvo', kind: 'ok' },
-      ready: { text: 'Rascunho pronto', kind: 'ok' },
+    const DRAFT_VISUAL_STATE_MAP = {
+      new: { text: 'Novo rascunho', kind: 'draft-new' },
+      dirty: { text: 'Editando rascunho', kind: 'draft-editing' },
+      saved: { text: 'Rascunho registrado', kind: 'draft-saved' },
+      ready: { text: 'Rascunho pronto', kind: 'draft-ready' },
+      published: { text: 'Publicado', kind: 'draft-published' },
+      cancelled: { text: 'Descartado', kind: 'draft-cancelled' },
     };
 
+    let bookDraftBaseline = '';
+    let bookDraftStableState = 'new';
     let authorDraftBaseline = '';
     let authorDraftStableState = 'new';
+    let exemplarDraftBaseline = '';
+    let exemplarDraftStableState = 'new';
+
+    function applyDraftVisualState(pill, stateKey = 'new') {
+      const config = DRAFT_VISUAL_STATE_MAP[stateKey] || DRAFT_VISUAL_STATE_MAP.new;
+      pill.textContent = config.text;
+      pill.className = `pill ${config.kind} status-pill-button`;
+      pill.dataset.state = stateKey;
+    }
+
+    function serializeBookFormState() {
+      return JSON.stringify({
+        draftId: el('bookDraftId').value || '',
+        publishedBookId: el('bookPublishedId').value || '',
+        action: el('bookAction').value || 'create',
+        batchId: el('bookBatchId').value || '',
+        bibRef: el('bookBibRef').value.trim(),
+        type: el('bookType').value || 'livro',
+        title: el('bookTitle').value.trim(),
+        subtitle: el('bookSubtitle').value.trim(),
+        author: el('bookAuthor').value.trim(),
+        edition: el('bookEdition').value.trim(),
+        publisher: el('bookPublisher').value.trim(),
+        place: el('bookPlace').value.trim(),
+        year: el('bookYear').value.trim(),
+        isbn: el('bookISBN').value.trim(),
+        issn: el('bookISSN').value.trim(),
+        periodicalTitle: el('bookPeriodicalTitle').value.trim(),
+        volume: el('bookVolume').value.trim(),
+        issueNumber: el('bookIssueNumber').value.trim(),
+        fascicle: el('bookFascicle').value.trim(),
+        issueDate: el('bookIssueDate').value.trim(),
+        frequency: el('bookFrequency').value.trim(),
+        cdd: el('bookCDD').value.trim(),
+        language: el('bookLanguage').value.trim(),
+        pages: el('bookPages').value.trim(),
+        loanable: el('bookLoanable').value || 'true',
+        notes: el('bookNotes').value.trim(),
+        coverPath: el('bookCoverPath').value.trim(),
+        marcJson: el('bookMarcJson').value.trim(),
+        contributors: getBookContributorsSnapshot({ keepEmpty: true }),
+      });
+    }
+
+    function setBookDraftVisualState(stateKey = 'new') {
+      applyDraftVisualState(refs.bookDraftModePill, stateKey);
+      if (stateKey !== 'dirty') bookDraftStableState = stateKey;
+    }
+
+    function syncBookDraftVisualState() {
+      const currentSnapshot = serializeBookFormState();
+      if (currentSnapshot !== bookDraftBaseline) {
+        setBookDraftVisualState('dirty');
+        return;
+      }
+      setBookDraftVisualState(bookDraftStableState || (el('bookDraftId').value ? 'saved' : 'new'));
+    }
 
     function serializeAuthorFormState() {
       return JSON.stringify({
@@ -1557,10 +1775,7 @@
     }
 
     function setAuthorDraftVisualState(stateKey = 'new') {
-      const config = AUTHOR_DRAFT_STATE_MAP[stateKey] || AUTHOR_DRAFT_STATE_MAP.new;
-      refs.authorDraftModePill.textContent = config.text;
-      refs.authorDraftModePill.className = `pill ${config.kind} status-pill-button`;
-      refs.authorDraftModePill.dataset.state = stateKey;
+      applyDraftVisualState(refs.authorDraftModePill, stateKey);
       if (stateKey !== 'dirty') authorDraftStableState = stateKey;
     }
 
@@ -1571,6 +1786,37 @@
         return;
       }
       setAuthorDraftVisualState(authorDraftStableState || (el('authorDraftId').value ? 'saved' : 'new'));
+    }
+
+    function serializeExemplarFormState() {
+      return JSON.stringify({
+        draftId: el('exemplarDraftId').value || '',
+        publishedExemplarId: el('exemplarPublishedId').value || '',
+        action: el('exemplarAction').value || 'create',
+        batchId: el('exemplarBatchId').value || '',
+        bibRef: el('exemplarBibRef').value.trim(),
+        tombo: el('exemplarTombo').value.trim(),
+        shelf: el('exemplarShelf').value.trim(),
+        labelAuthor: el('exemplarLabelAuthor').value.trim(),
+        labelTitle: el('exemplarLabelTitle').value.trim(),
+        labelCDD: el('exemplarLabelCDD').value.trim(),
+        labelNote: el('exemplarLabelNote').value.trim(),
+        notes: el('exemplarNotes').value.trim(),
+      });
+    }
+
+    function setExemplarDraftVisualState(stateKey = 'new') {
+      applyDraftVisualState(refs.exemplarDraftModePill, stateKey);
+      if (stateKey !== 'dirty') exemplarDraftStableState = stateKey;
+    }
+
+    function syncExemplarDraftVisualState() {
+      const currentSnapshot = serializeExemplarFormState();
+      if (currentSnapshot !== exemplarDraftBaseline) {
+        setExemplarDraftVisualState('dirty');
+        return;
+      }
+      setExemplarDraftVisualState(exemplarDraftStableState || (el('exemplarDraftId').value ? 'saved' : 'new'));
     }
 
     function setTab(tabId) {
@@ -1641,7 +1887,7 @@
     }
 
     function refreshBatchSelects() {
-      const ids = ['bookBatchId','authorBatchId','exemplarBatchId','queueBatchAssign','publishBatchId','catalogBatchId'];
+      const ids = ['bookBatchId','authorBatchId','exemplarBatchId','queueBatchAssign','publishBatchId','catalogBatchId','exemplarLotImportId'];
       ids.forEach(id => {
         const node = el(id);
         if (!node) return;
@@ -1728,12 +1974,12 @@
       const roles = [
         ['autor', 'Autor(a)'],
         ['coautor', 'Coautor(a)'],
-        ['organizacao', 'Organização'],
+        ['organizacao', 'Coletivo'],
         ['organizador', 'Organizador(a)'],
         ['tradutor', 'Tradutor(a)'],
         ['ilustrador', 'Ilustrador(a)'],
         ['prefaciador', 'Prefácio'],
-        ['coordenador', 'Coordenação'],
+        ['coordenador', 'Coordenador(a)'],
         ['editor', 'Editor(a)'],
         ['outro', 'Outro'],
       ];
@@ -1827,7 +2073,7 @@
     function getContributorGroupLabel(role = 'autor') {
       const labels = {
         autoria: 'Autoria',
-        organizacao: 'Organização',
+        organizacao: 'Coletivo',
         organizador: 'Organizador(a)',
         tradutor: 'Tradutor(a)',
         ilustrador: 'Ilustrador(a)',
@@ -2165,7 +2411,6 @@
       el('bookAction').value = 'create';
       el('bookType').value = 'livro';
       el('bookLoanable').value = 'true';
-      refs.bookDraftModePill.textContent = 'Novo rascunho';
       el('bookMarcJson').value = '';
       el('bookCoverPath').value = '';
       el('bookCoverFile').value = '';
@@ -2175,6 +2420,9 @@
       refs.bookResponsibilityExtraWrap.classList.add('is-hidden');
       syncBookTypeUI();
       setPreviewImage(refs.bookCoverPreview, '', 'covers');
+      bookDraftStableState = 'new';
+      bookDraftBaseline = serializeBookFormState();
+      setBookDraftVisualState('new');
       clearMessage(refs.bookMessage);
     }
 
@@ -2198,8 +2446,11 @@
       el('exemplarDraftId').value = '';
       el('exemplarPublishedId').value = '';
       el('exemplarAction').value = 'create';
-      refs.exemplarDraftModePill.textContent = 'Novo rascunho';
+      setExemplarDraftVisualState('new');
       updateLabelPreview();
+      exemplarDraftStableState = 'new';
+      exemplarDraftBaseline = serializeExemplarFormState();
+      setExemplarDraftVisualState('new');
       clearMessage(refs.exemplarMessage);
     }
 
@@ -2226,9 +2477,19 @@
       refs.authorPhotoFileName.textContent = file ? file.name : 'Nenhum arquivo selecionado';
     });
 
+    Array.from(el('bookForm').querySelectorAll('input, textarea, select')).forEach(node => {
+      node.addEventListener('input', syncBookDraftVisualState);
+      node.addEventListener('change', syncBookDraftVisualState);
+    });
+
     Array.from(el('authorForm').querySelectorAll('input, textarea, select')).forEach(node => {
       node.addEventListener('input', syncAuthorDraftVisualState);
       node.addEventListener('change', syncAuthorDraftVisualState);
+    });
+
+    Array.from(el('exemplarForm').querySelectorAll('input, textarea, select')).forEach(node => {
+      node.addEventListener('input', syncExemplarDraftVisualState);
+      node.addEventListener('change', syncExemplarDraftVisualState);
     });
 
     function updateLoginButton() {
@@ -2374,7 +2635,8 @@
     async function fillBookForm(record) {
       const enriched = await enrichBookRecord(record);
       setTab('booksPanel');
-      refs.bookDraftModePill.textContent = enriched.action === 'update' ? 'Editando rascunho' : 'Novo rascunho';
+      const nextBookState = enriched.status === 'ready' ? 'ready' : (enriched.id ? 'saved' : 'new');
+      setBookDraftVisualState(nextBookState);
       el('bookDraftId').value = enriched.id || '';
       el('bookPublishedId').value = enriched.published_book_id || '';
       el('bookAction').value = enriched.action || 'create';
@@ -2439,7 +2701,8 @@
 
     function fillExemplarForm(record) {
       setTab('exemplarsPanel');
-      refs.exemplarDraftModePill.textContent = record.action === 'update' ? 'Editando rascunho' : 'Novo rascunho';
+      const nextExemplarState = record.status === 'ready' ? 'ready' : (record.id ? 'saved' : 'new');
+      setExemplarDraftVisualState(nextExemplarState);
       el('exemplarDraftId').value = record.id || '';
       el('exemplarPublishedId').value = record.published_exemplar_id || '';
       el('exemplarAction').value = record.action || 'create';
@@ -2457,6 +2720,9 @@
         refs.labelBatchPreviewId.value = record.batch_id || '';
         loadLabelSheetPreview().catch(error => console.warn('Não foi possível abrir a prévia dos rótulos do lote.', error));
       }
+      exemplarDraftStableState = nextExemplarState;
+      exemplarDraftBaseline = serializeExemplarFormState();
+      setExemplarDraftVisualState(nextExemplarState);
     }
 
     async function fetchDraftAndEdit(type, id) {
@@ -2490,6 +2756,243 @@
       if (error) throw error;
       await Promise.all([loadQueue(), loadBatches()]);
       updateStats();
+    }
+
+    async function discardQueueDraft(type, id) {
+      const tableMap = { book: 'book_drafts', author: 'author_drafts', exemplar: 'exemplar_drafts' };
+      const table = tableMap[type];
+      if (!table) return;
+      const { error } = await supabase.from(table).update({ status: 'cancelled', updated_by: state.profile.id }).eq('id', Number(id));
+      if (error) throw error;
+      await Promise.all([loadQueue(), loadBatches(), loadCatalog()]);
+      updateStats();
+    }
+
+    function getQueueStatusBadge(status = '') {
+      const map = {
+        draft: { label: 'Em rascunho', cls: 'queue-status-draft' },
+        ready: { label: 'Pronto', cls: 'queue-status-ready' },
+        published: { label: 'Publicado', cls: 'queue-status-published' },
+        cancelled: { label: 'Descartado', cls: 'queue-status-cancelled' },
+      };
+      const config = map[status] || { label: status || '—', cls: 'queue-status-unknown' };
+      return `<span class="queue-status-badge ${config.cls}">${sanitize(config.label)}</span>`;
+    }
+
+    function buildSuggestedTombo({ bibRef = '', publishedBookId = '', draftId = '' }, copyNo = 1) {
+      const currentYear = new Date().getFullYear();
+      const cleanRef = String(bibRef || '').trim();
+      const normalizedRef = cleanRef ? cleanRef.replace(/^0+/, '') || cleanRef : '';
+      const baseId = normalizedRef || String(publishedBookId || draftId || 'semref');
+      const suffix = Number(copyNo) > 1 ? `-${String(copyNo).padStart(2, '0')}` : '';
+      return `${baseId}-CCLA-${currentYear}${suffix}`;
+    }
+
+    function getPublishedBookForBibRef(bibRef = '') {
+      return state.books.find(item => String(item.bib_ref || '') === String(bibRef || '')) || null;
+    }
+
+    function countExistingExemplarsForBibRef(bibRef = '') {
+      const publishedCount = state.exemplars.filter(item => String(item.bib_ref || '') === String(bibRef || '')).length;
+      const draftCount = state.queueItems.filter(item => item.item_type === 'exemplar' && item.status !== 'cancelled' && String(item.reference_code || '') === String(bibRef || '')).length;
+      return publishedCount + draftCount;
+    }
+
+    function createImportedExemplarItem(bookDraft) {
+      const published = getPublishedBookForBibRef(bookDraft.bib_ref);
+      const existingCount = countExistingExemplarsForBibRef(bookDraft.bib_ref);
+      const nextCopy = existingCount + 1;
+      const suggestedTombo = buildSuggestedTombo({
+        bibRef: bookDraft.bib_ref,
+        publishedBookId: bookDraft.published_book_id || published?.id || '',
+        draftId: bookDraft.id,
+      }, nextCopy);
+
+      return {
+        draftId: bookDraft.id,
+        batchId: bookDraft.batch_id || '',
+        bookStatus: bookDraft.status || 'draft',
+        bibRef: bookDraft.bib_ref || '',
+        title: bookDraft.titulo || published?.titulo || '—',
+        subtitle: bookDraft.subtitulo || published?.subtitulo || '',
+        author: bookDraft.autor || published?.autor || '',
+        cdd: bookDraft.cdd || published?.cdd || '',
+        shelf: '',
+        note: '',
+        existingCount,
+        nextCopy,
+        suggestedTombo,
+      };
+    }
+
+    async function loadExemplarBatchQueue() {
+      const batchId = refs.exemplarLotImportId?.value || el('exemplarBatchId').value || '';
+      if (!batchId) {
+        state.batchExemplarItems = [];
+        renderExemplarBatchQueue();
+        return;
+      }
+
+      const { data, error } = await supabase
+        .from('book_drafts')
+        .select('id, published_book_id, batch_id, status, bib_ref, titulo, subtitulo, autor, cdd, action, updated_at')
+        .eq('batch_id', Number(batchId))
+        .order('updated_at', { ascending: true });
+
+      if (error) throw error;
+
+      state.batchExemplarItems = (data || [])
+        .filter(item => item.status !== 'cancelled')
+        .map(createImportedExemplarItem);
+
+      renderExemplarBatchQueue();
+
+      if (!state.batchExemplarItems.length) {
+        showMessage(refs.exemplarBatchMessage, 'Este lote não tem fichas de livros ativas para importar em exemplares.', 'info');
+      } else {
+        showMessage(refs.exemplarBatchMessage, `${state.batchExemplarItems.length} ficha(s) de livro importada(s) para a fila de exemplares.`, 'ok');
+      }
+    }
+
+    function renderExemplarBatchQueue() {
+      if (!refs.exemplarBatchQueueWrap) return;
+      if (!state.batchExemplarItems.length) {
+        refs.exemplarBatchQueueWrap.innerHTML = '<div class="empty">Escolha um lote e clique em importar para gerar a fila de exemplares livro por livro.</div>';
+        return;
+      }
+
+      refs.exemplarBatchQueueWrap.innerHTML = state.batchExemplarItems.map((item, index) => `
+        <div class="batch-exemplar-row" data-batch-exemplar-index="${index}">
+          <div class="batch-exemplar-row-head">
+            <div>
+              <strong>${sanitize(item.title || '—')}</strong>
+              <div class="hint" style="margin-top:4px;">${sanitize(item.subtitle || item.author || 'Sem subtítulo')}</div>
+            </div>
+            <div class="batch-exemplar-meta">
+              <span class="pill info">Ref. ${sanitize(item.bibRef || '—')}</span>
+              ${getQueueStatusBadge(item.bookStatus || 'draft')}
+              <span class="pill warn">Exemplares já cadastrados: ${sanitize(item.existingCount)}</span>
+            </div>
+          </div>
+
+          <div class="batch-exemplar-grid">
+            <div class="field">
+              <label>Tombo sugerido</label>
+              <input type="text" data-field="tombo" value="${sanitize(item.suggestedTombo)}" />
+            </div>
+            <div class="field">
+              <label>Localização</label>
+              <input type="text" data-field="shelf" value="${sanitize(item.shelf || '')}" placeholder="Estante A / Prateleira 3" />
+            </div>
+            <div class="field">
+              <label>CDD no rótulo</label>
+              <input type="text" data-field="cdd" value="${sanitize(item.cdd || '')}" placeholder="CDD se disponível" />
+            </div>
+            <div class="field">
+              <label>Nota curta do rótulo</label>
+              <input type="text" data-field="note" value="${sanitize(item.note || '')}" placeholder="Opcional" />
+            </div>
+          </div>
+
+          <div class="batch-exemplar-label-preview">
+            <span class="batch-exemplar-label-code">${sanitize(getAuthorTrigram(item.author || ''))}</span>
+            <span><strong>Tombo:</strong> <span data-preview="tombo">${sanitize(item.suggestedTombo)}</span></span>
+            <span><strong>CDD:</strong> <span data-preview="cdd">${sanitize(item.cdd || '—')}</span></span>
+            <span><strong>Autor:</strong> ${sanitize(item.author || '—')}</span>
+          </div>
+
+          <div class="row-actions">
+            <button type="button" class="button secondary small" data-action="fill-imported-exemplar" data-index="${index}">Preencher formulário</button>
+            <button type="button" class="button success small" data-action="save-imported-exemplar" data-index="${index}">Salvar rascunho deste exemplar</button>
+          </div>
+        </div>
+      `).join('');
+
+      refs.exemplarBatchQueueWrap.querySelectorAll('.batch-exemplar-row').forEach(row => {
+        row.querySelectorAll('input[data-field]').forEach(input => {
+          input.addEventListener('input', () => {
+            const index = Number(row.dataset.batchExemplarIndex);
+            const item = state.batchExemplarItems[index];
+            if (!item) return;
+            item.suggestedTombo = row.querySelector('[data-field="tombo"]').value.trim();
+            item.shelf = row.querySelector('[data-field="shelf"]').value.trim();
+            item.cdd = row.querySelector('[data-field="cdd"]').value.trim();
+            item.note = row.querySelector('[data-field="note"]').value.trim();
+            const tomboPreview = row.querySelector('[data-preview="tombo"]');
+            const cddPreview = row.querySelector('[data-preview="cdd"]');
+            if (tomboPreview) tomboPreview.textContent = item.suggestedTombo || '—';
+            if (cddPreview) cddPreview.textContent = item.cdd || '—';
+          });
+        });
+      });
+
+      refs.exemplarBatchQueueWrap.querySelectorAll('[data-action="fill-imported-exemplar"]').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const item = state.batchExemplarItems[Number(btn.dataset.index)];
+          if (!item) return;
+          fillExemplarFormFromImportedItem(item);
+        });
+      });
+
+      refs.exemplarBatchQueueWrap.querySelectorAll('[data-action="save-imported-exemplar"]').forEach(btn => {
+        btn.addEventListener('click', async () => {
+          const item = state.batchExemplarItems[Number(btn.dataset.index)];
+          if (!item) return;
+          try {
+            await saveImportedExemplarItem(item);
+          } catch (error) {
+            showMessage(refs.exemplarBatchMessage, error.message, 'error');
+          }
+        });
+      });
+    }
+
+    function fillExemplarFormFromImportedItem(item) {
+      el('exemplarDraftId').value = '';
+      el('exemplarPublishedId').value = '';
+      el('exemplarAction').value = 'create';
+      el('exemplarBatchId').value = item.batchId || '';
+      el('exemplarBibRef').value = item.bibRef || '';
+      el('exemplarTombo').value = item.suggestedTombo || '';
+      el('exemplarShelf').value = item.shelf || '';
+      el('exemplarLabelTitle').value = item.title || '';
+      el('exemplarLabelAuthor').value = item.author || '';
+      el('exemplarLabelCDD').value = item.cdd || '';
+      el('exemplarLabelNote').value = item.note || '';
+      el('exemplarNotes').value = item.subtitle ? `Subtítulo: ${item.subtitle}` : '';
+      if (refs.labelBatchPreviewId) refs.labelBatchPreviewId.value = item.batchId || '';
+      updateLabelPreview();
+      exemplarDraftStableState = 'new';
+      exemplarDraftBaseline = serializeExemplarFormState();
+      setExemplarDraftVisualState('dirty');
+      setTab('exemplarsPanel');
+      clearMessage(refs.exemplarMessage);
+    }
+
+    async function saveImportedExemplarItem(item) {
+      const payload = {
+        published_exemplar_id: null,
+        batch_id: item.batchId || null,
+        action: 'create',
+        status: 'draft',
+        target_bib_ref: item.bibRef || '',
+        tombo: item.suggestedTombo || '',
+        shelf_location: item.shelf || null,
+        label_title_override: item.title || null,
+        label_author_override: item.author || null,
+        label_cdd_override: item.cdd || null,
+        label_note: item.note || null,
+        notes: item.subtitle ? `Subtítulo: ${item.subtitle}` : null,
+        created_by: state.profile.id,
+        updated_by: state.profile.id,
+      };
+      if (!payload.target_bib_ref || !payload.tombo) {
+        throw new Error('Cada exemplar importado precisa ter referência e tombo antes de salvar.');
+      }
+      await saveDraft('exemplar_drafts', payload, refs.exemplarBatchMessage, 'Rascunho de exemplar salvo a partir do lote.');
+      await loadExemplarBatchQueue();
+      if (refs.labelBatchPreviewId) refs.labelBatchPreviewId.value = item.batchId || '';
+      await loadLabelSheetPreview();
     }
 
     function renderQueue() {
@@ -2531,7 +3034,7 @@
             ${items.map(item => `
               <tr>
                 <td>${sanitize(item.item_type)}</td>
-                <td>${sanitize(item.status)}</td>
+                <td>${getQueueStatusBadge(item.status)}</td>
                 <td>${sanitize(item.action)}</td>
                 <td>${sanitize(item.reference_code || '—')}</td>
                 <td>${sanitize(item.display_title || '—')}</td>
@@ -2543,6 +3046,7 @@
                     <button class="btn-inline small secondary" data-action="edit-queue" data-type="${sanitize(item.item_type)}" data-id="${item.draft_id}">Editar</button>
                     <button class="btn-inline small success" data-action="publish-queue" data-type="${sanitize(item.item_type)}" data-id="${item.draft_id}">Publicar</button>
                     <button class="btn-inline small ghost" data-action="assign-queue" data-type="${sanitize(item.item_type)}" data-id="${item.draft_id}" data-batch="${sanitize(targetBatchId || '')}">Atribuir lote</button>
+                    ${item.status !== 'cancelled' ? `<button class="btn-inline small warning" data-action="discard-queue" data-type="${sanitize(item.item_type)}" data-id="${item.draft_id}">Descartar</button>` : ''}
                   </div>
                 </td>
               </tr>
@@ -2578,6 +3082,17 @@
           try {
             await assignDraftToBatch(btn.dataset.type, Number(btn.dataset.id), Number(batchId));
             showMessage(refs.queueMessage, 'Lote atribuído ao rascunho.', 'ok');
+          } catch (error) {
+            showMessage(refs.queueMessage, error.message, 'error');
+          }
+        });
+      });
+
+      refs.queueTableWrap.querySelectorAll('[data-action="discard-queue"]').forEach(btn => {
+        btn.addEventListener('click', async () => {
+          try {
+            await discardQueueDraft(btn.dataset.type, Number(btn.dataset.id));
+            showMessage(refs.queueMessage, 'Rascunho descartado a partir da fila editorial.', 'ok');
           } catch (error) {
             showMessage(refs.queueMessage, error.message, 'error');
           }
@@ -2976,6 +3491,19 @@
       if (error) throw error;
       await Promise.all([loadQueue(), loadBatches()]);
       updateStats();
+      if (table === 'book_drafts') {
+        bookDraftStableState = 'ready';
+        bookDraftBaseline = serializeBookFormState();
+        setBookDraftVisualState('ready');
+      } else if (table === 'author_drafts') {
+        authorDraftStableState = 'ready';
+        authorDraftBaseline = serializeAuthorFormState();
+        setAuthorDraftVisualState('ready');
+      } else if (table === 'exemplar_drafts') {
+        exemplarDraftStableState = 'ready';
+        exemplarDraftBaseline = serializeExemplarFormState();
+        setExemplarDraftVisualState('ready');
+      }
       showMessage(target, 'Rascunho marcado como pronto.', 'ok');
     }
 
@@ -3140,14 +3668,15 @@
         row.parentNode.insertBefore(row.nextElementSibling, row);
       }
       syncBookResponsibilitySummary();
+      syncBookDraftVisualState();
     });
 
     refs.bookContributorsWrap.addEventListener('input', (event) => {
-      if (event.target.closest('.contributor-row')) syncBookResponsibilitySummary();
+      if (event.target.closest('.contributor-row')) { syncBookResponsibilitySummary(); syncBookDraftVisualState(); }
     });
 
     refs.bookContributorsWrap.addEventListener('change', (event) => {
-      if (event.target.closest('.contributor-row')) syncBookResponsibilitySummary();
+      if (event.target.closest('.contributor-row')) { syncBookResponsibilitySummary(); syncBookDraftVisualState(); }
     });
 
     ['queueTypeFilter', 'queueStatusFilter', 'queueSearch'].forEach(id => {
@@ -3192,8 +3721,26 @@
         }
       });
     }
+    if (refs.exemplarLotImportId) {
+      refs.exemplarLotImportId.addEventListener('change', () => {
+        clearMessage(refs.exemplarBatchMessage);
+      });
+    }
+    el('loadExemplarBatchBtn').addEventListener('click', async () => {
+      try {
+        await loadExemplarBatchQueue();
+      } catch (error) {
+        showMessage(refs.exemplarBatchMessage, error.message, 'error');
+      }
+    });
+    el('clearExemplarBatchBtn').addEventListener('click', () => {
+      state.batchExemplarItems = [];
+      renderExemplarBatchQueue();
+      clearMessage(refs.exemplarBatchMessage);
+    });
     el('exemplarBatchId').addEventListener('change', async () => {
       if (refs.labelBatchPreviewId) refs.labelBatchPreviewId.value = el('exemplarBatchId').value || '';
+      if (refs.exemplarLotImportId) refs.exemplarLotImportId.value = el('exemplarBatchId').value || '';
       try {
         await loadLabelSheetPreview();
       } catch (error) {
@@ -3214,6 +3761,7 @@
     resetBookForm();
     resetAuthorForm();
     resetExemplarForm();
+    renderExemplarBatchQueue();
     renderLabelSheet([], '');
     updateLoginButton();
     refreshAll();
