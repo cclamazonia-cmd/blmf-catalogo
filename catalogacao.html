@@ -3023,6 +3023,28 @@
       updateStats();
     }
 
+    async function discardOpenBatch(batchId) {
+      const targetBatchId = Number(batchId);
+      if (!targetBatchId) return;
+      const tables = ['book_drafts', 'author_drafts', 'exemplar_drafts'];
+      for (const table of tables) {
+        const { error } = await supabase
+          .from(table)
+          .update({ batch_id: null, updated_by: state.profile.id })
+          .eq('batch_id', targetBatchId)
+          .neq('status', 'cancelled');
+        if (error) throw error;
+      }
+      const { error } = await supabase
+        .from('catalog_batches')
+        .update({ status: 'cancelled' })
+        .eq('id', targetBatchId)
+        .eq('status', 'open');
+      if (error) throw error;
+      await Promise.all([loadBatches(), loadQueue(), loadCatalog()]);
+      updateStats();
+    }
+
     async function discardQueueDraft(type, id) {
       const tableMap = { book: 'book_drafts', author: 'author_drafts', exemplar: 'exemplar_drafts' };
       const table = tableMap[type];
@@ -3717,8 +3739,9 @@
     }
 
     function renderBatchList() {
-      if (!state.batches.length) {
-        refs.batchListWrap.innerHTML = '<div class="empty">Nenhum lote criado ainda.</div>';
+      const openBatches = state.batches.filter(batch => batch.status === 'open');
+      if (!openBatches.length) {
+        refs.batchListWrap.innerHTML = '<div class="empty">Nenhum lote aberto no momento.</div>';
         return;
       }
       refs.batchListWrap.innerHTML = `
@@ -3731,10 +3754,11 @@
               <th>Observações</th>
               <th>Criado em</th>
               <th>Publicado em</th>
+              <th>Ação</th>
             </tr>
           </thead>
           <tbody>
-            ${state.batches.map(batch => `
+            ${openBatches.map(batch => `
               <tr>
                 <td>#${batch.id}</td>
                 <td>${sanitize(batch.name)}</td>
@@ -3742,9 +3766,25 @@
                 <td>${sanitize(batch.notes || '—')}</td>
                 <td>${sanitize(formatDate(batch.created_at))}</td>
                 <td>${sanitize(formatDate(batch.published_at))}</td>
+                <td><button class="btn-inline small warning" data-action="discard-batch" data-batch-id="${batch.id}">Descartar lote</button></td>
               </tr>`).join('')}
           </tbody>
         </table>`;
+
+      refs.batchListWrap.querySelectorAll('[data-action="discard-batch"]').forEach(btn => {
+        btn.addEventListener('click', async () => {
+          const batchId = Number(btn.dataset.batchId);
+          if (!batchId) return;
+          const confirmed = window.confirm('Este lote será descartado. Os rascunhos vinculados não serão apagados: eles voltarão para “Sem lote”. Deseja continuar?');
+          if (!confirmed) return;
+          try {
+            await discardOpenBatch(batchId);
+            showMessage(refs.batchMessage, 'Lote descartado. Os rascunhos vinculados voltaram para “Sem lote”.', 'ok');
+          } catch (error) {
+            showMessage(refs.batchMessage, error.message, 'error');
+          }
+        });
+      });
     }
 
     function renderCatalogBooks() {
