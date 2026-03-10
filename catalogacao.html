@@ -1861,7 +1861,7 @@
       dirty: { text: 'Editando rascunho', kind: 'draft-editing' },
       saved: { text: 'Rascunho registrado', kind: 'draft-saved' },
       ready: { text: 'Rascunho pronto', kind: 'draft-ready' },
-      published: { text: 'Publicado', kind: 'draft-published' },
+      published: { text: 'Ficha publicada', kind: 'draft-published' },
       cancelled: { text: 'Descartado', kind: 'draft-cancelled' },
     };
 
@@ -2832,6 +2832,11 @@
       renderCatalogBooks();
       renderCatalogAuthors();
       renderCatalogExemplars();
+      if (state.queueItems?.length) {
+        renderQueue();
+      } else {
+        renderTrash();
+      }
     }
 
     async function refreshAll(showSuccess = false) {
@@ -2890,7 +2895,7 @@
     async function fillBookForm(record) {
       const enriched = await enrichBookRecord(record);
       setTab('booksPanel');
-      const nextBookState = enriched.status === 'ready' ? 'ready' : (enriched.id ? 'saved' : 'new');
+      const nextBookState = enriched.status === 'ready' ? 'ready' : (enriched.status === 'published' ? 'published' : (enriched.id ? 'saved' : 'new'));
       setBookDraftVisualState(nextBookState);
       el('bookDraftId').value = enriched.id || '';
       el('bookPublishedId').value = enriched.published_book_id || '';
@@ -2949,7 +2954,7 @@
       el('authorNotes').value = record.notes || '';
       setPreviewImage(refs.authorPhotoPreview, record.photo_object_path || '', 'authors');
       refs.authorPhotoFileName.textContent = 'Nenhum arquivo selecionado';
-      authorDraftStableState = record.status === 'ready' ? 'ready' : (record.id ? 'saved' : 'new');
+      authorDraftStableState = record.status === 'ready' ? 'ready' : (record.status === 'published' ? 'published' : (record.id ? 'saved' : 'new'));
       authorDraftBaseline = serializeAuthorFormState();
       setAuthorDraftVisualState(authorDraftStableState);
     }
@@ -3084,6 +3089,32 @@
       return map[type] || null;
     }
 
+    function getQueueExemplarRecord(item = {}) {
+      if (item.item_type !== 'exemplar') return null;
+      const referenceCode = String(item.reference_code || '').trim();
+      const displayTitle = String(item.display_title || '').trim();
+      return state.exemplars.find(ex => String(ex.bib_ref || '').trim() === referenceCode)
+        || state.exemplars.find(ex => String(ex.tombo || '').trim() === displayTitle)
+        || null;
+    }
+
+    function getQueuePrimaryDisplay(item = {}) {
+      if (item.item_type === 'exemplar') {
+        const exemplar = getQueueExemplarRecord(item);
+        return exemplar?.titulo_etiqueta || item.display_subtitle || item.display_title || '—';
+      }
+      return item.display_title || '—';
+    }
+
+    function getQueueSecondaryDisplay(item = {}) {
+      if (item.item_type === 'exemplar') {
+        const exemplar = getQueueExemplarRecord(item);
+        return exemplar?.autor_etiqueta || item.display_subtitle || '—';
+      }
+      return item.display_subtitle || '—';
+    }
+
+
     async function restoreQueueDraft(type, id) {
       const table = getDraftTableName(type);
       if (!table) throw new Error('Tipo de rascunho inválido para restauração.');
@@ -3132,8 +3163,8 @@
               <tr>
                 <td>${sanitize(getItemTypeLabel(item.item_type))}</td>
                 <td>${sanitize(item.reference_code || '—')}</td>
-                <td>${sanitize(item.display_title || '—')}</td>
-                <td>${sanitize(item.display_subtitle || '—')}</td>
+                <td>${sanitize(getQueuePrimaryDisplay(item))}</td>
+                <td>${sanitize(getQueueSecondaryDisplay(item))}</td>
                 <td>${item.batch_id ? '#' + sanitize(item.batch_id) : '—'}</td>
                 <td>${sanitize(formatDate(item.updated_at))}</td>
                 <td>
@@ -3673,8 +3704,8 @@
                 <td>${getQueueStatusBadge(item.status)}</td>
                 <td>${sanitize(item.action)}</td>
                 <td>${sanitize(item.reference_code || '—')}</td>
-                <td>${sanitize(item.display_title || '—')}</td>
-                <td>${sanitize(item.display_subtitle || '—')}</td>
+                <td>${sanitize(getQueuePrimaryDisplay(item))}</td>
+                <td>${sanitize(getQueueSecondaryDisplay(item))}</td>
                 <td>${item.batch_id ? '#' + sanitize(item.batch_id) : '—'}</td>
                 <td>${sanitize(formatDate(item.updated_at))}</td>
                 <td>
@@ -4311,8 +4342,10 @@
         }
         await Promise.all([loadQueue(), loadBatches(), loadCatalog()]);
         updateStats();
+        bookDraftStableState = 'published';
+        bookDraftBaseline = serializeBookFormState();
+        setBookDraftVisualState('published');
         showMessage(refs.bookMessage, `Rascunho de livro publicado com sucesso.${contributorSyncMessage}`, contributorSyncMessage ? 'error' : 'ok');
-        resetBookForm();
       } catch (error) {
         showMessage(refs.bookMessage, error.message, 'error');
       }
@@ -4326,8 +4359,10 @@
         if (error) throw error;
         await Promise.all([loadQueue(), loadBatches(), loadCatalog()]);
         updateStats();
+        authorDraftStableState = 'published';
+        authorDraftBaseline = serializeAuthorFormState();
+        setAuthorDraftVisualState('published');
         showMessage(refs.authorMessage, 'Rascunho de autor publicado com sucesso.', 'ok');
-        resetAuthorForm();
       } catch (error) {
         showMessage(refs.authorMessage, error.message, 'error');
       }
@@ -4341,8 +4376,13 @@
         if (error) throw error;
         await Promise.all([loadQueue(), loadBatches(), loadCatalog()]);
         updateStats();
+        exemplarDraftStableState = 'published';
+        exemplarDraftBaseline = serializeExemplarFormState();
+        setExemplarDraftVisualState('published');
+        labelDraftStableState = 'published';
+        labelDraftBaseline = serializeLabelFormState();
+        setLabelDraftVisualState('published');
         showMessage(refs.exemplarMessage, 'Rascunho de exemplar publicado com sucesso.', 'ok');
-        resetExemplarForm();
       } catch (error) {
         showMessage(refs.exemplarMessage, error.message, 'error');
       }
@@ -4358,8 +4398,13 @@
         if (error) throw error;
         await Promise.all([loadQueue(), loadBatches(), loadCatalog()]);
         updateStats();
+        exemplarDraftStableState = 'published';
+        exemplarDraftBaseline = serializeExemplarFormState();
+        setExemplarDraftVisualState('published');
+        labelDraftStableState = 'published';
+        labelDraftBaseline = serializeLabelFormState();
+        setLabelDraftVisualState('published');
         showMessage(refs.labelMessage, 'Rótulo publicado com sucesso.', 'ok');
-        resetExemplarForm();
       } catch (error) {
         showMessage(refs.labelMessage, error.message, 'error');
       }
