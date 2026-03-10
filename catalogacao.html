@@ -1081,8 +1081,8 @@
     </div>
 
     <div class="tabs" id="tabs">
-      <button class="tab-btn" data-tab="batchesPanel">Lotes</button>
-      <button class="tab-btn active" data-tab="booksPanel">Fichas de livros</button>
+      <button class="tab-btn active" data-tab="batchesPanel">Lotes</button>
+      <button class="tab-btn" data-tab="booksPanel">Fichas de livros</button>
       <button class="tab-btn" data-tab="exemplarsPanel">Exemplares</button>
       <button class="tab-btn" data-tab="labelsPanel">Rótulos</button>
       <button class="tab-btn" data-tab="authorsPanel">Fichas de autores</button>
@@ -1090,7 +1090,7 @@
       <button class="tab-btn" data-tab="catalogPanel">Catálogo já publicado</button>
     </div>
 
-    <section id="booksPanel" class="panel active">
+    <section id="booksPanel" class="panel">
       <div class="panel-header">
         <div>
           <h3>Fichas de livros</h3>
@@ -1675,7 +1675,7 @@
       </div>
     </section>
 
-    <section id="batchesPanel" class="panel">
+    <section id="batchesPanel" class="panel active">
       <div class="panel-header">
         <div>
           <h3>Lotes de publicação</h3>
@@ -1797,7 +1797,7 @@
       labelPreviewItems: [],
       catalogSort: {
         books: { key: 'id', dir: 'desc' },
-        authors: { key: 'preferred_name', dir: 'asc' },
+        authors: { key: 'sort_name', dir: 'asc' },
         exemplars: { key: 'exemplar_id', dir: 'desc' },
       },
       publishLocks: {
@@ -1993,6 +1993,7 @@
         authors: {
           id: item.id,
           preferred_name: item.preferred_name || '',
+          sort_name: item.sort_name || item.preferred_name || '',
           country: item.country || '',
           source: item.source_label || item.source_kind || '',
         },
@@ -2306,19 +2307,43 @@
       setLabelDraftVisualState(labelDraftStableState || (el('exemplarDraftId').value ? 'saved' : 'new'));
     }
 
+    const CATALOGACAO_TAB_STORAGE_KEY = 'catalogacaoActiveTab';
+
+    function getAvailableCatalogacaoTabs() {
+      return Array.from(document.querySelectorAll('.tab-btn'))
+        .map(btn => btn.dataset.tab)
+        .filter(Boolean);
+    }
+
+    function getStoredCatalogacaoTab() {
+      try {
+        const saved = window.localStorage?.getItem(CATALOGACAO_TAB_STORAGE_KEY) || '';
+        return getAvailableCatalogacaoTabs().includes(saved) ? saved : '';
+      } catch {
+        return '';
+      }
+    }
+
     function setTab(tabId) {
+      const availableTabs = getAvailableCatalogacaoTabs();
+      const resolvedTab = availableTabs.includes(tabId)
+        ? tabId
+        : (getStoredCatalogacaoTab() || document.querySelector('.panel.active')?.id || availableTabs[0] || 'batchesPanel');
       document.querySelectorAll('.tab-btn').forEach(btn => {
-        btn.classList.toggle('active', btn.dataset.tab === tabId);
+        btn.classList.toggle('active', btn.dataset.tab === resolvedTab);
       });
       document.querySelectorAll('.panel').forEach(panel => {
-        panel.classList.toggle('active', panel.id === tabId);
+        panel.classList.toggle('active', panel.id === resolvedTab);
       });
+      try {
+        window.localStorage?.setItem(CATALOGACAO_TAB_STORAGE_KEY, resolvedTab);
+      } catch {}
     }
 
     let catalogacaoRefreshPromise = null;
 
     function getActiveCatalogacaoTab() {
-      return document.querySelector('.panel.active')?.id || 'booksPanel';
+      return document.querySelector('.panel.active')?.id || getStoredCatalogacaoTab() || getAvailableCatalogacaoTabs()[0] || 'batchesPanel';
     }
 
     async function refreshCatalogacaoForActiveTab() {
@@ -2494,15 +2519,15 @@
 
       const copied = await copyIsbnIfPossible(isbn);
       const url = source === 'bn'
-        ? 'https://www.isbn.bn.br/website'
-        : 'https://www.cblservicos.org.br/isbn/pesquisa/';
+        ? `http://www.isbn.bn.br/website/consulta/cadastro/isbn/${encodeURIComponent(isbn)}`
+        : `https://servicos.cbl.org.br/isbn/pesquisa/?page=1&q=${encodeURIComponent(isbn)}&filtrar_por%5B0%5D=isbn&ord%5B0%5D=relevancia&dir%5B0%5D=asc`;
 
       window.open(url, '_blank', 'noopener');
 
       if (copied) {
-        showMessage(refs.bookMessage, `ISBN copiado. Cole em ${source === 'bn' ? 'BN' : 'CBL'} para abrir a ficha.`, 'info');
+        showMessage(refs.bookMessage, `Busca de ISBN aberta em ${source === 'bn' ? 'BN' : 'CBL'} com o número já copiado para conferência.`, 'info');
       } else {
-        showMessage(refs.bookMessage, `Abra a busca em ${source === 'bn' ? 'BN' : 'CBL'} e pesquise o ISBN informado.`, 'info');
+        showMessage(refs.bookMessage, `Busca de ISBN aberta em ${source === 'bn' ? 'BN' : 'CBL'}.`, 'info');
       }
     }
 
@@ -3142,7 +3167,7 @@
     async function loadCatalog() {
       const [{ data: books, error: booksError }, { data: authors, error: authorsError }, { data: exemplars, error: exemplarsError }] = await Promise.all([
         supabase.from('v_catalog_books_editable').select('*').order('updated_at', { ascending: false }).limit(1000),
-        supabase.from('authors').select('*').order('preferred_name', { ascending: true }).limit(300),
+        supabase.from('authors').select('*').order('sort_name', { ascending: true, nullsFirst: false }).order('preferred_name', { ascending: true }).limit(300),
         supabase.from('v_exemplar_labels').select('*').order('exemplar_id', { ascending: false }).limit(300),
       ]);
       if (booksError) throw booksError;
@@ -3170,7 +3195,9 @@
         clearMessage(refs.globalMessage);
         await requireSession();
         await loadProfile();
+        const currentTab = getActiveCatalogacaoTab();
         await Promise.all([loadBatches(), loadQueue(), loadCatalog()]);
+        setTab(currentTab);
         if (refs.labelBatchPreviewId?.value) {
           try {
             await loadLabelSheetPreview();
@@ -3375,6 +3402,13 @@
         .eq('id', targetBatchId)
         .eq('status', 'open');
       if (error) throw error;
+      state.batches = state.batches.map(batch => Number(batch.id) === targetBatchId ? { ...batch, status: 'cancelled' } : batch);
+      state.queueItems = state.queueItems.map(item => Number(item.batch_id) === targetBatchId ? { ...item, batch_id: null } : item);
+      state.batchExemplarItems = state.batchExemplarItems.map(item => Number(item.batch_id) === targetBatchId ? { ...item, batch_id: null } : item);
+      state.batchLabelItems = state.batchLabelItems.map(item => Number(item.batch_id) === targetBatchId ? { ...item, batch_id: null } : item);
+      refreshBatchSelects();
+      renderBatchList();
+      renderQueue();
       await Promise.all([loadBatches(), loadQueue(), loadCatalog()]);
       updateStats();
     }
@@ -3383,10 +3417,17 @@
       const tableMap = { book: 'book_drafts', author: 'author_drafts', exemplar: 'exemplar_drafts' };
       const table = tableMap[type];
       if (!table) return;
-      const { error } = await supabase.from(table).update({ status: 'cancelled', updated_by: state.profile.id }).eq('id', Number(id));
+      const numericId = Number(id);
+      const { error } = await supabase.from(table).update({ status: 'cancelled', updated_by: state.profile.id }).eq('id', numericId);
       if (error) throw error;
+      state.queueItems = state.queueItems.filter(item => Number(item.draft_id) !== numericId);
+      renderQueue();
       await Promise.all([loadQueue(), loadBatches(), loadCatalog()]);
       updateStats();
+    }
+
+    function confirmDiscardAction(message) {
+      return window.confirm(message);
     }
 
     function getQueueStatusBadge(status = '') {
@@ -4086,6 +4127,8 @@
 
       refs.queueTableWrap.querySelectorAll('[data-action="discard-queue"]').forEach(btn => {
         btn.addEventListener('click', async () => {
+          const confirmed = confirmDiscardAction('Este rascunho será descartado e irá para a lixeira. Deseja continuar?');
+          if (!confirmed) return;
           try {
             await discardQueueDraft(btn.dataset.type, Number(btn.dataset.id));
             showMessage(refs.queueMessage, 'Rascunho descartado a partir da fila editorial.', 'ok');
@@ -4135,7 +4178,7 @@
         btn.addEventListener('click', async () => {
           const batchId = Number(btn.dataset.batchId);
           if (!batchId) return;
-          const confirmed = window.confirm('Este lote será descartado. Os rascunhos vinculados não serão apagados: eles voltarão para “Sem lote”. Deseja continuar?');
+          const confirmed = confirmDiscardAction('Este lote será descartado. Os rascunhos vinculados não serão apagados: eles voltarão para “Sem lote”. Deseja continuar?');
           if (!confirmed) return;
           try {
             await discardOpenBatch(batchId);
@@ -4239,11 +4282,21 @@
       const publishedAuthorId = Number(authorId);
       if (!publishedAuthorId) throw new Error('Autor inválido para edição.');
 
-      const existingDraftId = await findExistingActiveDraftId('author_drafts', 'published_author_id', publishedAuthorId);
-      if (existingDraftId) {
-        await fetchDraftAndEdit('author', existingDraftId);
-        showMessage(refs.catalogMessage, `Rascunho de autor já aberto (#${existingDraftId}).`, 'ok');
-        return existingDraftId;
+      const { data: existingDrafts, error: existingDraftsError } = await supabase
+        .from('author_drafts')
+        .select('id, status, updated_at')
+        .eq('published_author_id', publishedAuthorId)
+        .neq('status', 'cancelled')
+        .order('updated_at', { ascending: false })
+        .limit(1);
+
+      if (existingDraftsError) throw existingDraftsError;
+
+      const existingDraft = Array.isArray(existingDrafts) ? existingDrafts[0] : null;
+      if (existingDraft?.id) {
+        await fetchDraftAndEdit('author', Number(existingDraft.id));
+        showMessage(refs.catalogMessage, `Rascunho de autor já aberto (#${existingDraft.id}).`, 'ok');
+        return Number(existingDraft.id);
       }
 
       const batchId = el('catalogBatchId').value || null;
@@ -4275,7 +4328,7 @@
           <thead>
             <tr>
               <th class="sortable">${renderSortableHeader('ID', 'authors', 'id')}</th>
-              <th class="sortable">${renderSortableHeader('Nome', 'authors', 'preferred_name')}</th>
+              <th class="sortable">${renderSortableHeader('Nome para ordenação', 'authors', 'sort_name')}</th>
               <th class="sortable">${renderSortableHeader('País', 'authors', 'country')}</th>
               <th class="sortable">${renderSortableHeader('Fonte', 'authors', 'source')}</th>
               <th>Operações</th>
@@ -4285,12 +4338,13 @@
             ${items.map(author => `
               <tr>
                 <td>${author.id}</td>
-                <td>${sanitize(author.preferred_name || '—')}</td>
+                <td>${sanitize(author.sort_name || author.preferred_name || '—')}</td>
                 <td>${sanitize(author.country || '—')}</td>
                 <td>${sanitize(author.source_label || author.source_kind || '—')}</td>
                 <td>
                   <div class="row-actions">
-                    <button class="btn-inline small secondary" data-action="draft-author-edit" data-author-id="${author.id}">Criar rascunho de edição</button>
+                    <button class="btn-inline small secondary" data-action="load-author-edit" data-author-id="${author.id}">Carregar para editar</button>
+                    <button class="btn-inline small ghost" data-action="draft-author" data-author-id="${author.id}">Criar novo rascunho</button>
                   </div>
                 </td>
               </tr>`).join('')}
@@ -4299,10 +4353,27 @@
 
       bindCatalogSortButtons(refs.catalogAuthorsWrap, renderCatalogAuthors);
 
-      refs.catalogAuthorsWrap.querySelectorAll('[data-action="draft-author-edit"]').forEach(btn => {
+      refs.catalogAuthorsWrap.querySelectorAll('[data-action="load-author-edit"]').forEach(btn => {
         btn.addEventListener('click', async () => {
           try {
             await loadOrCreateAuthorDraftFromCatalog(btn.dataset.authorId);
+          } catch (error) {
+            showMessage(refs.catalogMessage, error.message, 'error');
+          }
+        });
+      });
+
+      refs.catalogAuthorsWrap.querySelectorAll('[data-action="draft-author"]').forEach(btn => {
+        btn.addEventListener('click', async () => {
+          try {
+            const currentTab = getActiveCatalogacaoTab();
+            const batchId = el('catalogBatchId').value || null;
+            const { data, error } = await supabase.rpc('create_author_draft_from_author', { p_author_id: Number(btn.dataset.authorId), p_batch_id: batchId ? Number(batchId) : null });
+            if (error) throw error;
+            await Promise.all([loadQueue(), loadCatalog(), loadBatches()]);
+            setTab(currentTab);
+            updateStats();
+            showMessage(refs.catalogMessage, `Novo rascunho de edição de autor criado (#${data}). O rascunho ficou na fila editorial sem mudar a aba atual.`, 'ok');
           } catch (error) {
             showMessage(refs.catalogMessage, error.message, 'error');
           }
@@ -4564,29 +4635,6 @@
       }
     });
 
-    async function persistAuthorDraftBeforePublish() {
-      const payload = await reuseExistingDraftIdIfNeeded('author_drafts', getAuthorDraftPayload(), 'published_author_id');
-      if (!payload.preferred_name) throw new Error('Informe o nome do autor em Nome, SOBRENOME.');
-      const dbPayload = { ...payload };
-      const isUpdate = !!dbPayload.id;
-      if (!dbPayload.id) delete dbPayload.id;
-
-      let result;
-      if (isUpdate) {
-        const id = dbPayload.id;
-        delete dbPayload.id;
-        result = await supabase.from('author_drafts').update(dbPayload).eq('id', id).select().single();
-      } else {
-        result = await supabase.from('author_drafts').insert(dbPayload).select().single();
-      }
-
-      if (result.error) throw result.error;
-      await Promise.all([loadQueue(), loadBatches(), loadCatalog()]);
-      updateStats();
-      fillAuthorForm(result.data);
-      return result.data;
-    }
-
     el('exemplarForm').addEventListener('submit', async (event) => {
       event.preventDefault();
       try {
@@ -4642,9 +4690,14 @@
 
     async function discardDraft(table, id, target, resetFn) {
       if (!id) throw new Error('Salve o rascunho antes de descartá-lo.');
+      const confirmed = confirmDiscardAction('Este rascunho será descartado e irá para a lixeira. Deseja continuar?');
+      if (!confirmed) return;
       const currentTab = getActiveCatalogacaoTab();
-      const { error } = await supabase.from(table).update({ status: 'cancelled', updated_by: state.profile.id }).eq('id', Number(id));
+      const numericId = Number(id);
+      const { error } = await supabase.from(table).update({ status: 'cancelled', updated_by: state.profile.id }).eq('id', numericId);
       if (error) throw error;
+      state.queueItems = state.queueItems.filter(item => Number(item.draft_id) !== numericId);
+      renderQueue();
       await Promise.all([loadQueue(), loadBatches()]);
       updateStats();
       resetFn();
@@ -4741,13 +4794,19 @@
         return;
       }
       try {
+        const draftId = el('authorDraftId').value;
+        if (!draftId) throw new Error('Salve o rascunho antes de publicar.');
         setPublishLock('author', true);
-        const savedDraft = await persistAuthorDraftBeforePublish();
-        const draftId = savedDraft?.id || el('authorDraftId').value;
-        if (!draftId) throw new Error('Não foi possível salvar o rascunho antes de publicar.');
+        const authorPayload = getAuthorDraftPayload();
+        const { id: _ignoredAuthorId, ...authorUpdatePayload } = authorPayload;
+        const { error: authorSaveError } = await supabase
+          .from('author_drafts')
+          .update(authorUpdatePayload)
+          .eq('id', Number(draftId));
+        if (authorSaveError) throw authorSaveError;
         const { data: draftState, error: draftStateError } = await supabase
           .from('author_drafts')
-          .select('id, status')
+          .select('id, published_author_id, status')
           .eq('id', Number(draftId))
           .single();
         if (draftStateError) throw draftStateError;
@@ -4761,29 +4820,17 @@
         }
         const { error } = await supabase.rpc('publish_author_draft', { p_draft_id: Number(draftId) });
         if (error) throw error;
-        const { data: freshDraft } = await supabase
-          .from('author_drafts')
-          .select('*')
-          .eq('id', Number(draftId))
-          .single();
         await Promise.all([loadQueue(), loadBatches(), loadCatalog()]);
         setTab(currentTab);
         updateStats();
-        if (freshDraft) {
-          fillAuthorForm(freshDraft);
-          setTab(currentTab);
-        } else {
-          authorDraftStableState = 'published';
-          authorDraftBaseline = serializeAuthorFormState();
-          setAuthorDraftVisualState('published');
-        }
+        resetAuthorForm();
+        setTab(currentTab);
         showPublishedPopup('author');
         showMessage(refs.authorMessage, 'Rascunho de autor publicado com sucesso.', 'ok');
       } catch (error) {
         const message = /duplicate|already exists|já existe|unique/i.test(String(error?.message || ''))
           ? 'autor já existente'
           : error.message;
-        hidePublishedPopup('author');
         showMessage(refs.authorMessage, message, 'error');
       } finally {
         setPublishLock('author', false);
@@ -5092,6 +5139,7 @@
       updateLoginButton();
     });
 
+    setTab(getActiveCatalogacaoTab());
     resetBookForm();
     resetAuthorForm();
     resetExemplarForm();
