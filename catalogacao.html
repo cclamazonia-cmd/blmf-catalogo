@@ -163,6 +163,13 @@
       border-color: transparent;
     }
 
+    .button.danger-solid,
+    .btn-inline.danger-solid {
+      background: linear-gradient(135deg, #991b1b, #dc2626);
+      border-color: transparent;
+      color: #fff;
+    }
+
     .button.ghost,
     .btn-inline.ghost {
       background: rgba(18,18,18,.72);
@@ -1518,8 +1525,12 @@
             <div>
               <h4 style="margin:0 0 6px;">Lixeira de rascunhos</h4>
               <p class="small">Aqui aparecem somente os rascunhos descartados de livros, autores e exemplares. Você pode restaurar ou restaurar e abrir para continuar a edição.</p>
+              <p class="small" style="margin-top:8px; color:#ffe0e0;">Atenção: ao esvaziar a lixeira, os rascunhos descartados serão apagados de forma irreversível.</p>
             </div>
-            <button id="refreshTrashBtn" class="button secondary">Atualizar lixeira</button>
+            <div class="row-actions">
+              <button id="refreshTrashBtn" class="button secondary">Atualizar lixeira</button>
+              <button id="emptyTrashBtn" class="button danger-solid">Esvaziar lixeira</button>
+            </div>
           </div>
           <div id="trashMessage" class="message"></div>
           <div id="trashTableWrap" class="table-wrap"></div>
@@ -1700,6 +1711,7 @@
       trashMessage: el('trashMessage'),
       trashTableWrap: el('trashTableWrap'),
       refreshTrashBtn: el('refreshTrashBtn'),
+      emptyTrashBtn: el('emptyTrashBtn'),
     };
 
     function showMessage(target, text, kind = 'info') {
@@ -2913,6 +2925,16 @@
       updateStats();
     }
 
+    async function emptyTrash() {
+      const tables = ['book_drafts', 'author_drafts', 'exemplar_drafts'];
+      for (const table of tables) {
+        const { error } = await supabase.from(table).delete().eq('status', 'cancelled');
+        if (error) throw error;
+      }
+      await Promise.all([loadQueue(), loadBatches(), loadCatalog()]);
+      updateStats();
+    }
+
     function renderTrash() {
       if (!refs.trashTableWrap) return;
       const items = [...state.queueItems]
@@ -4106,6 +4128,23 @@
       refs.refreshTrashBtn.addEventListener('click', () => {
         clearMessage(refs.trashMessage);
         renderTrash();
+      });
+    }
+    if (refs.emptyTrashBtn) {
+      refs.emptyTrashBtn.addEventListener('click', async () => {
+        const hasDiscardedDrafts = state.queueItems.some(item => item.status === 'cancelled');
+        if (!hasDiscardedDrafts) {
+          showMessage(refs.trashMessage, 'A lixeira já está vazia.', 'info');
+          return;
+        }
+        const confirmed = window.confirm('Tem certeza? Esta ação vai apagar definitivamente todos os rascunhos descartados da lixeira. O processo é irreversível.');
+        if (!confirmed) return;
+        try {
+          await emptyTrash();
+          showMessage(refs.trashMessage, 'Lixeira esvaziada com sucesso. A operação é irreversível.', 'ok');
+        } catch (error) {
+          showMessage(refs.trashMessage, error.message, 'error');
+        }
       });
     }
     if (refs.labelBatchPreviewId) {
