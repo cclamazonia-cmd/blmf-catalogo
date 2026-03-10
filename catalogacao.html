@@ -564,6 +564,91 @@
       font-size: .9rem;
     }
 
+    .status-pill-button {
+      min-height: 44px;
+      padding: 10px 16px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 800;
+      letter-spacing: .01em;
+      box-shadow: var(--shadow);
+    }
+
+    .label-sheet-wrap {
+      display: flex;
+      flex-direction: column;
+      gap: 18px;
+    }
+
+    .label-sheet-page-frame {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .label-sheet-page-meta {
+      color: var(--muted);
+      font-size: .88rem;
+      text-align: center;
+    }
+
+    .label-sheet-page {
+      width: min(210mm, 100%);
+      margin: 0 auto;
+      padding: 12mm 8mm;
+      background: #ffffff;
+      color: #111111;
+      border-radius: 20px;
+      border: 1px solid rgba(255,255,255,.12);
+      box-shadow: var(--shadow);
+    }
+
+    .label-sheet-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      grid-template-rows: repeat(9, 29mm);
+    }
+
+    .label-sheet-cell {
+      border: 1px dashed rgba(17,17,17,.22);
+      padding: 3mm 2.8mm;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 2.2mm;
+      overflow: hidden;
+    }
+
+    .label-sheet-code {
+      font-size: 1.18rem;
+      font-weight: 900;
+      letter-spacing: .18em;
+      line-height: 1;
+      color: #111111;
+    }
+
+    .label-sheet-tombo {
+      font-size: 1.02rem;
+      font-weight: 800;
+      line-height: 1.15;
+      color: #111111;
+      word-break: break-word;
+    }
+
+    .label-sheet-cdd {
+      font-size: .82rem;
+      line-height: 1.2;
+      color: #444444;
+      text-transform: uppercase;
+      letter-spacing: .04em;
+      word-break: break-word;
+    }
+
+    .label-sheet-empty {
+      opacity: .28;
+    }
     .sr-only {
       position: absolute;
       width: 1px;
@@ -686,12 +771,12 @@
     </div>
 
     <div class="tabs" id="tabs">
-      <button class="tab-btn active" data-tab="booksPanel">Fichas de livros</button>
-      <button class="tab-btn" data-tab="authorsPanel">Fichas de autores</button>
-      <button class="tab-btn" data-tab="exemplarsPanel">Exemplares e etiquetas</button>
-      <button class="tab-btn" data-tab="queuePanel">Fila editorial</button>
       <button class="tab-btn" data-tab="batchesPanel">Lotes</button>
-      <button class="tab-btn" data-tab="catalogPanel">Catálogo publicado</button>
+      <button class="tab-btn active" data-tab="booksPanel">Fichas de livros</button>
+      <button class="tab-btn" data-tab="exemplarsPanel">Exemplares e rótulos</button>
+      <button class="tab-btn" data-tab="authorsPanel">Fichas de autores</button>
+      <button class="tab-btn" data-tab="queuePanel">Fila editorial</button>
+      <button class="tab-btn" data-tab="catalogPanel">Catálogo já publicado</button>
     </div>
 
     <section id="booksPanel" class="panel active">
@@ -957,8 +1042,8 @@
             </div>
 
             <div class="field" style="grid-column: span 2;">
-              <label for="authorPreferredName">Nome preferido</label>
-              <input id="authorPreferredName" type="text" required />
+              <label for="authorPreferredName">Nome, SOBRENOME</label>
+              <input id="authorPreferredName" type="text" placeholder="Mikhail, BAKUNIN" required />
             </div>
 
             <div class="field">
@@ -978,7 +1063,7 @@
 
             <div class="field">
               <label for="authorCountry">País</label>
-              <input id="authorCountry" type="text" />
+              <input id="authorCountry" type="text" placeholder="Brasil" />
             </div>
 
             <div class="field">
@@ -1042,8 +1127,8 @@
     <section id="exemplarsPanel" class="panel">
       <div class="panel-header">
         <div>
-          <h3>Exemplares e etiquetas</h3>
-          <p>Crie ou edite rascunhos de exemplar com tombo, localização e ajustes de etiqueta.</p>
+          <h3>Exemplares e rótulos</h3>
+          <p>Crie ou edite rascunhos de exemplar com tombo, localização e ajustes de rótulo.</p>
         </div>
         <div class="inline">
           <span id="exemplarDraftModePill" class="pill info">Novo rascunho</span>
@@ -1079,22 +1164,22 @@
           </div>
 
           <div class="field">
-            <label for="exemplarLabelAuthor">Autor na etiqueta</label>
+            <label for="exemplarLabelAuthor">Autor no rótulo</label>
             <input id="exemplarLabelAuthor" type="text" />
           </div>
 
           <div class="field">
-            <label for="exemplarLabelTitle">Título na etiqueta</label>
+            <label for="exemplarLabelTitle">Título no rótulo</label>
             <input id="exemplarLabelTitle" type="text" />
           </div>
 
           <div class="field">
-            <label for="exemplarLabelCDD">CDD na etiqueta</label>
+            <label for="exemplarLabelCDD">CDD no rótulo</label>
             <input id="exemplarLabelCDD" type="text" />
           </div>
 
           <div class="field">
-            <label for="exemplarLabelNote">Nota curta de etiqueta</label>
+            <label for="exemplarLabelNote">Nota curta do rótulo</label>
             <input id="exemplarLabelNote" type="text" />
           </div>
 
@@ -1112,7 +1197,7 @@
         </form>
 
         <div class="card" style="margin-top:16px;">
-          <h4>Prévia da etiqueta</h4>
+          <h4>Prévia do rótulo</h4>
           <div id="labelPreview" class="grid cols-4">
             <div class="pill info">Tombo: <span id="labelPrevTombo">—</span></div>
             <div class="pill info">Referência: <span id="labelPrevBibRef">—</span></div>
@@ -1121,8 +1206,24 @@
           </div>
           <div style="margin-top:12px; padding:14px; border-radius:16px; border:1px dashed rgba(255,255,255,.16); background:rgba(255,255,255,.02);">
             <strong id="labelPrevTitle">Título</strong>
-            <div id="labelPrevNote" class="hint" style="margin-top:6px;">Sem nota de etiqueta.</div>
+            <div id="labelPrevNote" class="hint" style="margin-top:6px;">Sem nota de rótulo.</div>
           </div>
+        </div>
+
+        <div class="card" style="margin-top:16px;">
+          <h4>Prévia da folha A4 3 × 9</h4>
+          <p class="hint" style="margin:0 0 12px;">Selecione um lote para visualizar os rótulos em uma folha padrão com 27 posições. Cada rótulo mostra o código de 3 letras do sobrenome, o tombo e o CDD quando houver.</p>
+          <div class="grid cols-2" style="margin-bottom:16px; align-items:end;">
+            <div class="field">
+              <label for="labelBatchPreviewId">Lote da prévia</label>
+              <select id="labelBatchPreviewId"></select>
+            </div>
+            <div class="actions" style="justify-content:flex-start;">
+              <button id="refreshLabelSheetBtn" type="button" class="button secondary">Atualizar prévia dos rótulos</button>
+            </div>
+          </div>
+          <div id="labelSheetSummary" class="hint" style="margin-bottom:12px;"></div>
+          <div id="labelSheetWrap" class="label-sheet-wrap"></div>
         </div>
       </div>
     </section>
@@ -1331,6 +1432,10 @@
       bookResponsibilityExtraWrap: el('bookResponsibilityExtraWrap'),
       bookCoverFileName: el('bookCoverFileName'),
       authorPhotoFileName: el('authorPhotoFileName'),
+      labelBatchPreviewId: el('labelBatchPreviewId'),
+      refreshLabelSheetBtn: el('refreshLabelSheetBtn'),
+      labelSheetSummary: el('labelSheetSummary'),
+      labelSheetWrap: el('labelSheetWrap'),
     };
 
     function showMessage(target, text, kind = 'info') {
@@ -1351,6 +1456,46 @@
         .replaceAll('>', '&gt;')
         .replaceAll('"', '&quot;')
         .replaceAll("'", '&#039;');
+    }
+
+    function normalizeForSearch(value) {
+      return String(value || '')
+        .normalize('NFD')
+        .replace(/[̀-ͯ]/g, '')
+        .toLowerCase()
+        .trim();
+    }
+
+    function getBookDisplayTitle(book = {}) {
+      return book.titulo || book.title || book.display_title || '—';
+    }
+
+    function getBookSearchIndex(book = {}) {
+      return normalizeForSearch([
+        book.bib_ref,
+        book.titulo,
+        book.title,
+        book.display_title,
+        book.subtitulo,
+        book.subtitle,
+        book.autor,
+        book.author,
+        book.editora,
+        book.publisher,
+        book.ano,
+        book.titulo_periodico,
+      ].filter(Boolean).join(' '));
+    }
+
+    function getAuthorTrigram(name) {
+      const raw = String(name || '').trim();
+      if (!raw) return '---';
+      const base = raw.includes(',')
+        ? raw.split(',')[0]
+        : (raw.split(/\s+/).filter(Boolean).slice(-1)[0] || raw);
+      const clean = normalizeForSearch(base).replace(/[^a-z0-9]/g, '').toUpperCase();
+      if (!clean) return '---';
+      return clean.slice(0, 3).padEnd(3, 'X');
     }
 
     function formatDate(value) {
@@ -1376,6 +1521,56 @@
       refs.statDrafts.textContent = state.queueItems.filter(item => item.status === 'draft' || item.status === 'ready').length;
       refs.statBooks.textContent = state.books.length;
       refs.statAuthors.textContent = state.authors.length;
+    }
+
+    const AUTHOR_DRAFT_STATE_MAP = {
+      new: { text: 'Novo rascunho', kind: 'info' },
+      dirty: { text: 'Rascunho modificado', kind: 'warn' },
+      saved: { text: 'Rascunho salvo', kind: 'ok' },
+      ready: { text: 'Rascunho pronto', kind: 'ok' },
+    };
+
+    let authorDraftBaseline = '';
+    let authorDraftStableState = 'new';
+
+    function serializeAuthorFormState() {
+      return JSON.stringify({
+        draftId: el('authorDraftId').value || '',
+        publishedAuthorId: el('authorPublishedId').value || '',
+        action: el('authorAction').value || 'create',
+        batchId: el('authorBatchId').value || '',
+        preferredName: el('authorPreferredName').value.trim(),
+        sortName: el('authorSortName').value.trim(),
+        biography: el('authorBiography').value.trim(),
+        birthYear: el('authorBirthYear').value.trim(),
+        deathYear: el('authorDeathYear').value.trim(),
+        country: el('authorCountry').value.trim(),
+        sourceKind: el('authorSourceKind').value || '',
+        sourceLabel: el('authorSourceLabel').value.trim(),
+        sourceUrl: el('authorSourceUrl').value.trim(),
+        viaf: el('authorVIAF').value.trim(),
+        isni: el('authorISNI').value.trim(),
+        wikidata: el('authorWikidata').value.trim(),
+        photoPath: el('authorPhotoPath').value.trim(),
+        notes: el('authorNotes').value.trim(),
+      });
+    }
+
+    function setAuthorDraftVisualState(stateKey = 'new') {
+      const config = AUTHOR_DRAFT_STATE_MAP[stateKey] || AUTHOR_DRAFT_STATE_MAP.new;
+      refs.authorDraftModePill.textContent = config.text;
+      refs.authorDraftModePill.className = `pill ${config.kind} status-pill-button`;
+      refs.authorDraftModePill.dataset.state = stateKey;
+      if (stateKey !== 'dirty') authorDraftStableState = stateKey;
+    }
+
+    function syncAuthorDraftVisualState() {
+      const currentSnapshot = serializeAuthorFormState();
+      if (currentSnapshot !== authorDraftBaseline) {
+        setAuthorDraftVisualState('dirty');
+        return;
+      }
+      setAuthorDraftVisualState(authorDraftStableState || (el('authorDraftId').value ? 'saved' : 'new'));
     }
 
     function setTab(tabId) {
@@ -1450,6 +1645,7 @@
       ids.forEach(id => {
         const node = el(id);
         if (!node) return;
+        const previousValue = node.value;
         if (id === 'publishBatchId') {
           node.innerHTML = '<option value="">Selecione um lote</option>' + state.batches
             .filter(b => b.status === 'open')
@@ -1458,7 +1654,22 @@
         } else {
           node.innerHTML = batchOptions(true);
         }
+        if (previousValue && Array.from(node.options).some(option => option.value === previousValue)) {
+          node.value = previousValue;
+        }
       });
+
+      if (refs.labelBatchPreviewId) {
+        const previousValue = refs.labelBatchPreviewId.value;
+        refs.labelBatchPreviewId.innerHTML = '<option value="">Selecione um lote para a prévia</option>' + state.batches
+          .map(batch => `<option value="${batch.id}">${sanitize(batch.name)} (#${batch.id}) — ${sanitize(batch.status || 'open')}</option>`)
+          .join('');
+        if (previousValue && Array.from(refs.labelBatchPreviewId.options).some(option => option.value === previousValue)) {
+          refs.labelBatchPreviewId.value = previousValue;
+        } else if (el('exemplarBatchId')?.value && Array.from(refs.labelBatchPreviewId.options).some(option => option.value === el('exemplarBatchId').value)) {
+          refs.labelBatchPreviewId.value = el('exemplarBatchId').value;
+        }
+      }
     }
 
     function parseJsonSafe(value, fallback = {}) {
@@ -1972,11 +2183,13 @@
       el('authorDraftId').value = '';
       el('authorPublishedId').value = '';
       el('authorAction').value = 'create';
-      refs.authorDraftModePill.textContent = 'Novo rascunho';
       el('authorPhotoPath').value = '';
       el('authorPhotoFile').value = '';
       refs.authorPhotoFileName.textContent = 'Nenhum arquivo selecionado';
       setPreviewImage(refs.authorPhotoPreview, '', 'authors');
+      authorDraftStableState = 'new';
+      authorDraftBaseline = serializeAuthorFormState();
+      setAuthorDraftVisualState('new');
       clearMessage(refs.authorMessage);
     }
 
@@ -1996,7 +2209,7 @@
       refs.labelPrevAuthor.textContent = el('exemplarLabelAuthor').value || '—';
       refs.labelPrevCDD.textContent = el('exemplarLabelCDD').value || '—';
       refs.labelPrevTitle.textContent = el('exemplarLabelTitle').value || 'Título';
-      refs.labelPrevNote.textContent = el('exemplarLabelNote').value || 'Sem nota de etiqueta.';
+      refs.labelPrevNote.textContent = el('exemplarLabelNote').value || 'Sem nota de rótulo.';
     }
 
     ['exemplarTombo','exemplarBibRef','exemplarLabelAuthor','exemplarLabelCDD','exemplarLabelTitle','exemplarLabelNote'].forEach(id => {
@@ -2011,6 +2224,11 @@
     el('authorPhotoFile').addEventListener('change', () => {
       const file = el('authorPhotoFile').files[0];
       refs.authorPhotoFileName.textContent = file ? file.name : 'Nenhum arquivo selecionado';
+    });
+
+    Array.from(el('authorForm').querySelectorAll('input, textarea, select')).forEach(node => {
+      node.addEventListener('input', syncAuthorDraftVisualState);
+      node.addEventListener('change', syncAuthorDraftVisualState);
     });
 
     function updateLoginButton() {
@@ -2067,6 +2285,13 @@
       state.batches = data || [];
       refreshBatchSelects();
       renderBatchList();
+      if (refs.labelBatchPreviewId?.value) {
+        try {
+          await loadLabelSheetPreview();
+        } catch (error) {
+          console.warn('Não foi possível recarregar a prévia dos rótulos.', error);
+        }
+      }
     }
 
     async function loadQueue() {
@@ -2078,7 +2303,7 @@
 
     async function loadCatalog() {
       const [{ data: books, error: booksError }, { data: authors, error: authorsError }, { data: exemplars, error: exemplarsError }] = await Promise.all([
-        supabase.from('v_catalog_books_editable').select('*').order('updated_at', { ascending: false }).limit(300),
+        supabase.from('v_catalog_books_editable').select('*').order('updated_at', { ascending: false }).limit(1000),
         supabase.from('authors').select('*').order('preferred_name', { ascending: true }).limit(300),
         supabase.from('v_exemplar_labels').select('*').order('exemplar_id', { ascending: false }).limit(300),
       ]);
@@ -2103,6 +2328,13 @@
         await requireSession();
         await loadProfile();
         await Promise.all([loadBatches(), loadQueue(), loadCatalog()]);
+        if (refs.labelBatchPreviewId?.value) {
+          try {
+            await loadLabelSheetPreview();
+          } catch (labelError) {
+            console.warn('Não foi possível atualizar a prévia dos rótulos.', labelError);
+          }
+        }
         updateStats();
         updateLoginButton();
         if (showSuccess) {
@@ -2180,7 +2412,6 @@
 
     function fillAuthorForm(record) {
       setTab('authorsPanel');
-      refs.authorDraftModePill.textContent = record.action === 'update' ? 'Editando rascunho' : 'Novo rascunho';
       el('authorDraftId').value = record.id || '';
       el('authorPublishedId').value = record.published_author_id || '';
       el('authorAction').value = record.action || 'create';
@@ -2201,6 +2432,9 @@
       el('authorNotes').value = record.notes || '';
       setPreviewImage(refs.authorPhotoPreview, record.photo_object_path || '', 'authors');
       refs.authorPhotoFileName.textContent = 'Nenhum arquivo selecionado';
+      authorDraftStableState = record.status === 'ready' ? 'ready' : (record.id ? 'saved' : 'new');
+      authorDraftBaseline = serializeAuthorFormState();
+      setAuthorDraftVisualState(authorDraftStableState);
     }
 
     function fillExemplarForm(record) {
@@ -2219,6 +2453,10 @@
       el('exemplarLabelNote').value = record.label_note || '';
       el('exemplarNotes').value = record.notes || '';
       updateLabelPreview();
+      if (refs.labelBatchPreviewId) {
+        refs.labelBatchPreviewId.value = record.batch_id || '';
+        loadLabelSheetPreview().catch(error => console.warn('Não foi possível abrir a prévia dos rótulos do lote.', error));
+      }
     }
 
     async function fetchDraftAndEdit(type, id) {
@@ -2379,14 +2617,21 @@
     }
 
     function renderCatalogBooks() {
-      const search = el('catalogSearch').value.trim().toLowerCase();
-      const authorSearch = el('catalogAuthorSearch').value.trim().toLowerCase();
+      const search = normalizeForSearch(el('catalogSearch').value);
+      const authorSearch = normalizeForSearch(el('catalogAuthorSearch').value);
       let items = [...state.books];
       if (search) {
-        items = items.filter(book => [book.bib_ref, book.titulo, book.autor, book.editora, book.ano].filter(Boolean).join(' ').toLowerCase().includes(search));
+        items = items.filter(book => getBookSearchIndex(book).includes(search));
       }
       if (authorSearch) {
-        items = items.filter(book => [book.autor, book.titulo, book.subtitulo].filter(Boolean).join(' ').toLowerCase().includes(authorSearch));
+        items = items.filter(book => normalizeForSearch([
+          book.autor,
+          book.author,
+          book.titulo,
+          book.title,
+          book.subtitulo,
+          book.subtitle,
+        ].filter(Boolean).join(' ')).includes(authorSearch));
       }
       if (!items.length) {
         refs.catalogBooksWrap.innerHTML = '<div class="empty">Nenhum livro encontrado.</div>';
@@ -2411,9 +2656,9 @@
               <tr>
                 <td>${book.id}</td>
                 <td>${sanitize(book.bib_ref || '—')}</td>
-                <td>${sanitize(book.titulo || '—')}</td>
-                <td>${sanitize(book.autor || '—')}</td>
-                <td>${sanitize(book.editora || '—')}</td>
+                <td>${sanitize(getBookDisplayTitle(book))}</td>
+                <td>${sanitize(book.autor || book.author || '—')}</td>
+                <td>${sanitize(book.editora || book.publisher || '—')}</td>
                 <td>${sanitize(book.ano || '—')}</td>
                 <td>${sanitize(book.total_exemplares || 0)}</td>
                 <td><div class="row-actions"><button class="btn-inline small secondary" data-action="draft-book" data-book-id="${book.id}">Criar rascunho de edição</button></div></td>
@@ -2489,10 +2734,10 @@
     }
 
     function renderCatalogExemplars() {
-      const search = el('catalogExemplarSearch').value.trim().toLowerCase();
+      const search = normalizeForSearch(el('catalogExemplarSearch').value);
       let items = [...state.exemplars];
       if (search) {
-        items = items.filter(ex => [ex.tombo, ex.bib_ref, ex.autor_etiqueta, ex.titulo_etiqueta].filter(Boolean).join(' ').toLowerCase().includes(search));
+        items = items.filter(ex => normalizeForSearch([ex.tombo, ex.bib_ref, ex.autor_etiqueta, ex.titulo_etiqueta].filter(Boolean).join(' ')).includes(search));
       }
       if (!items.length) {
         refs.catalogExemplarsWrap.innerHTML = '<div class="empty">Nenhum exemplar encontrado.</div>';
@@ -2540,6 +2785,96 @@
       });
     }
 
+    function buildLabelPreviewItems(exemplarDrafts = [], bookDrafts = []) {
+      const bookDraftMap = new Map();
+      bookDrafts.filter(item => item && item.status !== 'cancelled').forEach(item => {
+        const key = String(item.bib_ref || '').trim();
+        if (!key) return;
+        bookDraftMap.set(key, item);
+      });
+
+      const publishedBookMap = new Map();
+      state.books.forEach(book => {
+        const key = String(book.bib_ref || '').trim();
+        if (!key) return;
+        publishedBookMap.set(key, book);
+      });
+
+      return exemplarDrafts
+        .filter(item => item && item.status !== 'cancelled')
+        .map(item => {
+          const bibRef = String(item.target_bib_ref || '').trim();
+          const bookDraft = bookDraftMap.get(bibRef);
+          const publishedBook = publishedBookMap.get(bibRef);
+          const authorName = item.label_author_override || bookDraft?.autor || publishedBook?.autor || publishedBook?.author || '';
+          const cddValue = item.label_cdd_override || bookDraft?.cdd || publishedBook?.cdd || '';
+          return {
+            authorCode: getAuthorTrigram(authorName),
+            tombo: item.tombo || '—',
+            cdd: cddValue || '—',
+            bibRef: bibRef || '—',
+            authorName: authorName || '—',
+          };
+        })
+        .sort((a, b) => String(a.tombo).localeCompare(String(b.tombo), 'pt-BR', { numeric: true, sensitivity: 'base' }));
+    }
+
+    function renderLabelSheet(labels = [], batchId = '') {
+      const batch = state.batches.find(item => String(item.id) === String(batchId));
+      const batchLabel = batch ? `${batch.name} (#${batch.id})` : (batchId ? `Lote #${batchId}` : 'Sem lote');
+
+      if (!labels.length) {
+        refs.labelSheetSummary.textContent = batchId ? `${batchLabel} — nenhum rótulo disponível para prévia.` : '';
+        refs.labelSheetWrap.innerHTML = '<div class="empty">Escolha um lote com exemplares para ver a prévia dos rótulos.</div>';
+        return;
+      }
+
+      const pages = [];
+      for (let index = 0; index < labels.length; index += 27) {
+        const chunk = labels.slice(index, index + 27);
+        while (chunk.length < 27) chunk.push(null);
+        pages.push(chunk);
+      }
+
+      refs.labelSheetSummary.textContent = `${batchLabel} — ${labels.length} rótulo(s) distribuído(s) em ${pages.length} página(s) de 27 posições.`;
+      refs.labelSheetWrap.innerHTML = pages.map((page, pageIndex) => `
+        <div class="label-sheet-page-frame">
+          <div class="label-sheet-page-meta">Página ${pageIndex + 1} · ${sanitize(batchLabel)}</div>
+          <div class="label-sheet-page">
+            <div class="label-sheet-grid">
+              ${page.map(label => label ? `
+                <div class="label-sheet-cell" title="${sanitize(label.authorName)} · ${sanitize(label.bibRef)}">
+                  <div class="label-sheet-code">${sanitize(label.authorCode)}</div>
+                  <div class="label-sheet-tombo">${sanitize(label.tombo)}</div>
+                  <div class="label-sheet-cdd">CDD ${sanitize(label.cdd)}</div>
+                </div>
+              ` : '<div class="label-sheet-cell label-sheet-empty"></div>').join('')}
+            </div>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    async function loadLabelSheetPreview() {
+      const batchId = refs.labelBatchPreviewId?.value || '';
+      if (!batchId) {
+        refs.labelSheetSummary.textContent = '';
+        refs.labelSheetWrap.innerHTML = '<div class="empty">Escolha um lote para ver a prévia dos rótulos em folha A4 3 × 9.</div>';
+        return;
+      }
+
+      const [{ data: exemplarDrafts, error: exemplarError }, { data: bookDrafts, error: bookError }] = await Promise.all([
+        supabase.from('exemplar_drafts').select('id, batch_id, status, target_bib_ref, tombo, label_author_override, label_cdd_override, updated_at').eq('batch_id', Number(batchId)).order('updated_at', { ascending: true }),
+        supabase.from('book_drafts').select('id, batch_id, status, bib_ref, autor, cdd, updated_at').eq('batch_id', Number(batchId)).order('updated_at', { ascending: true }),
+      ]);
+
+      if (exemplarError) throw exemplarError;
+      if (bookError) throw bookError;
+
+      const labels = buildLabelPreviewItems(exemplarDrafts || [], bookDrafts || []);
+      renderLabelSheet(labels, batchId);
+    }
+
     async function uploadFileToBucket(bucket, file, path) {
       const { error } = await supabase.storage.from(bucket).upload(path, file, { upsert: true, cacheControl: '3600' });
       if (error) throw error;
@@ -2574,6 +2909,7 @@
         await uploadFileToBucket('authors', file, path);
         el('authorPhotoPath').value = path;
         setPreviewImage(refs.authorPhotoPreview, path, 'authors');
+        syncAuthorDraftVisualState();
         showMessage(refs.authorMessage, 'Foto enviada com sucesso.', 'ok');
       } catch (error) {
         showMessage(refs.authorMessage, error.message, 'error');
@@ -2588,6 +2924,7 @@
     el('clearAuthorPhotoBtn').addEventListener('click', () => {
       el('authorPhotoPath').value = '';
       setPreviewImage(refs.authorPhotoPreview, '', 'authors');
+      syncAuthorDraftVisualState();
     });
 
     el('bookForm').addEventListener('submit', async (event) => {
@@ -2613,7 +2950,7 @@
       event.preventDefault();
       try {
         const payload = getAuthorDraftPayload();
-        if (!payload.preferred_name) throw new Error('Informe o nome preferido do autor.');
+        if (!payload.preferred_name) throw new Error('Informe o nome do autor em Nome, SOBRENOME.');
         const saved = await saveDraft('author_drafts', payload, refs.authorMessage, 'Rascunho de autor salvo com sucesso.');
         fillAuthorForm(saved);
       } catch (error) {
@@ -2656,7 +2993,12 @@
       try { await markDraftReady('book_drafts', el('bookDraftId').value, refs.bookMessage); } catch (error) { showMessage(refs.bookMessage, error.message, 'error'); }
     });
     el('authorReadyBtn').addEventListener('click', async () => {
-      try { await markDraftReady('author_drafts', el('authorDraftId').value, refs.authorMessage); } catch (error) { showMessage(refs.authorMessage, error.message, 'error'); }
+      try {
+        await markDraftReady('author_drafts', el('authorDraftId').value, refs.authorMessage);
+        authorDraftBaseline = serializeAuthorFormState();
+        authorDraftStableState = 'ready';
+        setAuthorDraftVisualState('ready');
+      } catch (error) { showMessage(refs.authorMessage, error.message, 'error'); }
     });
     el('exemplarReadyBtn').addEventListener('click', async () => {
       try { await markDraftReady('exemplar_drafts', el('exemplarDraftId').value, refs.exemplarMessage); } catch (error) { showMessage(refs.exemplarMessage, error.message, 'error'); }
@@ -2832,6 +3174,32 @@
       renderCatalogAuthors();
     });
     el('catalogExemplarSearch').addEventListener('input', renderCatalogExemplars);
+    if (refs.refreshLabelSheetBtn) {
+      refs.refreshLabelSheetBtn.addEventListener('click', async () => {
+        try {
+          await loadLabelSheetPreview();
+        } catch (error) {
+          showMessage(refs.exemplarMessage, error.message, 'error');
+        }
+      });
+    }
+    if (refs.labelBatchPreviewId) {
+      refs.labelBatchPreviewId.addEventListener('change', async () => {
+        try {
+          await loadLabelSheetPreview();
+        } catch (error) {
+          showMessage(refs.exemplarMessage, error.message, 'error');
+        }
+      });
+    }
+    el('exemplarBatchId').addEventListener('change', async () => {
+      if (refs.labelBatchPreviewId) refs.labelBatchPreviewId.value = el('exemplarBatchId').value || '';
+      try {
+        await loadLabelSheetPreview();
+      } catch (error) {
+        showMessage(refs.exemplarMessage, error.message, 'error');
+      }
+    });
 
     supabase.auth.onAuthStateChange(async (_event, session) => {
       state.session = session;
@@ -2846,6 +3214,7 @@
     resetBookForm();
     resetAuthorForm();
     resetExemplarForm();
+    renderLabelSheet([], '');
     updateLoginButton();
     refreshAll();
 
