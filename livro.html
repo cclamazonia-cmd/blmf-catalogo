@@ -107,12 +107,22 @@
     }
     .contentbox{min-width:0}
 
-    .author-link{
-      text-decoration:underline;
-      text-underline-offset:2px;
-      text-decoration-thickness:1px;
+    .author-line{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+    .author-card{
+      display:inline-flex;align-items:center;justify-content:center;
+      padding:4px 10px;border-radius:999px;
+      border:1px solid rgba(255,255,255,.14);
+      background:rgba(255,255,255,.05);
+      color:var(--text);text-decoration:none;font-weight:700;
+      transition:background .15s ease,border-color .15s ease,transform .15s ease;
     }
-    .author-link:hover{opacity:.88}
+    .author-card:hover{
+      background:rgba(255,255,255,.09);
+      border-color:rgba(255,255,255,.24);
+      transform:translateY(-1px);
+    }
+    .author-plain{color:var(--muted)}
+    .author-sep{color:var(--muted)}
   </style>
 </head>
 <body>
@@ -292,54 +302,161 @@
       return url.toString();
     }
 
+    function normalizeLoose(value) {
+      return String(value || "")
+        .normalize("NFD")
+        .replace(/\p{Diacritic}/gu, "")
+        .toLowerCase()
+        .replace(/[^\p{Letter}\p{Number}]+/gu, " ")
+        .trim()
+        .replace(/\s+/g, " ");
+    }
+
+    function splitAuthorNames(raw) {
+      const txt = String(raw || "").trim();
+      if (!txt) return [];
+      let parts = txt.split(/\s*;\s*|\s*
++\s*/).map(v => String(v || "").trim()).filter(Boolean);
+      if (parts.length <= 1 && txt.includes(" / ")) {
+        parts = txt.split(/\s*\/\s*/).map(v => String(v || "").trim()).filter(Boolean);
+      }
+      return parts;
+    }
+
+    function buildAuthorKeys(authorRow) {
+      const values = [authorRow?.preferred_name, authorRow?.sort_name].filter(Boolean);
+      const keys = new Set();
+      for (const value of values) {
+        const norm = normalizeLoose(value);
+        if (norm) keys.add(norm);
+        if (String(value).includes(",")) {
+          const bits = String(value).split(",").map(v => v.trim()).filter(Boolean);
+          if (bits.length >= 2) {
+            const alt = normalizeLoose(bits.slice(1).join(" ") + " " + bits[0]);
+            if (alt) keys.add(alt);
+          }
+        }
+      }
+      return Array.from(keys);
+    }
+
     function renderAuthorLinks(targetId, items, fallbackText = "—") {
       const el = $(targetId);
       if (!el) return;
+      el.classList.add("author-line");
       if (!Array.isArray(items) || !items.length) {
         el.textContent = fallbackText || "—";
         return;
       }
-      el.innerHTML = items.map((item) => {
-        const label = escapeHtml(item?.name || "");
+      el.innerHTML = items.map((item, idx) => {
+        const label = escapeHtml(item?.label || item?.name || "");
         const authorId = item?.author_id;
-        if (authorId == null || authorId === "") return label;
-        return `<a class="author-link" href="${escapeHtml(authorHref(authorId))}">${label}</a>`;
-      }).join("; ") || (fallbackText || "—");
+        const body = (authorId == null || authorId === "")
+          ? `<span class="author-plain">${label}</span>`
+          : `<a class="author-card" href="${escapeHtml(authorHref(authorId))}">${label}</a>`;
+        const sep = idx < items.length - 1 ? `<span class="author-sep">;</span>` : "";
+        return body + sep;
+      }).join("") || (fallbackText || "—");
     }
 
-    async function loadLinkedAuthors(bookRow, autorFallback = "") {
-      const singleAuthorId = bookRow?.author_id ?? bookRow?.authorId ?? null;
-      const fallbackItems = [];
-      const fallbackName = String(autorFallback || "").trim();
-      if (fallbackName) {
-        fallbackItems.push({ name: fallbackName, author_id: singleAuthorId });
+    async function loadLinkedAuthors(bookRow) {
+      const results = [];
+      if (bookRow?.id != null) {
+        try {
+          const { data, error } = await supabase
+            .from("book_authors")
+            .select("author_id, role, ord")
+            .eq("book_id", bookRow.id)
+            .order("ord", { ascending: true })
+            .limit(20);
+
+          if (!error && Array.isArray(data) && data.length) {
+            const preferred = data.filter((row) => {
+              const role = normalizeLoose(row?.role || "");
+              return !role || ["autor", "author", "principal"].includes(role);
+            });
+            const picked = preferred.length ? preferred : data;
+            const ids = [...new Set(picked.map((row) => row?.author_id).filter(Boolean))];
+            if (ids.length) {
+              const authorsTable = await pickFirstExistingTable(["authors_public", "v_authors_public", "authors"]);
+              let byId = new Map();
+              if (authorsTable) {
+                const { data: authorRows, error: authorError } = await supabase
+                  .from(authorsTable)
+                  .select("id, preferred_name, sort_name")
+                  .in("id", ids);
+                if (!authorError && Array.isArray(authorRows)) {
+                  byId = new Map(authorRows.map((row) => [row.id, row]));
+                }
+              }
+              for (const row of picked) {
+                const author = byId.get(row.author_id);
+                if (author) {
+                  results.push({
+                    author_id: row.author_id,
+                    preferred_name: author.preferred_name || "",
+                    sort_name: author.sort_name || "",
+                    keys: buildAuthorKeys(author)
+                  });
+                }
+              }
+            }
+          }
+        } catch (_) {}
       }
 
-      if (bookRow?.id == null) return fallbackItems;
+      const singleAuthorId = bookRow?.author_id ?? bookRow?.authorId ?? null;
+      if (singleAuthorId && !results.some((row) => String(row.author_id) === String(singleAuthorId))) {
+        try {
+          const authorsTable = await pickFirstExistingTable(["authors_public", "v_authors_public", "authors"]);
+          if (authorsTable) {
+            const { data: authorRow, error } = await supabase
+              .from(authorsTable)
+              .select("id, preferred_name, sort_name")
+              .eq("id", singleAuthorId)
+              .maybeSingle();
+            if (!error && authorRow) {
+              results.push({
+                author_id: authorRow.id,
+                preferred_name: authorRow.preferred_name || "",
+                sort_name: authorRow.sort_name || "",
+                keys: buildAuthorKeys(authorRow)
+              });
+            }
+          }
+        } catch (_) {}
+      }
 
-      try {
-        const { data, error } = await supabase
-          .from("book_authors")
-          .select("author_id, role, ord, authors(id, preferred_name, sort_name)")
-          .eq("book_id", bookRow.id)
-          .order("ord", { ascending: true })
-          .limit(20);
+      return results;
+    }
 
-        if (error || !Array.isArray(data) || !data.length) return fallbackItems;
+    async function resolveAuthorDisplayItems(bookRow, autorFallback = "") {
+      const names = splitAuthorNames(autorFallback);
+      if (!names.length) return [];
 
-        const items = data.map((row) => {
-          const nested = Array.isArray(row.authors) ? row.authors[0] : row.authors;
-          const name = nested?.preferred_name || nested?.sort_name || "";
-          return {
-            name: String(name || "").trim(),
-            author_id: row.author_id
-          };
-        }).filter((row) => row.name);
+      const linked = await loadLinkedAuthors(bookRow);
+      if (!linked.length) {
+        if (names.length === 1 && (bookRow?.author_id ?? bookRow?.authorId ?? null)) {
+          return [{ label: names[0], author_id: bookRow.author_id ?? bookRow.authorId }];
+        }
+        return names.map((name) => ({ label: name, author_id: null }));
+      }
 
-        if (items.length) return items;
-      } catch (_) {}
+      const used = new Set();
+      const byIndexUsable = linked.length === names.length;
 
-      return fallbackItems;
+      return names.map((name, idx) => {
+        const norm = normalizeLoose(name);
+        let matchIndex = linked.findIndex((row, i) => !used.has(i) && row.keys.includes(norm));
+        if (matchIndex === -1 && byIndexUsable && linked[idx] && !used.has(idx)) {
+          matchIndex = idx;
+        }
+        if (matchIndex !== -1) {
+          used.add(matchIndex);
+          return { label: name, author_id: linked[matchIndex].author_id };
+        }
+        return { label: name, author_id: null };
+      });
     }
 
     const nk = (s) => String(s || "").normalize("NFD").replace(/\p{Diacritic}/gu, "").toLowerCase();
@@ -525,9 +642,12 @@
 
       let authorItems = [];
       try {
-        authorItems = await loadLinkedAuthors(data, autor);
+        authorItems = await resolveAuthorDisplayItems(data, autor);
       } catch (_) {
-        authorItems = String(autor || "").trim() ? [{ name: String(autor).trim(), author_id: data?.author_id ?? null }] : [];
+        const fallbackNames = splitAuthorNames(autor);
+        authorItems = fallbackNames.length
+          ? fallbackNames.map((name) => ({ label: name, author_id: null }))
+          : [];
       }
       renderAuthorLinks("authorLine", authorItems, "—");
 
