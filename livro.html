@@ -107,15 +107,24 @@
     }
     .contentbox{min-width:0}
 
-    .author-inline-wrap { display:flex; flex-wrap:wrap; gap:6px; align-items:center; }
-    .author-name-plain { color: var(--muted); }
-    .author-card-link {
-      display:inline-flex; align-items:center; padding:4px 10px; border-radius:999px;
-      border:1px solid var(--line); background:#fff; color:var(--ink); text-decoration:none;
-      font-weight:600; transition:background .15s ease, border-color .15s ease, transform .15s ease;
+    .author-link,
+    .author-link:visited{
+      display:inline-flex;
+      align-items:center;
+      padding:4px 10px;
+      margin:2px 6px 2px 0;
+      border-radius:999px;
+      border:1px solid rgba(140,110,115,.65);
+      background:transparent;
+      color:#f2f2f2;
+      text-decoration:none;
+      box-shadow:none;
     }
-    .author-card-link:hover { background:#f7f7fb; border-color:#c9ccdf; transform:translateY(-1px); }
-    .author-separator { color: var(--muted); margin:0 2px; }
+    .author-link:hover{
+      border-color:rgba(255,255,255,.35);
+      background:rgba(255,255,255,.04);
+      color:#ffffff;
+    }
   </style>
 </head>
 <body>
@@ -279,113 +288,70 @@
       return (u.searchParams.get("ref") || u.searchParams.get("bib_ref") || "").trim();
     }
 
-    function normalizeAuthorName(value) {
-      return String(value || "")
-        .normalize("NFD")
-        .replace(/[̀-ͯ]/g, "")
-        .toLowerCase()
-        .replace(/[^a-z0-9]+/g, " ")
-        .trim()
-        .replace(/\s+/g, " ");
+    function escapeHtml(value) {
+      return String(value ?? "")
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;")
+        .replaceAll("'", "&#39;");
     }
 
-    function splitAuthorDisplay(raw) {
-      const txt = String(raw || "").trim();
-      if (!txt) return [];
-      return txt.split(/\s*;\s*/).map(v => String(v || "").trim()).filter(Boolean);
+    function authorHref(authorId) {
+      const url = new URL(ROUTES.AUTOR);
+      url.searchParams.set("id", String(authorId));
+      url.searchParams.set("author_id", String(authorId));
+      return url.toString();
     }
 
-    function buildAuthorVariants(name) {
-      const out = new Set();
-      const clean = String(name || "").trim();
-      const base = normalizeAuthorName(clean);
-      if (base) out.add(base);
-      if (clean.includes(",")) {
-        const bits = clean.split(",").map(v => v.trim()).filter(Boolean);
-        if (bits.length >= 2) {
-          const swapped = normalizeAuthorName(bits.slice(1).join(" ") + " " + bits[0]);
-          if (swapped) out.add(swapped);
-        }
-      }
-      return Array.from(out);
-    }
-
-    function authorUrl(authorId) {
-      return `${ROUTES.AUTOR}?id=${encodeURIComponent(authorId)}&author_id=${encodeURIComponent(authorId)}`;
-    }
-
-    async function renderBookAuthors(authorText, bookRow) {
-      const host = $("authorLine");
-      if (!host) return;
-
-      const names = splitAuthorDisplay(authorText);
-      if (!names.length) {
-        host.textContent = "—";
+    function renderAuthorLinks(targetId, items, fallbackText = "—") {
+      const el = $(targetId);
+      if (!el) return;
+      if (!Array.isArray(items) || !items.length) {
+        el.textContent = fallbackText || "—";
         return;
       }
+      el.innerHTML = items.map((item) => {
+        const label = escapeHtml(item?.name || "");
+        const authorId = item?.author_id;
+        if (authorId == null || authorId === "") return label;
+        return `<a class="author-link" href="${escapeHtml(authorHref(authorId))}">${label}</a>`;
+      }).join("; ") || (fallbackText || "—");
+    }
 
-      let linkedAuthors = [];
-      try {
-        const bookId = bookRow?.id ?? null;
-        if (bookId != null) {
-          const rel = await supabase
-            .from("book_authors")
-            .select("author_id, role, ord")
-            .eq("book_id", bookId)
-            .order("ord", { ascending: true });
-
-          if (!rel.error && Array.isArray(rel.data) && rel.data.length) {
-            const ids = [...new Set(rel.data.map(r => r?.author_id).filter(Boolean))];
-            if (ids.length) {
-              const auth = await supabase
-                .from("authors")
-                .select("id, preferred_name, sort_name")
-                .in("id", ids);
-
-              if (!auth.error && Array.isArray(auth.data)) {
-                linkedAuthors = auth.data.map(row => ({
-                  id: row.id,
-                  keys: [row.preferred_name, row.sort_name]
-                    .filter(Boolean)
-                    .flatMap(buildAuthorVariants)
-                }));
-              }
-            }
-          }
-        }
-      } catch (_) {
-        linkedAuthors = [];
+    async function loadLinkedAuthors(bookRow, autorFallback = "") {
+      const singleAuthorId = bookRow?.author_id ?? bookRow?.authorId ?? null;
+      const fallbackItems = [];
+      const fallbackName = String(autorFallback || "").trim();
+      if (fallbackName) {
+        fallbackItems.push({ name: fallbackName, author_id: singleAuthorId });
       }
 
-      host.innerHTML = "";
-      host.classList.add("author-inline-wrap");
-      const used = new Set();
+      if (bookRow?.id == null) return fallbackItems;
 
-      names.forEach((name, idx) => {
-        const variants = buildAuthorVariants(name);
-        const match = linkedAuthors.find((row) => !used.has(row.id) && variants.some(v => row.keys.includes(v)));
+      try {
+        const { data, error } = await supabase
+          .from("book_authors")
+          .select("author_id, role, ord, authors(id, preferred_name, sort_name)")
+          .eq("book_id", bookRow.id)
+          .order("ord", { ascending: true })
+          .limit(20);
 
-        if (match) {
-          used.add(match.id);
-          const a = document.createElement("a");
-          a.className = "author-card-link";
-          a.href = authorUrl(match.id);
-          a.textContent = name;
-          host.appendChild(a);
-        } else {
-          const span = document.createElement("span");
-          span.className = "author-name-plain";
-          span.textContent = name;
-          host.appendChild(span);
-        }
+        if (error || !Array.isArray(data) || !data.length) return fallbackItems;
 
-        if (idx < names.length - 1) {
-          const sep = document.createElement("span");
-          sep.className = "author-separator";
-          sep.textContent = ";";
-          host.appendChild(sep);
-        }
-      });
+        const items = data.map((row) => {
+          const nested = Array.isArray(row.authors) ? row.authors[0] : row.authors;
+          const name = nested?.preferred_name || nested?.sort_name || "";
+          return {
+            name: String(name || "").trim(),
+            author_id: row.author_id
+          };
+        }).filter((row) => row.name);
+
+        if (items.length) return items;
+      } catch (_) {}
+
+      return fallbackItems;
     }
 
     const nk = (s) => String(s || "").normalize("NFD").replace(/\p{Diacritic}/gu, "").toLowerCase();
@@ -568,7 +534,14 @@
 
       $("title").textContent = titulo || "Sem título";
       setLine("subtitleLine", subtitulo);
-      await renderBookAuthors(autor, data);
+
+      let authorItems = [];
+      try {
+        authorItems = await loadLinkedAuthors(data, autor);
+      } catch (_) {
+        authorItems = String(autor || "").trim() ? [{ name: String(autor).trim(), author_id: data?.author_id ?? null }] : [];
+      }
+      renderAuthorLinks("authorLine", authorItems, "—");
 
       setPill("bibRefPill", "ref", data[colRef] || "", true);
       setPill("yearPill", "ano", ano, true);
