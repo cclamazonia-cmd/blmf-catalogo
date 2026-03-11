@@ -740,27 +740,45 @@ async function loadAuthorRelationsFromSupabase() {
     if (!bookId || !authorId || !isAuthorRole(row?.role)) continue;
     const key = String(bookId);
     if (!map.has(key)) map.set(key, []);
-    map.get(key).push(authorId);
+    map.get(key).push({
+      authorId,
+      ord: Number.isFinite(Number(row?.ord)) ? Number(row.ord) : null
+    });
   }
   return map;
 }
-function resolveAuthorIdsForRow(authorValue, relationIds, authorLookup, fallbackAuthorId) {
+function resolveAuthorIdsForRow(authorValue, relationEntries, authorLookup, fallbackAuthorId) {
   const names = splitAuthorNames(authorValue);
   if (!names.length) return [];
 
-  if (Array.isArray(relationIds) && relationIds.length === names.length) {
-    return relationIds.map(id => normalizeAuthorIdValue(id));
+  const resolved = new Array(names.length).fill(null);
+
+  if (Array.isArray(relationEntries) && relationEntries.length) {
+    relationEntries.forEach((entry, index) => {
+      const authorId = normalizeAuthorIdValue(entry?.authorId ?? entry);
+      if (!authorId) return;
+      const ordNumber = Number(entry?.ord);
+      const position = Number.isInteger(ordNumber) && ordNumber >= 1 && ordNumber <= names.length
+        ? ordNumber - 1
+        : (index < names.length ? index : -1);
+      if (position >= 0 && position < names.length && !resolved[position]) {
+        resolved[position] = authorId;
+      }
+    });
   }
 
-  const resolved = names.map(name => {
+  names.forEach((name, index) => {
+    if (resolved[index]) return;
     const matches = authorLookup.get(normalize(name));
-    if (!matches || matches.size !== 1) return null;
-    return normalizeAuthorIdValue([...matches][0]);
+    if (!matches || matches.size !== 1) return;
+    resolved[index] = normalizeAuthorIdValue([...matches][0]);
   });
 
-  if (resolved.some(Boolean)) return resolved;
-  if (names.length === 1 && fallbackAuthorId) return [normalizeAuthorIdValue(fallbackAuthorId)];
-  return [];
+  if (names.length === 1 && !resolved[0] && fallbackAuthorId) {
+    resolved[0] = normalizeAuthorIdValue(fallbackAuthorId);
+  }
+
+  return resolved.some(Boolean) ? resolved : [];
 }
 function prepareRows() {
   for (const r of rows) {
