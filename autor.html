@@ -237,6 +237,7 @@
       auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true }
     });
 
+
     const $ = (id) => document.getElementById(id);
 
     function setStatus(msg, cls) {
@@ -248,9 +249,7 @@
     function setPill(id, label, value, showDash = false) {
       const el = $(id);
       if (!el) return;
-
       const txt = String(value ?? "").trim();
-
       if (!txt) {
         if (showDash) {
           el.style.display = "inline-flex";
@@ -261,7 +260,6 @@
         }
         return;
       }
-
       el.style.display = "inline-flex";
       el.textContent = `${label}: ${txt}`;
     }
@@ -269,97 +267,69 @@
     function setLine(id, value) {
       const el = $(id);
       if (!el) return;
-
       const txt = String(value ?? "").trim();
       el.textContent = txt;
       el.style.display = txt ? "" : "none";
-    }
-
-    function getAuthorIdFromUrl() {
-      const u = new URL(location.href);
-      const raw = (u.searchParams.get("id") || u.searchParams.get("author_id") || "").trim();
-      const n = Number(raw);
-      return Number.isFinite(n) && n > 0 ? n : null;
-    }
-
-    function getAuthorNameFromUrl() {
-      const u = new URL(location.href);
-      return String(
-        u.searchParams.get("author")
-        || u.searchParams.get("name")
-        || u.searchParams.get("autor")
-        || ""
-      ).trim();
     }
 
     function normalizeText(value) {
       return String(value || "")
         .normalize("NFD")
         .replace(/[̀-ͯ]/g, "")
-        .replace(/[\s ]+/g, " ")
-        .replace(/[.,;:!?()[\]{}'"`´’“”]+/g, " ")
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, " ")
         .trim()
-        .toLowerCase();
+        .replace(/\s+/g, " ");
     }
 
-    function authorNameKeys(value) {
+    function splitNames(value) {
+      return String(value || "")
+        .split(/\s*;\s*/)
+        .map(v => String(v || "").trim())
+        .filter(Boolean);
+    }
+
+    function buildNameVariants(value) {
       const raw = String(value || "").trim();
+      const out = new Set();
       if (!raw) return [];
-      const keys = new Set();
-      const add = (v) => {
-        const n = normalizeText(v);
-        if (n) keys.add(n);
-      };
-      add(raw);
-      if (raw.includes(',')) {
-        const parts = raw.split(',').map(s => s.trim()).filter(Boolean);
-        if (parts.length >= 2) add(parts.slice(1).join(' ') + ' ' + parts[0]);
+      out.add(raw);
+      const norm = normalizeText(raw);
+      if (norm) out.add(norm);
+      if (raw.includes(",")) {
+        const bits = raw.split(",").map(v => v.trim()).filter(Boolean);
+        if (bits.length >= 2) {
+          const swapped = `${bits.slice(1).join(" ")} ${bits[0]}`.trim();
+          if (swapped) {
+            out.add(swapped);
+            const sn = normalizeText(swapped);
+            if (sn) out.add(sn);
+          }
+        }
       } else {
-        const parts = raw.split(/\s+/).filter(Boolean);
-        if (parts.length >= 2) add(parts[parts.length - 1] + ', ' + parts.slice(0, -1).join(' '));
-      }
-      return [...keys];
-    }
-
-    async function fetchAuthorCandidates() {
-      const datasets = [];
-      const sources = [
-        { schema: "api", table: "authors_public" },
-        { table: "v_authors_public" },
-        { table: "authors_public" },
-        { table: "authors" },
-      ];
-      for (const src of sources) {
-        const qb = src.schema ? supabase.schema(src.schema).from(src.table) : supabase.from(src.table);
-        const { data, error } = await qb.select("id, preferred_name, sort_name, birth_year, death_year, country, biography, notes, viaf_id, isni, wikidata_id, photo_object_path, source_kind, source_label, books_count").order("id", { ascending: true });
-        if (!error && Array.isArray(data) && data.length) datasets.push(data);
-      }
-      datasets.sort((a, b) => b.length - a.length);
-      return datasets[0] || [];
-    }
-
-    function resolveAuthorFromCandidates(candidates, rawName) {
-      const wanted = authorNameKeys(rawName);
-      if (!wanted.length || !Array.isArray(candidates) || !candidates.length) return null;
-      let best = null;
-      let bestScore = -1;
-      for (const row of candidates) {
-        const keys = [
-          ...authorNameKeys(row?.preferred_name),
-          ...authorNameKeys(row?.sort_name),
-        ];
-        if (!keys.length) continue;
-        let score = 0;
-        for (const key of keys) {
-          if (wanted.includes(key)) score = Math.max(score, 100);
-          else if (wanted.some(w => key.includes(w) || w.includes(key))) score = Math.max(score, 60);
-        }
-        if (score > bestScore) {
-          best = row;
-          bestScore = score;
+        const bits = raw.split(/\s+/).filter(Boolean);
+        if (bits.length >= 2) {
+          const swapped = `${bits[bits.length - 1]}, ${bits.slice(0, -1).join(" ")}`.trim();
+          out.add(swapped);
+          const sn = normalizeText(swapped);
+          if (sn) out.add(sn);
         }
       }
-      return bestScore >= 60 ? best : null;
+      return Array.from(out);
+    }
+
+    function getAuthorParamsFromUrl() {
+      const u = new URL(location.href);
+      const rawId = (u.searchParams.get("id") || u.searchParams.get("author_id") || "").trim();
+      const n = Number(rawId);
+      const authorId = Number.isFinite(n) && n > 0 ? n : null;
+      const authorName = (
+        u.searchParams.get("author")
+        || u.searchParams.get("name")
+        || u.searchParams.get("autor")
+        || ""
+      ).trim();
+      return { authorId, authorName };
     }
 
     async function setupContaButton() {
@@ -392,10 +362,8 @@
     function yearsLabel(birth, death) {
       const hasBirth = birth !== null && birth !== undefined && String(birth).trim() !== "" && String(birth).trim().toLowerCase() !== "null";
       const hasDeath = death !== null && death !== undefined && String(death).trim() !== "" && String(death).trim().toLowerCase() !== "null";
-
       const b = hasBirth ? String(birth).trim() : "";
       const d = hasDeath ? String(death).trim() : "";
-
       if (b && d) return `${b}–${d}`;
       if (b && !d) return `${b} /`;
       if (!b && d) return `/ ${d}`;
@@ -410,12 +378,9 @@
     function buildPhotoCandidates(pathOrUrl) {
       const raw = String(pathOrUrl || "").trim();
       if (!raw) return [];
-
       if (/^https?:\/\//i.test(raw)) return [raw];
-
       const stripped = raw.replace(/^\/+/, "");
       const withoutPrefix = stripped.replace(/^(autor|authors|covers)\//i, "");
-
       const candidates = [
         supabase.storage.from("authors").getPublicUrl(stripped)?.data?.publicUrl || "",
         supabase.storage.from("autor").getPublicUrl(stripped)?.data?.publicUrl || "",
@@ -424,7 +389,6 @@
         supabase.storage.from("autor").getPublicUrl(withoutPrefix)?.data?.publicUrl || "",
         supabase.storage.from("covers").getPublicUrl(withoutPrefix)?.data?.publicUrl || "",
       ];
-
       return uniqueStrings(candidates);
     }
 
@@ -435,7 +399,6 @@
         img.onerror = null;
         return;
       }
-
       img.onerror = () => tryLoadImage(img, box, candidates, idx + 1);
       img.onload = () => {
         img.onerror = null;
@@ -448,103 +411,108 @@
       const box = $("photoBox");
       const img = $("photoImg");
       const candidates = buildPhotoCandidates(pathOrUrl);
-
       if (!candidates.length) {
         box.classList.add("empty");
         img.removeAttribute("src");
         img.onerror = null;
         return;
       }
-
       tryLoadImage(img, box, candidates, 0);
     }
 
-    async function tryMaybeSingle(sources, id) {
-      for (const src of sources) {
-        const qb = src.schema
-          ? supabase.schema(src.schema).from(src.table)
-          : supabase.from(src.table);
-
-        const { data, error } = await qb.select("*").eq("id", id).maybeSingle();
-        if (!error && data) return { data, source: src };
+    async function fetchRestRows(path, schemaName = "public") {
+      try {
+        const headers = {
+          apikey: SUPABASE_ANON_KEY,
+          Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
+          Accept: "application/json"
+        };
+        if (schemaName && schemaName !== "public") headers["Accept-Profile"] = schemaName;
+        const res = await fetch(`${SUPABASE_URL}/rest/v1/${path}`, { headers });
+        if (!res.ok) return [];
+        const text = await res.text();
+        return text ? JSON.parse(text) : [];
+      } catch (_) {
+        return [];
       }
-      return { data: null, source: null };
     }
 
-    async function tryMany(sources, authorId) {
-      for (const src of sources) {
-        const qb = src.schema
-          ? supabase.schema(src.schema).from(src.table)
-          : supabase.from(src.table);
-
-        const { data, error } = await qb.select("*").eq("author_id", authorId).order("ord", { ascending: true }).order("titulo", { ascending: true });
-        if (!error && Array.isArray(data)) return { data, source: src };
+    function chooseLargestDataset(...datasets) {
+      let chosen = [];
+      for (const dataset of datasets) {
+        if (Array.isArray(dataset) && dataset.length > chosen.length) chosen = dataset;
       }
-      return { data: [], source: null };
+      return chosen;
+    }
+
+    async function loadAuthorsDataset() {
+      const select = encodeURIComponent("id,preferred_name,sort_name,biography,notes,birth_year,death_year,country,books_count,viaf_id,isni,wikidata_id,photo_object_path,source_kind,source_label");
+      const [v1, a1, a2] = await Promise.all([
+        fetchRestRows(`v_authors_public?select=${select}&order=id.asc`, "public"),
+        fetchRestRows(`authors_public?select=${select}&order=id.asc`, "api"),
+        fetchRestRows(`authors_public?select=${select}&order=id.asc`, "public")
+      ]);
+      return chooseLargestDataset(v1, a1, a2);
+    }
+
+    function resolveAuthorRecord(authors, authorId, authorName) {
+      const rows = Array.isArray(authors) ? authors : [];
+      if (authorId) {
+        const byId = rows.find(r => Number(r?.id) === Number(authorId));
+        if (byId) return byId;
+      }
+      const namesToTry = buildNameVariants(authorName);
+      if (!namesToTry.length) return null;
+      const wanted = new Set(namesToTry.map(normalizeText).filter(Boolean));
+      for (const row of rows) {
+        const keys = [
+          ...buildNameVariants(row?.preferred_name),
+          ...buildNameVariants(row?.sort_name)
+        ].map(normalizeText).filter(Boolean);
+        if (keys.some(k => wanted.has(k))) return row;
+      }
+      return null;
     }
 
     function uniqBooks(rows) {
       const seen = new Set();
       const out = [];
       for (const row of rows || []) {
-        const key = String(row?.bib_ref || row?.id || "").trim();
-        if (!key || seen.has(key)) continue;
+        const key = String(row?.bib_ref || row?.id || "").trim() || JSON.stringify(row);
+        if (seen.has(key)) continue;
         seen.add(key);
         out.push(row);
       }
       return out;
     }
 
-    async function fetchBooksByAuthorText(author) {
-      const names = [
-        String(author?.sort_name || "").trim(),
-        String(author?.preferred_name || "").trim()
-      ].filter(Boolean);
-
-      if (!names.length) return [];
-
+    async function fetchBooksByAuthor(author) {
+      const names = uniqueStrings([
+        author?.preferred_name,
+        author?.sort_name,
+      ].flatMap(buildNameVariants));
       const sources = [
-        { schema: "api", table: "books_public" },
-        { table: "books_public" },
-        { table: "v_books_public" },
+        ["api", "books_public"],
+        ["public", "books_public"],
+        ["public", "v_books_public"],
       ];
-
       const results = [];
-
-      for (const src of sources) {
+      for (const [schemaName, tableName] of sources) {
         for (const name of names) {
-          const qb = src.schema
-            ? supabase.schema(src.schema).from(src.table)
-            : supabase.from(src.table);
-
-          const exact = await qb.select("*").eq("autor", name).order("titulo", { ascending: true });
-          if (!exact.error && Array.isArray(exact.data) && exact.data.length) {
-            results.push(...exact.data);
-          }
-
-          const qb2 = src.schema
-            ? supabase.schema(src.schema).from(src.table)
-            : supabase.from(src.table);
-
-          const contains = await qb2.select("*").ilike("autor", `%${name}%`).order("titulo", { ascending: true });
-          if (!contains.error && Array.isArray(contains.data) && contains.data.length) {
-            results.push(...contains.data);
-          }
+          const select = encodeURIComponent("id,bib_ref,autor,titulo,subtitulo,ano,editora");
+          const exact = await fetchRestRows(`${tableName}?select=${select}&autor=eq.${encodeURIComponent(name)}&order=titulo.asc`, schemaName);
+          if (exact.length) results.push(...exact);
+          const contains = await fetchRestRows(`${tableName}?select=${select}&autor=ilike.*${encodeURIComponent(name)}*&order=titulo.asc`, schemaName);
+          if (contains.length) results.push(...contains);
         }
       }
-
       return uniqBooks(results);
     }
 
     function sortBooks(rows) {
       return [...(rows || [])].sort((a, b) => {
-        const ao = Number.isFinite(Number(a?.ord)) ? Number(a.ord) : 9999;
-        const bo = Number.isFinite(Number(b?.ord)) ? Number(b.ord) : 9999;
-        if (ao !== bo) return ao - bo;
-
         const at = String(a?.titulo || "").localeCompare(String(b?.titulo || ""), "pt-BR", { sensitivity: "base" });
         if (at !== 0) return at;
-
         return String(a?.bib_ref || "").localeCompare(String(b?.bib_ref || ""), "pt-BR", { sensitivity: "base" });
       });
     }
@@ -552,16 +520,12 @@
     function renderBooks(books) {
       const list = $("booksList");
       const empty = $("booksEmpty");
-
       list.innerHTML = "";
-
       if (!books.length) {
         empty.style.display = "";
         return;
       }
-
       empty.style.display = "none";
-
       for (const row of books) {
         const a = document.createElement("a");
         a.className = "book-card";
@@ -574,11 +538,8 @@
         const subtitle = document.createElement("div");
         subtitle.className = "book-subtitle";
         const sub = String(row.subtitulo || "").trim();
-        if (sub) {
-          subtitle.textContent = sub;
-        } else {
-          subtitle.style.display = "none";
-        }
+        if (sub) subtitle.textContent = sub;
+        else subtitle.style.display = "none";
 
         const meta1 = document.createElement("div");
         meta1.className = "book-meta";
@@ -589,10 +550,7 @@
 
         const meta2 = document.createElement("div");
         meta2.className = "book-meta";
-        meta2.textContent = [
-          row.editora || "",
-          row.role ? `função: ${row.role}` : "",
-        ].filter(Boolean).join(" · ") || "";
+        meta2.textContent = [row.editora || ""].filter(Boolean).join(" · ") || "";
 
         a.append(title, subtitle, meta1, meta2);
         list.appendChild(a);
@@ -600,40 +558,7 @@
     }
 
     async function loadAuthor() {
-      let authorId = getAuthorIdFromUrl();
-      const authorName = getAuthorNameFromUrl();
-
-      const authorSources = [
-        { schema: "api", table: "authors_public" },
-        { table: "v_authors_public" },
-        { table: "authors_public" },
-        { table: "authors" },
-      ];
-
-      const booksSources = [
-        { schema: "api", table: "author_books_public" },
-        { table: "author_books_public" },
-      ];
-
-      let author = null;
-      let linkedBooks = [];
-      let resolvedByName = false;
-
-      if (authorId) {
-        const authorRes = await tryMaybeSingle(authorSources, authorId);
-        author = authorRes.data || null;
-      }
-
-      if (!author && authorName) {
-        const candidates = await fetchAuthorCandidates();
-        const matched = resolveAuthorFromCandidates(candidates, authorName);
-        if (matched?.id) {
-          authorId = Number(matched.id) || matched.id;
-          resolvedByName = true;
-          const authorRes = await tryMaybeSingle(authorSources, authorId);
-          author = authorRes.data || matched;
-        }
-      }
+      const { authorId, authorName } = getAuthorParamsFromUrl();
 
       if (!authorId && !authorName) {
         $("nameLine").textContent = "Autor não encontrado";
@@ -644,45 +569,36 @@
         return;
       }
 
-      if (authorId) {
-        const booksRes = await tryMany(booksSources, authorId);
-        linkedBooks = booksRes.data || [];
-      }
+      const authors = await loadAuthorsDataset();
+      const author = resolveAuthorRecord(authors, authorId, authorName);
 
       if (!author) {
-        $("nameLine").textContent = authorName || "Autor não encontrado";
+        $("nameLine").textContent = "Autor não encontrado";
         $("bioLine").textContent = "Não encontrei este autor nas vistas públicas.";
         setPhoto("");
         setStatus("Autor não encontrado.", "warn");
-        renderBooks([]);
+        $("booksEmpty").style.display = "";
         return;
       }
 
-      const textMatchedBooks = await fetchBooksByAuthorText({
-        sort_name: author.sort_name || authorName || "",
-        preferred_name: author.preferred_name || authorName || ""
-      });
-      const books = sortBooks(uniqBooks([...(linkedBooks || []), ...(textMatchedBooks || [])]));
+      const books = sortBooks(await fetchBooksByAuthor(author));
 
       $("nameLine").textContent = author.preferred_name || author.sort_name || authorName || "Sem nome";
       setLine("sortLine", author.sort_name && author.sort_name !== author.preferred_name ? author.sort_name : "");
       $("bioLine").textContent = String(author.biography || author.notes || "—").trim() || "—";
 
-      setPill("authorIdPill", "id", String(author.id || authorId || ""), true);
-      setPill("yearsPill", "nascimento - falecimento", yearsLabel(author.birth_year, author.death_year));
+      setPill("yearsPill", "nascimento - falecimento", yearsLabel(author.birth_year, author.death_year), true);
       setPill("countryPill", "País", author.country || "");
-      setPill("booksCountPill", "livros", String(books.length || author.books_count || 0));
+      setPill("booksCountPill", "livros", String(books.length || author.books_count || 0), true);
       setPill("viafPill", "VIAF", author.viaf_id || "");
       setPill("isniPill", "ISNI", author.isni || "");
       setPill("wikidataPill", "Wikidata", author.wikidata_id || "");
-
       const sourceLabel = [author.source_kind || "", author.source_label || ""].filter(Boolean).join(" · ");
-      setPill("sourcePill", "fonte", sourceLabel || (resolvedByName ? "resolvido por nome" : ""));
-
+      setPill("sourcePill", "fonte", sourceLabel);
       setPhoto(author.photo_object_path || "");
-      renderBooks(books || []);
+      renderBooks(books);
       setStatus("", "");
-      document.title = `BLMF — ${author.preferred_name || author.sort_name || authorName || "Autor"}`;
+      document.title = `BLMF — ${author.preferred_name || author.sort_name || "Autor"}`;
     }
 
     await setupContaButton();
