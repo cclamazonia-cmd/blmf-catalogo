@@ -284,18 +284,15 @@
 
     function getAuthorNameFromUrl() {
       const u = new URL(location.href);
-      const raw = (
+      return String(
         u.searchParams.get("author")
         || u.searchParams.get("name")
         || u.searchParams.get("autor")
-        || u.searchParams.get("preferred_name")
-        || u.searchParams.get("sort_name")
         || ""
       ).trim();
-      return raw || null;
     }
 
-    function normalizeText(value) {
+    function normalizeAuthorKey(value) {
       return String(value || "")
         .normalize("NFD")
         .replace(/[̀-ͯ]/g, "")
@@ -305,23 +302,19 @@
         .replace(/\s+/g, " ");
     }
 
-    function buildNameCandidates(name) {
-      const txt = String(name || "").trim();
+    function authorNameVariants(value) {
+      const txt = String(value || "").trim();
       const out = new Set();
-      if (!txt) return [];
-      out.add(normalizeText(txt));
-      if (txt.includes(",")) {
-        const bits = txt.split(",").map(v => v.trim()).filter(Boolean);
-        if (bits.length >= 2) out.add(normalizeText(bits.slice(1).join(" ") + " " + bits[0]));
-      } else {
-        const bits = txt.split(/\s+/).filter(Boolean);
+      const base = normalizeAuthorKey(txt);
+      if (base) out.add(base);
+      if (txt.includes(',')) {
+        const bits = txt.split(',').map(v => v.trim()).filter(Boolean);
         if (bits.length >= 2) {
-          const last = bits[bits.length - 1];
-          const firsts = bits.slice(0, -1).join(" ");
-          out.add(normalizeText(`${last}, ${firsts}`));
+          const swapped = normalizeAuthorKey(bits.slice(1).join(' ') + ' ' + bits[0]);
+          if (swapped) out.add(swapped);
         }
       }
-      return [...out].filter(Boolean);
+      return Array.from(out);
     }
 
     async function fetchRestRows(path, schemaName) {
@@ -329,9 +322,9 @@
         const headers = {
           apikey: SUPABASE_ANON_KEY,
           Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
-          Accept: "application/json"
+          Accept: 'application/json'
         };
-        if (schemaName && schemaName !== "public") headers["Accept-Profile"] = schemaName;
+        if (schemaName && schemaName !== 'public') headers['Accept-Profile'] = schemaName;
         const res = await fetch(`${SUPABASE_URL}/rest/v1/${path}`, { headers });
         if (!res.ok) return [];
         const text = await res.text();
@@ -341,34 +334,36 @@
       }
     }
 
-    async function resolveAuthorByName(authorName) {
-      const requested = buildNameCandidates(authorName);
-      if (!requested.length) return null;
-
-      const datasets = await Promise.all([
-        fetchRestRows(`v_authors_public?select=${encodeURIComponent("id,preferred_name,sort_name,biography,notes,birth_year,death_year,country,books_count,viaf_id,isni,wikidata_id,photo_object_path,source_kind,source_label")}&order=id.asc`, "public"),
-        fetchRestRows(`authors_public?select=${encodeURIComponent("id,preferred_name,sort_name,biography,notes,birth_year,death_year,country,books_count,viaf_id,isni,wikidata_id,photo_object_path,source_kind,source_label")}&order=id.asc`, "api"),
-        fetchRestRows(`authors_public?select=${encodeURIComponent("id,preferred_name,sort_name,biography,notes,birth_year,death_year,country,books_count,viaf_id,isni,wikidata_id,photo_object_path,source_kind,source_label")}&order=id.asc`, "public")
-      ]);
-
-      const rows = datasets.reduce((best, cur) => Array.isArray(cur) && cur.length > best.length ? cur : best, []);
-      let best = null;
-
-      for (const row of rows) {
-        const keys = [
-          ...buildNameCandidates(row?.preferred_name),
-          ...buildNameCandidates(row?.sort_name)
-        ];
-        const hit = requested.some(k => keys.includes(k));
-        if (!hit) continue;
-
-        const exact = requested.includes(normalizeText(row?.preferred_name)) || requested.includes(normalizeText(row?.sort_name));
-        if (!best || (exact && !best._exact)) {
-          best = { ...row, _exact: exact };
-        }
+    function chooseLargestDataset(...datasets) {
+      let chosen = [];
+      for (const dataset of datasets) {
+        if (Array.isArray(dataset) && dataset.length > chosen.length) chosen = dataset;
       }
+      return chosen;
+    }
 
-      return best;
+    async function loadAuthorsPublicDataset() {
+      const select = 'id,preferred_name,sort_name,biography,notes,birth_year,death_year,country,books_count,viaf_id,isni,wikidata_id,photo_object_path,source_kind,source_label';
+      const [vAuthorsPublic, authorsPublicApi, authorsPublicPublic] = await Promise.all([
+        fetchRestRows(`v_authors_public?select=${encodeURIComponent(select)}&order=id.asc`, 'public'),
+        fetchRestRows(`authors_public?select=${encodeURIComponent(select)}&order=id.asc`, 'api'),
+        fetchRestRows(`authors_public?select=${encodeURIComponent(select)}&order=id.asc`, 'public')
+      ]);
+      return chooseLargestDataset(vAuthorsPublic, authorsPublicApi, authorsPublicPublic);
+    }
+
+    function findAuthorInDataset(dataset, authorId, authorName) {
+      const rows = Array.isArray(dataset) ? dataset : [];
+      if (authorId) {
+        const byId = rows.find(row => Number(row?.id) === Number(authorId));
+        if (byId) return byId;
+      }
+      const variants = authorNameVariants(authorName);
+      if (!variants.length) return null;
+      return rows.find(row => {
+        const keys = [row?.preferred_name, row?.sort_name].flatMap(authorNameVariants);
+        return variants.some(v => keys.includes(v));
+      }) || null;
     }
 
     async function setupContaButton() {
@@ -505,10 +500,12 @@
     }
 
     async function fetchBooksByAuthorText(author) {
-      const names = [
-        String(author?.sort_name || "").trim(),
-        String(author?.preferred_name || "").trim()
-      ].filter(Boolean);
+      const names = typeof author === 'string'
+        ? [String(author || '').trim()].filter(Boolean)
+        : [
+            String(author?.sort_name || "").trim(),
+            String(author?.preferred_name || "").trim()
+          ].filter(Boolean);
 
       if (!names.length) return [];
 
@@ -612,6 +609,15 @@
       const authorId = getAuthorIdFromUrl();
       const authorName = getAuthorNameFromUrl();
 
+      if (!authorId && !authorName) {
+        $("nameLine").textContent = "Autor não encontrado";
+        $("bioLine").textContent = "Faltou um id válido ou um nome de autor na URL.";
+        setPhoto("");
+        setStatus("Informe um id de autor válido ou um nome de autor.", "warn");
+        $("booksEmpty").style.display = "";
+        return;
+      }
+
       const authorSources = [
         { schema: "api", table: "authors_public" },
         { table: "v_authors_public" },
@@ -625,31 +631,41 @@
       ];
 
       let author = null;
+      const authorsDataset = await loadAuthorsPublicDataset();
+      author = findAuthorInDataset(authorsDataset, authorId, authorName);
+
+      if (!author && authorId) {
+        const found = await tryMaybeSingle(authorSources, authorId);
+        author = found?.data || null;
+      }
+
       let linkedBooks = [];
-
-      if (authorId) {
-        const foundAuthor = await tryMaybeSingle(authorSources, authorId);
-        author = foundAuthor.data || null;
-
-        const foundBooks = await tryMany(booksSources, authorId);
-        linkedBooks = foundBooks.data || [];
+      if (author?.id) {
+        const foundBooks = await tryMany(booksSources, author.id);
+        linkedBooks = foundBooks?.data || [];
       }
 
-      if (!author && authorName) {
-        author = await resolveAuthorByName(authorName);
-        if (author?.id) {
-          const foundBooks = await tryMany(booksSources, author.id);
-          linkedBooks = foundBooks.data || [];
-        }
-      }
+      const textMatchedBooks = await fetchBooksByAuthorText(author || authorName || "");
+      const books = sortBooks(uniqBooks([...(linkedBooks || []), ...(textMatchedBooks || [])]));
 
-      if (!authorId && !authorName) {
-        $("nameLine").textContent = "Autor não encontrado";
-        $("bioLine").textContent = "Faltou um id válido ou um nome de autor na URL.";
-        setPhoto("");
-        setStatus("Abra esta página a partir de um nome de autor clicável no catálogo.", "warn");
-        $("booksEmpty").style.display = "";
-        return;
+      if (!author && books.length) {
+        author = {
+          id: authorId || "",
+          preferred_name: authorName || "Autor",
+          sort_name: authorName || "Autor",
+          biography: "",
+          notes: "",
+          birth_year: "",
+          death_year: "",
+          country: "",
+          books_count: books.length,
+          viaf_id: "",
+          isni: "",
+          wikidata_id: "",
+          photo_object_path: "",
+          source_kind: "",
+          source_label: ""
+        };
       }
 
       if (!author) {
@@ -661,14 +677,10 @@
         return;
       }
 
-      const textMatchedBooks = await fetchBooksByAuthorText(author);
-      const books = sortBooks(uniqBooks([...(linkedBooks || []), ...(textMatchedBooks || [])]));
-
-      $("nameLine").textContent = author.preferred_name || author.sort_name || "Sem nome";
+      $("nameLine").textContent = author.preferred_name || author.sort_name || authorName || "Sem nome";
       setLine("sortLine", author.sort_name && author.sort_name !== author.preferred_name ? author.sort_name : "");
       $("bioLine").textContent = (author.biography || author.notes || "—").trim() || "—";
 
-      setPill("authorIdPill", "id", String(author.id || ""), true);
       setPill("yearsPill", "nascimento - falecimento", yearsLabel(author.birth_year, author.death_year));
       setPill("countryPill", "País", author.country || "");
       setPill("booksCountPill", "livros", String(books.length || author.books_count || 0));
@@ -683,7 +695,7 @@
 
       renderBooks(books || []);
       setStatus("", "");
-      document.title = `BLMF — ${author.preferred_name || author.sort_name || "Autor"}`;
+      document.title = `BLMF — ${author.preferred_name || author.sort_name || authorName || "Autor"}`;
     }
 
     await setupContaButton();
