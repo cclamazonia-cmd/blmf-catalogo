@@ -187,7 +187,7 @@
 
         <div class="contentbox">
           <h1 class="title" id="nameLine">Carregando…</h1>
-          
+          <div class="subtitle" id="sortLine" style="display:none"></div>
 
           <div class="meta" style="margin-top:12px">
             <div class="pill" id="yearsPill" style="display:none"></div>
@@ -426,6 +426,21 @@
       return [];
     }
 
+    async function fetchAuthorPageById(authorId) {
+      if (!authorId) return null;
+      try {
+        const { data, error } = await supabase
+          .from("v_author_page_public")
+          .select("*")
+          .eq("id", authorId)
+          .limit(1)
+          .maybeSingle();
+        if (!error && data) return data;
+      } catch (_) {}
+      const rows = await fetchRest(`v_author_page_public?select=*&id=eq.${encodeURIComponent(authorId)}&limit=1`);
+      return rows[0] || null;
+    }
+
     async function fetchBooksByAuthorName(bookName) {
       const out = [];
       try {
@@ -449,6 +464,9 @@
 
     async function fetchAuthorById(authorId) {
       if (!authorId) return null;
+
+      const fromPage = await fetchAuthorPageById(authorId);
+      if (fromPage) return fromPage;
 
       const fromView = await fetchViewOneById("v_authors_public", authorId);
       if (fromView) return fromView;
@@ -533,9 +551,19 @@
     }
 
     async function fetchLinkedBooks(authorId, author) {
+      if (author && Array.isArray(author.books_json) && author.books_json.length) {
+        return author.books_json;
+      }
+
       let rows = [];
       if (authorId) {
-        rows = await fetchViewManyByAuthorId("author_books_public", authorId);
+        rows = await fetchViewManyByAuthorId("v_author_books_public_compat", authorId);
+        if (!rows.length) {
+          rows = await fetchViewManyByAuthorId("author_books_public", authorId);
+        }
+        if (!rows.length) {
+          rows = await fetchRest(`v_author_books_public_compat?select=*&author_id=eq.${encodeURIComponent(authorId)}&order=ord.asc,titulo.asc`);
+        }
         if (!rows.length) {
           rows = await fetchRest(`author_books_public?select=*&author_id=eq.${encodeURIComponent(authorId)}&order=ord.asc,titulo.asc`);
         }
@@ -543,21 +571,11 @@
       if (Array.isArray(rows) && rows.length) return rows;
 
       const names = [author?.sort_name, author?.preferred_name].map(v => String(v || "").trim()).filter(Boolean);
-      const out = [];
       for (const name of names) {
-        out.push(...await fetchBooksByAuthorName(name));
-        const exact = await fetchRest(`books_public?select=*&autor=eq.${encodeURIComponent(name)}&order=titulo.asc`);
-        if (Array.isArray(exact) && exact.length) out.push(...exact);
-        const broad = await fetchRest(`books_public?select=*&autor=ilike.${encodeURIComponent(`%${name}%`)}&order=titulo.asc`);
-        if (Array.isArray(broad) && broad.length) out.push(...broad);
+        rows = await fetchBooksByAuthorName(name);
+        if (Array.isArray(rows) && rows.length) return rows;
       }
-      const seen = new Set();
-      return out.filter(row => {
-        const key = String(row?.bib_ref || row?.id || "").trim();
-        if (!key || seen.has(key)) return false;
-        seen.add(key);
-        return true;
-      });
+      return [];
     }
 
     function sortBooks(rows) {
@@ -648,8 +666,14 @@
       }
 
       let author = null;
-      if (authorId) author = await fetchAuthorById(authorId);
-      if (!author && authorName) author = await fetchAuthorByName(authorName);
+      if (authorId) author = await fetchAuthorPageById(authorId);
+      if (!author && authorId) author = await fetchAuthorById(authorId);
+      if (!author && authorName) {
+        const authorByName = await fetchAuthorByName(authorName);
+        if (authorByName?.id) {
+          author = await fetchAuthorPageById(authorByName.id) || authorByName;
+        }
+      }
 
       if (!author) {
         $("nameLine").textContent = "Autor não encontrado";
@@ -663,11 +687,12 @@
       const books = sortBooks(await fetchLinkedBooks(author.id, author));
 
       $("nameLine").textContent = author.preferred_name || author.sort_name || "Sem nome";
+      setLine("sortLine", "");
       $("bioLine").textContent = String(author.biography || author.notes || "—").trim() || "—";
 
       setPill("yearsPill", "nascimento - falecimento", yearsLabel(author.birth_year, author.death_year));
       setPill("countryPill", "País", author.country || "");
-      setPill("booksCountPill", "livros", String(books.length || author.books_count || 0));
+      setPill("booksCountPill", "livros", String(author.books_count_resolved || books.length || author.books_count || 0));
       setPill("viafPill", "VIAF", author.viaf_id || "");
       setPill("isniPill", "ISNI", author.isni || "");
       setPill("wikidataPill", "Wikidata", author.wikidata_id || "");
