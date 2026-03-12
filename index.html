@@ -669,9 +669,11 @@ function buildAuthorMarkup(authorValue, authorIdsValue, terms) {
     const authorId = ids[idx] ?? singleId ?? null;
     const label = highlightHTML(name, terms);
     if (authorId) {
-      return `<button class="tag-link author-chip" type="button" data-author="${escapeHTML(name)}" data-author-id="${authorId}">${label}</button>`;
+      const href = `${AUTOR_URL}?id=${encodeURIComponent(authorId)}&author=${encodeURIComponent(name)}`;
+      return `<a class="tag-link author-chip" href="${href}" data-author="${escapeHTML(name)}" data-author-id="${authorId}">${label}</a>`;
     }
-    return `<span class="tag-link author-chip-static">${label}</span>`;
+    const href = `${AUTOR_URL}?author=${encodeURIComponent(name)}`;
+    return `<a class="tag-link author-chip author-chip-fallback" href="${href}" data-author="${escapeHTML(name)}">${label}</a>`;
   });
 
   return parts.length === 1 ? parts[0] : `<div class="author-chip-list">${parts.join('')}</div>`;
@@ -1248,21 +1250,18 @@ async function handleResultActions(e) {
   }
   const authorBtn = e.target.closest('.author-chip');
   if (authorBtn) {
-    const href = (authorBtn.getAttribute('href') || '').trim();
-    const authorId = (authorBtn.dataset.authorId || '').trim();
-    const authorName = (authorBtn.dataset.author || '').trim();
+    const href = authorBtn.getAttribute('href');
     if (href) {
       location.assign(href);
-    } else if (authorId || authorName) {
-      const u = new URL(AUTOR_URL, location.href);
-      if (authorId) {
-        u.searchParams.set('id', authorId);
-        u.searchParams.set('author_id', authorId);
-      }
-      if (authorName) {
-        u.searchParams.set('author', authorName);
-      }
-      location.assign(u.toString());
+      return;
+    }
+    const authorId = (authorBtn.dataset.authorId || '').trim();
+    const authorName = (authorBtn.dataset.author || '').trim();
+    if (authorId || authorName) {
+      const params = new URLSearchParams();
+      if (authorId) params.set('id', authorId);
+      if (authorName) params.set('author', authorName);
+      location.assign(`${AUTOR_URL}?${params.toString()}`);
     }
     return;
   }
