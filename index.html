@@ -686,6 +686,12 @@ function buildAuthorMarkup(authorValue, authorIdsValue, terms) {
 
   return parts.length === 1 ? parts[0] : `<div class="author-chip-list">${parts.join('')}</div>`;
 }
+function extractAuthorIdsFromJson(authorsJson) {
+  if (!Array.isArray(authorsJson)) return [];
+  return authorsJson
+    .map(item => normalizeAuthorIdValue(item?.id ?? item?.author_id ?? item))
+    .filter(Boolean);
+}
 async function fetchRestRows(path, schemaName) {
   try {
     const headers = {
@@ -810,18 +816,51 @@ function prepareRows() {
 }
 async function loadRowsFromSupabase() {
   try {
+    const headers = {
+      apikey: SUPABASE_ANON_KEY,
+      Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
+      Accept: 'application/json'
+    };
+
+    const canonicalSelect = 'id,bib_ref,titulo,autor_texto_livro,autor_exibicao,author_ids,authors_json,ano,editora,cdd,loanable,available_count,created_at';
+    const canonicalUrl = `${SUPABASE_URL}/rest/v1/v_books_catalog_public?select=${encodeURIComponent(canonicalSelect)}&order=titulo.asc`;
+    const canonicalRes = await fetch(canonicalUrl, { headers });
+    const canonicalText = await canonicalRes.text();
+
+    if (canonicalRes.ok) {
+      const canonicalData = canonicalText ? JSON.parse(canonicalText) : [];
+      if (Array.isArray(canonicalData) && canonicalData.length) {
+        return canonicalData.map(r => {
+          const authorIdsList = extractAuthorIdsFromJson(r.authors_json);
+          const singleAuthorId = authorIdsList.length === 1 ? authorIdsList[0] : null;
+          return {
+            id: r.id ?? null,
+            bib_ref: r.bib_ref ?? '',
+            autor: r.autor_exibicao ?? r.autor_texto_livro ?? '',
+            autor_texto_livro: r.autor_texto_livro ?? '',
+            autor_exibicao: r.autor_exibicao ?? r.autor_texto_livro ?? '',
+            titulo: r.titulo ?? '',
+            ano: r.ano ?? '',
+            editora: r.editora ?? '',
+            cdd: r.cdd ?? '',
+            author_id: singleAuthorId,
+            author_ids: authorIdsList.length ? authorIdsList.join('; ') : '',
+            author_ids_list: authorIdsList,
+            authors_json: Array.isArray(r.authors_json) ? r.authors_json : [],
+            loanable: r.loanable === false ? false : true,
+            available_count: Number(r.available_count ?? 0) || 0,
+            created_at: r.created_at ?? null
+          };
+        });
+      }
+    }
+
     const select = 'id,bib_ref,autor,titulo,ano,editora,cdd,loanable,available_count,created_at,author_id';
     const url = `${SUPABASE_URL}/rest/v1/v_books_public?select=${encodeURIComponent(select)}&order=titulo.asc`;
     const [authorRelations, authorLookup, res] = await Promise.all([
       loadAuthorRelationsFromSupabase(),
       loadAuthorLookupFromSupabase(),
-      fetch(url, {
-        headers: {
-          apikey: SUPABASE_ANON_KEY,
-          Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
-          Accept: 'application/json'
-        }
-      })
+      fetch(url, { headers })
     ]);
     const text = await res.text();
     if (!res.ok) {
