@@ -668,10 +668,10 @@ function buildAuthorMarkup(authorValue, authorIdsValue, terms) {
   const parts = names.map((name, idx) => {
     const authorId = ids[idx] ?? singleId ?? null;
     const label = highlightHTML(name, terms);
-    if (authorId) {
-      return `<button class="tag-link author-chip" type="button" data-author="${escapeHTML(name)}" data-author-id="${authorId}">${label}</button>`;
-    }
-    return `<span class="tag-link author-chip-static">${label}</span>`;
+    const href = authorId
+      ? `${AUTOR_URL}?id=${encodeURIComponent(authorId)}&author_id=${encodeURIComponent(authorId)}&author=${encodeURIComponent(name)}`
+      : `${AUTOR_URL}?author=${encodeURIComponent(name)}`;
+    return `<a class="tag-link author-chip" href="${href}" data-author="${escapeHTML(name)}"${authorId ? ` data-author-id="${authorId}"` : ''}>${label}</a>`;
   });
 
   return parts.length === 1 ? parts[0] : `<div class="author-chip-list">${parts.join('')}</div>`;
@@ -1248,18 +1248,14 @@ async function handleResultActions(e) {
   }
   const authorBtn = e.target.closest('.author-chip');
   if (authorBtn) {
-    e.preventDefault();
-    e.stopPropagation();
+    const href = authorBtn.getAttribute('href');
+    if (href) return;
     const authorId = (authorBtn.dataset.authorId || '').trim();
     const authorName = (authorBtn.dataset.author || '').trim();
-    if (authorId || authorName) {
-      const qs = new URLSearchParams();
-      if (authorId) {
-        qs.set('id', authorId);
-        qs.set('author_id', authorId);
-      }
-      if (authorName) qs.set('author', authorName);
-      location.assign(`${AUTOR_URL}?${qs.toString()}`);
+    if (authorId) {
+      location.assign(`${AUTOR_URL}?id=${encodeURIComponent(authorId)}&author_id=${encodeURIComponent(authorId)}${authorName ? `&author=${encodeURIComponent(authorName)}` : ''}`);
+    } else if (authorName) {
+      location.assign(`${AUTOR_URL}?author=${encodeURIComponent(authorName)}`);
     }
     return;
   }
