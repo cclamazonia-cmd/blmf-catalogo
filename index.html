@@ -492,7 +492,7 @@ const SUPABASE_ANON_KEY = "sb_publishable_38cFV9vsGhmqMp-Z5gmV4w_HY6ReWSF";
 const GH_BASE = "https://cclamazonia-cmd.github.io";
 const LIVRO_URL = new URL("livro.html", location.href).toString();
 const AUTOR_URL = new URL("autor.html", location.href).toString();
-const AUTHOR_PAGE_VERSION = '20260312-4';
+const AUTHOR_PAGE_VERSION = '20260312-3';
 const CONTA_URL = `${GH_BASE}/blmf-conta/conta.html`;
 const CADASTRO_URL = `${GH_BASE}/blmf-conta/cadastro.html`;
 const PAINEL_URL = `${GH_BASE}/blmf-conta/painel.html`;
@@ -689,12 +689,6 @@ function buildAuthorMarkup(authorValue, authorIdsValue, terms) {
 
   return parts.length === 1 ? parts[0] : `<div class="author-chip-list">${parts.join('')}</div>`;
 }
-function extractAuthorIdsFromJson(authorsJson) {
-  if (!Array.isArray(authorsJson)) return [];
-  return authorsJson
-    .map(item => normalizeAuthorIdValue(item?.id ?? item?.author_id ?? item))
-    .filter(Boolean);
-}
 async function fetchRestRows(path, schemaName) {
   try {
     const headers = {
@@ -819,51 +813,18 @@ function prepareRows() {
 }
 async function loadRowsFromSupabase() {
   try {
-    const headers = {
-      apikey: SUPABASE_ANON_KEY,
-      Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
-      Accept: 'application/json'
-    };
-
-    const canonicalSelect = 'id,bib_ref,titulo,autor_texto_livro,autor_exibicao,author_ids,authors_json,ano,editora,cdd,loanable,available_count,created_at';
-    const canonicalUrl = `${SUPABASE_URL}/rest/v1/v_books_catalog_public?select=${encodeURIComponent(canonicalSelect)}&order=titulo.asc`;
-    const canonicalRes = await fetch(canonicalUrl, { headers });
-    const canonicalText = await canonicalRes.text();
-
-    if (canonicalRes.ok) {
-      const canonicalData = canonicalText ? JSON.parse(canonicalText) : [];
-      if (Array.isArray(canonicalData) && canonicalData.length) {
-        return canonicalData.map(r => {
-          const authorIdsList = extractAuthorIdsFromJson(r.authors_json);
-          const singleAuthorId = authorIdsList.length === 1 ? authorIdsList[0] : null;
-          return {
-            id: r.id ?? null,
-            bib_ref: r.bib_ref ?? '',
-            autor: r.autor_exibicao ?? r.autor_texto_livro ?? '',
-            autor_texto_livro: r.autor_texto_livro ?? '',
-            autor_exibicao: r.autor_exibicao ?? r.autor_texto_livro ?? '',
-            titulo: r.titulo ?? '',
-            ano: r.ano ?? '',
-            editora: r.editora ?? '',
-            cdd: r.cdd ?? '',
-            author_id: singleAuthorId,
-            author_ids: authorIdsList.length ? authorIdsList.join('; ') : '',
-            author_ids_list: authorIdsList,
-            authors_json: Array.isArray(r.authors_json) ? r.authors_json : [],
-            loanable: r.loanable === false ? false : true,
-            available_count: Number(r.available_count ?? 0) || 0,
-            created_at: r.created_at ?? null
-          };
-        });
-      }
-    }
-
     const select = 'id,bib_ref,autor,titulo,ano,editora,cdd,loanable,available_count,created_at,author_id';
     const url = `${SUPABASE_URL}/rest/v1/v_books_public?select=${encodeURIComponent(select)}&order=titulo.asc`;
     const [authorRelations, authorLookup, res] = await Promise.all([
       loadAuthorRelationsFromSupabase(),
       loadAuthorLookupFromSupabase(),
-      fetch(url, { headers })
+      fetch(url, {
+        headers: {
+          apikey: SUPABASE_ANON_KEY,
+          Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
+          Accept: 'application/json'
+        }
+      })
     ]);
     const text = await res.text();
     if (!res.ok) {
@@ -1309,8 +1270,11 @@ async function handleResultActions(e) {
     const authorName = (authorBtn.dataset.author || '').trim();
     if (authorId || authorName) {
       const params = new URLSearchParams();
-      if (authorId) params.set('id', authorId);
-      if (authorName) params.set('author', authorName);
+      if (authorId) {
+        params.set('id', authorId);
+      } else if (authorName) {
+        params.set('author', authorName);
+      }
       params.set('v', AUTHOR_PAGE_VERSION);
       params.set('_cb', `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`);
       location.assign(`${AUTOR_URL}?${params.toString()}`);
