@@ -193,7 +193,7 @@
       CADASTRO: `${GH_BASE}/blmf-conta/cadastro.html`,
       CONTA: `${GH_BASE}/blmf-conta/conta.html`,
       AUTOR: new URL("autor.html", location.href).toString(),
-      AUTHOR_PAGE_VERSION: '20260312-4',
+      AUTHOR_PAGE_VERSION: '20260312-3',
     };
 
     document.getElementById("btnCatalogo").href = ROUTES.CATALOGO;
@@ -328,13 +328,56 @@
       const host = $("authorLine");
       if (!host) return;
 
-      let names = splitAuthorDisplay(authorText);
+      const names = splitAuthorDisplay(authorText);
+      const bookAuthors = [];
 
-      const authorsJsonInitial = Array.isArray(bookRow?.authors_json) ? bookRow.authors_json : [];
-      if (!names.length && authorsJsonInitial.length) {
-        names = authorsJsonInitial
-          .map(row => String(row?.preferred_name || row?.sort_name || "").trim())
-          .filter(Boolean);
+      const rawJson = bookRow?.authors_json;
+      if (Array.isArray(rawJson)) {
+        bookAuthors.push(...rawJson);
+      } else if (typeof rawJson === "string" && rawJson.trim()) {
+        try {
+          const parsed = JSON.parse(rawJson);
+          if (Array.isArray(parsed)) bookAuthors.push(...parsed);
+        } catch (_) {}
+      }
+
+      if (!bookAuthors.length && bookRow?.id != null) {
+        try {
+          const rel = await supabase
+            .from("v_book_author_links_public")
+            .select("author_id, preferred_name, sort_name")
+            .eq("book_id", bookRow.id);
+
+          if (!rel.error && Array.isArray(rel.data) && rel.data.length) {
+            bookAuthors.push(...rel.data.map(row => ({
+              id: row.author_id,
+              preferred_name: row.preferred_name,
+              sort_name: row.sort_name
+            })));
+          }
+        } catch (_) {}
+      }
+
+      host.innerHTML = "";
+      host.classList.add("author-inline-wrap");
+
+      if (bookAuthors.length) {
+        bookAuthors.forEach((row, idx) => {
+          const label = String(row?.preferred_name || row?.sort_name || names[idx] || "").trim();
+          if (!label) return;
+          const a = document.createElement("a");
+          a.className = "author-card-link";
+          a.href = authorUrl(row?.id ?? row?.author_id ?? null, label);
+          a.textContent = label;
+          host.appendChild(a);
+          if (idx < bookAuthors.length - 1) {
+            const sep = document.createElement("span");
+            sep.className = "author-separator";
+            sep.textContent = ";";
+            host.appendChild(sep);
+          }
+        });
+        return;
       }
 
       if (!names.length) {
@@ -342,77 +385,11 @@
         return;
       }
 
-      let linkedAuthors = [];
-
-      const authorsJson = Array.isArray(bookRow?.authors_json) ? bookRow.authors_json : [];
-      if (authorsJson.length) {
-        linkedAuthors = authorsJson
-          .map((row, index) => ({
-            id: row?.id ?? row?.author_id ?? null,
-            displayName: String(row?.preferred_name || row?.sort_name || names[index] || "").trim(),
-            keys: [row?.preferred_name, row?.sort_name]
-              .filter(Boolean)
-              .flatMap(buildAuthorVariants)
-          }))
-          .filter(row => row.id != null && String(row.id).trim());
-      }
-
-      if (!linkedAuthors.length) {
-        try {
-          const bookId = bookRow?.id ?? null;
-          if (bookId != null) {
-            const rel = await supabase
-              .from("book_authors")
-              .select("author_id, role, ord")
-              .eq("book_id", bookId)
-              .order("ord", { ascending: true });
-
-            if (!rel.error && Array.isArray(rel.data) && rel.data.length) {
-              const ids = [...new Set(rel.data.map(r => r?.author_id).filter(Boolean))];
-              if (ids.length) {
-                const auth = await supabase
-                  .from("authors")
-                  .select("id, preferred_name, sort_name")
-                  .in("id", ids);
-
-                if (!auth.error && Array.isArray(auth.data)) {
-                  linkedAuthors = auth.data.map(row => ({
-                    id: row.id,
-                    displayName: String(row.preferred_name || row.sort_name || "").trim(),
-                    keys: [row.preferred_name, row.sort_name]
-                      .filter(Boolean)
-                      .flatMap(buildAuthorVariants)
-                  }));
-                }
-              }
-            }
-          }
-        } catch (_) {
-          linkedAuthors = [];
-        }
-      }
-
-      host.innerHTML = "";
-      host.classList.add("author-inline-wrap");
-      const used = new Set();
-
       names.forEach((name, idx) => {
-        const variants = buildAuthorVariants(name);
-        const match = linkedAuthors.find((row) => !used.has(row.id) && variants.some(v => row.keys.includes(v)));
-
-        if (match) {
-          used.add(match.id);
-          const a = document.createElement("a");
-          a.className = "author-card-link";
-          a.href = authorUrl(match.id, name);
-          a.textContent = name;
-          host.appendChild(a);
-        } else {
-          const span = document.createElement("span");
-          span.className = "author-name-plain";
-          span.textContent = name;
-          host.appendChild(span);
-        }
+        const span = document.createElement("span");
+        span.className = "author-name-plain";
+        span.textContent = name;
+        host.appendChild(span);
 
         if (idx < names.length - 1) {
           const sep = document.createElement("span");
@@ -525,9 +502,7 @@
       const colRef = findCol(keys, ["bib_ref", "bibref", "ref", "referencia", "referência"]) || "bib_ref";
       const colTit = findCol(keys, ["titulo", "título", "title", "nome"]);
       const colSub = findCol(keys, ["subtitulo", "subtítulo", "subtitle"]);
-      const colAut = findCol(keys, ["autor", "author", "autores"])
-        || findCol(keys, ["autor_exibicao"])
-        || findCol(keys, ["autor_texto_livro"]);
+      const colAut = findCol(keys, ["autor_exibicao", "autor", "author", "autores"]);
       const colAno = findCol(keys, ["ano", "year"]);
       const colEdi = findCol(keys, ["editora", "publisher"]);
       const colLoc = findCol(keys, ["local_publicacao", "local de publicação", "cidade", "place"]);
