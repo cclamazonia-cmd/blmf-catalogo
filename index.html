@@ -1248,9 +1248,18 @@ async function handleResultActions(e) {
   }
   const authorBtn = e.target.closest('.author-chip');
   if (authorBtn) {
+    e.preventDefault();
+    e.stopPropagation();
     const authorId = (authorBtn.dataset.authorId || '').trim();
-    if (authorId) {
-      location.assign(`${AUTOR_URL}?id=${encodeURIComponent(authorId)}`);
+    const authorName = (authorBtn.dataset.author || '').trim();
+    if (authorId || authorName) {
+      const qs = new URLSearchParams();
+      if (authorId) {
+        qs.set('id', authorId);
+        qs.set('author_id', authorId);
+      }
+      if (authorName) qs.set('author', authorName);
+      location.assign(`${AUTOR_URL}?${qs.toString()}`);
     }
     return;
   }
