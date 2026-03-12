@@ -492,7 +492,7 @@ const SUPABASE_ANON_KEY = "sb_publishable_38cFV9vsGhmqMp-Z5gmV4w_HY6ReWSF";
 const GH_BASE = "https://cclamazonia-cmd.github.io";
 const LIVRO_URL = new URL("livro.html", location.href).toString();
 const AUTOR_URL = new URL("autor.html", location.href).toString();
-const AUTHOR_PAGE_VERSION = '20260312-3';
+const AUTHOR_PAGE_VERSION = '20260312-4';
 const CONTA_URL = `${GH_BASE}/blmf-conta/conta.html`;
 const CADASTRO_URL = `${GH_BASE}/blmf-conta/cadastro.html`;
 const PAINEL_URL = `${GH_BASE}/blmf-conta/painel.html`;
@@ -664,8 +664,11 @@ function buildAuthorHref(authorId, authorName) {
   const params = new URLSearchParams();
   params.set('v', AUTHOR_PAGE_VERSION);
   params.set('_cb', `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`);
-  if (authorId) params.set('id', String(authorId));
-  if (authorName) params.set('author', String(authorName));
+  if (authorId) {
+    params.set('id', String(authorId));
+  } else if (authorName) {
+    params.set('author', String(authorName));
+  }
   return `${AUTOR_URL}?${params.toString()}`;
 }
 function buildAuthorMarkup(authorValue, authorIdsValue, terms) {
