@@ -310,8 +310,14 @@
       return Array.from(out);
     }
 
-    function authorUrl(authorId) {
-      return `${ROUTES.AUTOR}?id=${encodeURIComponent(authorId)}&author_id=${encodeURIComponent(authorId)}`;
+    function authorUrl(authorId, authorName = '') {
+      const qs = new URLSearchParams();
+      if (authorId) {
+        qs.set('id', authorId);
+        qs.set('author_id', authorId);
+      }
+      if (authorName) qs.set('author', authorName);
+      return `${ROUTES.AUTOR}?${qs.toString()}`;
     }
 
     async function renderBookAuthors(authorText, bookRow) {
@@ -369,7 +375,7 @@
           used.add(match.id);
           const a = document.createElement("a");
           a.className = "author-card-link";
-          a.href = authorUrl(match.id);
+          a.href = authorUrl(match.id, name);
           a.textContent = name;
           host.appendChild(a);
         } else {
