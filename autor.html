@@ -189,6 +189,7 @@
           <div class="subtitle" id="sortLine" style="display:none"></div>
 
           <div class="meta" style="margin-top:12px">
+            <div class="pill" id="authorIdPill" style="display:none"></div>
             <div class="pill" id="yearsPill" style="display:none"></div>
             <div class="pill" id="countryPill" style="display:none"></div>
             <div class="pill" id="booksCountPill" style="display:none"></div>
@@ -231,7 +232,7 @@
     document.getElementById("btnEntrar").href = ROUTES.CADASTRO;
 
     const SUPABASE_URL = "https://asptfmokzykwzlshsncw.supabase.co";
-    const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFzcHRmbW9renlrd3psc2hzbmN3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzI1MzcxNzcsImV4cCI6MjA4ODExMzE3N30.JkMLHPCV2AH5ELZV_1RfcoW250QEofLGvnDKSDpkcn0";
+    const SUPABASE_ANON_KEY = "sb_publishable_38cFV9vsGhmqMp-Z5gmV4w_HY6ReWSF";
 
     const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
       auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true }
@@ -276,20 +277,32 @@
     }
 
     function getAuthorRequestFromUrl() {
-      const u = new URL(location.href);
-      const rawId = (u.searchParams.get("id") || u.searchParams.get("author_id") || "").trim();
-      const n = Number(rawId);
-      const id = Number.isFinite(n) && n > 0 ? n : null;
+      const current = new URL(location.href);
+      const candidates = [current];
+      const hash = String(current.hash || "").replace(/^#/, "").trim();
+      if (hash) {
+        try {
+          if (hash.startsWith("?")) candidates.push(new URL(`${current.pathname}${hash}`, current.origin));
+          else if (hash.includes("=")) candidates.push(new URL(`${current.pathname}?${hash}`, current.origin));
+        } catch {}
+      }
 
-      const nameCandidates = [
-        u.searchParams.get("author"),
-        u.searchParams.get("autor"),
-        u.searchParams.get("name"),
-        u.searchParams.get("preferred_name"),
-        u.searchParams.get("sort_name")
-      ].map(v => String(v || "").trim()).filter(Boolean);
-
-      return { id, name: nameCandidates[0] || "" };
+      let id = null;
+      let name = "";
+      for (const u of candidates) {
+        const rawId = (u.searchParams.get("id") || u.searchParams.get("author_id") || u.searchParams.get("authorId") || "").trim();
+        const n = Number(rawId);
+        if (!id && Number.isFinite(n) && n > 0) id = n;
+        const nameCandidates = [
+          u.searchParams.get("author"),
+          u.searchParams.get("autor"),
+          u.searchParams.get("name"),
+          u.searchParams.get("preferred_name"),
+          u.searchParams.get("sort_name")
+        ].map(v => String(v || "").trim()).filter(Boolean);
+        if (!name && nameCandidates[0]) name = nameCandidates[0];
+      }
+      return { id, name };
     }
 
     function normalizeLoose(value) {
@@ -400,6 +413,54 @@
         box.classList.remove("empty");
       };
       img.src = candidates[idx];
+    }
+
+
+    const REST_HEADERS = {
+      apikey: SUPABASE_ANON_KEY,
+      Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
+    };
+
+    async function restSelect(path) {
+      const res = await fetch(`${SUPABASE_URL}/rest/v1/${path}`, { headers: REST_HEADERS });
+      let json = null;
+      try { json = await res.json(); } catch {}
+      return { ok: res.ok, status: res.status, data: json };
+    }
+
+    async function restMaybeSingle(table, where) {
+      const { ok, data } = await restSelect(`${table}?select=*&${where}&limit=1`);
+      return ok && Array.isArray(data) && data[0] ? data[0] : null;
+    }
+
+    async function restMany(table, where, order = '') {
+      const suffix = order ? `&order=${order}` : '';
+      const { ok, data } = await restSelect(`${table}?select=*&${where}${suffix}`);
+      return ok && Array.isArray(data) ? data : [];
+    }
+
+    async function restFindAuthorByName(rawName) {
+      const variants = authorNameVariants(rawName);
+      if (!variants.length) return null;
+      for (const name of variants) {
+        const encoded = encodeURIComponent(name);
+        for (const field of ["preferred_name", "sort_name"]) {
+          const row = await restMaybeSingle('v_authors_public', `${field}=eq.${encoded}`);
+          if (row) return row;
+        }
+      }
+      const normalizedVariants = new Set(variants.map(normalizeLoose).filter(Boolean));
+      for (const name of variants) {
+        const encoded = encodeURIComponent(`*${name}*`);
+        for (const field of ["preferred_name", "sort_name"]) {
+          const rows = await restMany('v_authors_public', `${field}=ilike.${encoded}`, 'preferred_name.asc');
+          if (rows.length) {
+            const exact = rows.find(row => normalizedVariants.has(normalizeLoose(row?.preferred_name)) || normalizedVariants.has(normalizeLoose(row?.sort_name)));
+            return exact || rows[0];
+          }
+        }
+      }
+      return null;
     }
 
     function setPhoto(pathOrUrl) {
@@ -606,36 +667,40 @@
         return;
       }
 
-      const authorSources = [
-        { schema: "api", table: "authors_public" },
-        { table: "v_authors_public" },
-        { table: "authors_public" },
-        { table: "authors" },
-      ];
-
-      const booksSources = [
-        { schema: "api", table: "author_books_public" },
-        { table: "author_books_public" },
-      ];
-
       let author = null;
       let linkedBooks = [];
+      let debugHint = "";
 
       if (requestedId) {
-        const [{ data: foundAuthor }, { data: foundBooks }] = await Promise.all([
-          tryMaybeSingle(authorSources, requestedId),
-          tryMany(booksSources, requestedId),
-        ]);
-        author = foundAuthor || null;
-        linkedBooks = Array.isArray(foundBooks) ? foundBooks : [];
+        author = await restMaybeSingle('v_authors_public', `id=eq.${requestedId}`);
+        linkedBooks = await restMany('author_books_public', `author_id=eq.${requestedId}`, 'ord.asc,titulo.asc');
+        if (!author) debugHint = `id ${requestedId} não apareceu em v_authors_public`;
       }
 
       if (!author && requestedName) {
-        const { data: foundByName } = await tryFindAuthorByName(authorSources, requestedName);
+        author = await restFindAuthorByName(requestedName);
+        if (author?.id) {
+          linkedBooks = await restMany('author_books_public', `author_id=eq.${author.id}`, 'ord.asc,titulo.asc');
+        } else if (!debugHint) {
+          debugHint = `nome ${requestedName} não apareceu em v_authors_public`;
+        }
+      }
+
+      if (!author && requestedId) {
+        const [{ data: foundAuthor }, { data: foundBooks }] = await Promise.all([
+          tryMaybeSingle([{ table: 'v_authors_public' }, { table: 'authors' }], requestedId),
+          tryMany([{ table: 'author_books_public' }], requestedId),
+        ]);
+        author = foundAuthor || null;
+        linkedBooks = Array.isArray(foundBooks) ? foundBooks : linkedBooks;
+      }
+
+      if (!author && requestedName) {
+        const { data: foundByName } = await tryFindAuthorByName([{ table: 'v_authors_public' }, { table: 'authors' }], requestedName);
         if (foundByName) {
           author = foundByName;
-          const { data: foundBooks } = await tryMany(booksSources, author.id);
-          linkedBooks = Array.isArray(foundBooks) ? foundBooks : [];
+          const { data: foundBooks } = await tryMany([{ table: 'author_books_public' }], author.id);
+          linkedBooks = Array.isArray(foundBooks) ? foundBooks : linkedBooks;
         }
       }
 
@@ -643,7 +708,7 @@
         $("nameLine").textContent = "Autor não encontrado";
         $("bioLine").textContent = "Não encontrei este autor nas vistas públicas.";
         setPhoto("");
-        setStatus("Autor não encontrado.", "warn");
+        setStatus(debugHint || "Autor não encontrado.", "warn");
         $("booksEmpty").style.display = "";
         return;
       }
@@ -667,7 +732,6 @@
       setPill("sourcePill", "fonte", sourceLabel);
 
       setPhoto(author.photo_object_path || "");
-
       renderBooks(books || []);
       setStatus("", "");
       document.title = `BLMF — ${author.preferred_name || author.sort_name || "Autor"}`;
