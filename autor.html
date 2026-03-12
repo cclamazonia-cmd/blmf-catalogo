@@ -343,7 +343,7 @@
     }
 
     async function loadAuthorsPublicDataset() {
-      const select = 'id,preferred_name,sort_name,biography,notes,birth_year,death_year,country,books_count,viaf_id,isni,wikidata_id,photo_object_path,source_kind,source_label';
+      const select = 'id,preferred_name,sort_name';
       const [vAuthorsPublic, authorsPublicApi, authorsPublicPublic] = await Promise.all([
         fetchRestRows(`v_authors_public?select=${encodeURIComponent(select)}&order=id.asc`, 'public'),
         fetchRestRows(`authors_public?select=${encodeURIComponent(select)}&order=id.asc`, 'api'),
@@ -631,17 +631,27 @@
       ];
 
       let author = null;
+      let authorStub = null;
       const authorsDataset = await loadAuthorsPublicDataset();
-      author = findAuthorInDataset(authorsDataset, authorId, authorName);
+      authorStub = findAuthorInDataset(authorsDataset, authorId, authorName);
+
+      if (authorStub?.id) {
+        const found = await tryMaybeSingle(authorSources, authorStub.id);
+        author = found?.data || null;
+      }
 
       if (!author && authorId) {
         const found = await tryMaybeSingle(authorSources, authorId);
         author = found?.data || null;
       }
 
+      if (!author && authorStub) {
+        author = authorStub;
+      }
+
       let linkedBooks = [];
-      if (author?.id) {
-        const foundBooks = await tryMany(booksSources, author.id);
+      if ((author?.id || authorStub?.id)) {
+        const foundBooks = await tryMany(booksSources, author?.id || authorStub?.id);
         linkedBooks = foundBooks?.data || [];
       }
 
