@@ -275,40 +275,46 @@
       el.style.display = txt ? "" : "none";
     }
 
-    function getAuthorParamsFromUrl() {
+    function getAuthorRequestFromUrl() {
       const u = new URL(location.href);
       const rawId = (u.searchParams.get("id") || u.searchParams.get("author_id") || "").trim();
-      const rawName = (u.searchParams.get("author") || u.searchParams.get("autor") || u.searchParams.get("name") || "").trim();
       const n = Number(rawId);
-      return {
-        authorId: Number.isFinite(n) && n > 0 ? n : null,
-        authorName: rawName || null,
-      };
+      const id = Number.isFinite(n) && n > 0 ? n : null;
+
+      const nameCandidates = [
+        u.searchParams.get("author"),
+        u.searchParams.get("autor"),
+        u.searchParams.get("name"),
+        u.searchParams.get("preferred_name"),
+        u.searchParams.get("sort_name")
+      ].map(v => String(v || "").trim()).filter(Boolean);
+
+      return { id, name: nameCandidates[0] || "" };
     }
 
-    function normalizeAuthorName(value) {
+    function normalizeLoose(value) {
       return String(value || "")
         .normalize("NFD")
         .replace(/[̀-ͯ]/g, "")
-        .replace(/[\s ]+/g, " ")
-        .replace(/[.,;:!?()\[\]{}"'`´-]+/g, " ")
+        .replace(/[^\p{L}\p{N}]+/gu, " ")
+        .replace(/\s+/g, " ")
         .trim()
         .toLowerCase();
     }
 
-    function authorNameVariants(value) {
-      const raw = String(value || "").trim();
+    function authorNameVariants(name) {
+      const raw = String(name || "").trim();
       if (!raw) return [];
       const out = new Set([raw]);
-      if (raw.includes(",")) {
-        const parts = raw.split(",").map(s => s.trim()).filter(Boolean);
-        if (parts.length >= 2) out.add(`${parts.slice(1).join(" ")} ${parts[0]}`.trim());
+      if (raw.includes(',')) {
+        const [last, first] = raw.split(',').map(s => s.trim()).filter(Boolean);
+        if (last && first) out.add(`${first} ${last}`);
       } else {
         const parts = raw.split(/\s+/).filter(Boolean);
         if (parts.length >= 2) {
-          const last = parts[parts.length - 1];
-          const first = parts.slice(0, -1).join(" ");
-          out.add(`${last}, ${first}`.trim());
+          const last = parts.pop();
+          const first = parts.join(' ');
+          if (first && last) out.add(`${last}, ${first}`);
         }
       }
       return [...out].filter(Boolean);
@@ -435,6 +441,41 @@
       return { data: [], source: null };
     }
 
+    async function tryFindAuthorByName(sources, rawName) {
+      const variants = authorNameVariants(rawName);
+      if (!variants.length) return { data: null, source: null };
+
+      for (const src of sources) {
+        for (const field of ["preferred_name", "sort_name"]) {
+          for (const name of variants) {
+            const qb = src.schema
+              ? supabase.schema(src.schema).from(src.table)
+              : supabase.from(src.table);
+            const { data, error } = await qb.select("*").eq(field, name).limit(1);
+            if (!error && Array.isArray(data) && data[0]) return { data: data[0], source: src };
+          }
+        }
+      }
+
+      const normalizedVariants = new Set(variants.map(normalizeLoose).filter(Boolean));
+      for (const src of sources) {
+        for (const field of ["preferred_name", "sort_name"]) {
+          for (const name of variants) {
+            const qb = src.schema
+              ? supabase.schema(src.schema).from(src.table)
+              : supabase.from(src.table);
+            const { data, error } = await qb.select("*").ilike(field, `%${name}%`).limit(20);
+            if (!error && Array.isArray(data) && data.length) {
+              const exact = data.find(row => normalizedVariants.has(normalizeLoose(row?.preferred_name)) || normalizedVariants.has(normalizeLoose(row?.sort_name)));
+              if (exact) return { data: exact, source: src };
+              return { data: data[0], source: src };
+            }
+          }
+        }
+      }
+      return { data: null, source: null };
+    }
+
     function uniqBooks(rows) {
       const seen = new Set();
       const out = [];
@@ -551,42 +592,16 @@
       }
     }
 
-    async function findAuthorByName(sources, name) {
-      const variants = authorNameVariants(name);
-      const normalizedWanted = new Set(variants.map(normalizeAuthorName).filter(Boolean));
-      if (!normalizedWanted.size) return { data: null, source: null };
-
-      for (const src of sources) {
-        const qb = src.schema
-          ? supabase.schema(src.schema).from(src.table)
-          : supabase.from(src.table);
-
-        const tries = [];
-        for (const variant of variants) {
-          tries.push(qb.select("*").ilike("preferred_name", variant));
-          tries.push(qb.select("*").ilike("sort_name", variant));
-        }
-
-        for (const req of tries) {
-          const { data, error } = await req;
-          if (error || !Array.isArray(data) || !data.length) continue;
-          const exact = data.find(row => normalizedWanted.has(normalizeAuthorName(row?.preferred_name)) || normalizedWanted.has(normalizeAuthorName(row?.sort_name)));
-          if (exact) return { data: exact, source: src };
-          return { data: data[0], source: src };
-        }
-      }
-
-      return { data: null, source: null };
-    }
-
     async function loadAuthor() {
-      const { authorId, authorName } = getAuthorParamsFromUrl();
+      const req = getAuthorRequestFromUrl();
+      const requestedId = req.id;
+      const requestedName = req.name;
 
-      if (!authorId && !authorName) {
+      if (!requestedId && !requestedName) {
         $("nameLine").textContent = "Autor não encontrado";
-        $("bioLine").textContent = "Faltou um id válido ou um nome de autor na URL.";
+        $("bioLine").textContent = "Faltou o id ou o nome do autor na URL.";
         setPhoto("");
-        setStatus("Informe um id ou nome de autor válido.", "warn");
+        setStatus("Informe um id válido ou um nome de autor.", "warn");
         $("booksEmpty").style.display = "";
         return;
       }
@@ -606,23 +621,21 @@
       let author = null;
       let linkedBooks = [];
 
-      if (authorId) {
-        const [{ data: authorById }, { data: booksById }] = await Promise.all([
-          tryMaybeSingle(authorSources, authorId),
-          tryMany(booksSources, authorId),
+      if (requestedId) {
+        const [{ data: foundAuthor }, { data: foundBooks }] = await Promise.all([
+          tryMaybeSingle(authorSources, requestedId),
+          tryMany(booksSources, requestedId),
         ]);
-        author = authorById;
-        linkedBooks = booksById || [];
+        author = foundAuthor || null;
+        linkedBooks = Array.isArray(foundBooks) ? foundBooks : [];
       }
 
-      if (!author && authorName) {
-        const { data: authorByName } = await findAuthorByName(authorSources, authorName);
-        if (authorByName) {
-          author = authorByName;
-          if (author?.id) {
-            const { data: booksByResolvedId } = await tryMany(booksSources, author.id);
-            linkedBooks = booksByResolvedId || linkedBooks || [];
-          }
+      if (!author && requestedName) {
+        const { data: foundByName } = await tryFindAuthorByName(authorSources, requestedName);
+        if (foundByName) {
+          author = foundByName;
+          const { data: foundBooks } = await tryMany(booksSources, author.id);
+          linkedBooks = Array.isArray(foundBooks) ? foundBooks : [];
         }
       }
 
