@@ -379,10 +379,11 @@
           a.textContent = name;
           host.appendChild(a);
         } else {
-          const span = document.createElement("span");
-          span.className = "author-name-plain";
-          span.textContent = name;
-          host.appendChild(span);
+          const a = document.createElement("a");
+          a.className = "author-card-link";
+          a.href = authorUrl('', name);
+          a.textContent = name;
+          host.appendChild(a);
         }
 
         if (idx < names.length - 1) {
