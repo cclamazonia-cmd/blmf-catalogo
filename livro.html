@@ -336,36 +336,53 @@
       }
 
       let linkedAuthors = [];
-      try {
-        const bookId = bookRow?.id ?? null;
-        if (bookId != null) {
-          const rel = await supabase
-            .from("book_authors")
-            .select("author_id, role, ord")
-            .eq("book_id", bookId)
-            .order("ord", { ascending: true });
 
-          if (!rel.error && Array.isArray(rel.data) && rel.data.length) {
-            const ids = [...new Set(rel.data.map(r => r?.author_id).filter(Boolean))];
-            if (ids.length) {
-              const auth = await supabase
-                .from("authors")
-                .select("id, preferred_name, sort_name")
-                .in("id", ids);
+      const authorsJson = Array.isArray(bookRow?.authors_json) ? bookRow.authors_json : [];
+      if (authorsJson.length) {
+        linkedAuthors = authorsJson
+          .map((row, index) => ({
+            id: row?.id ?? row?.author_id ?? null,
+            displayName: String(row?.preferred_name || row?.sort_name || names[index] || "").trim(),
+            keys: [row?.preferred_name, row?.sort_name]
+              .filter(Boolean)
+              .flatMap(buildAuthorVariants)
+          }))
+          .filter(row => row.id != null && String(row.id).trim());
+      }
 
-              if (!auth.error && Array.isArray(auth.data)) {
-                linkedAuthors = auth.data.map(row => ({
-                  id: row.id,
-                  keys: [row.preferred_name, row.sort_name]
-                    .filter(Boolean)
-                    .flatMap(buildAuthorVariants)
-                }));
+      if (!linkedAuthors.length) {
+        try {
+          const bookId = bookRow?.id ?? null;
+          if (bookId != null) {
+            const rel = await supabase
+              .from("book_authors")
+              .select("author_id, role, ord")
+              .eq("book_id", bookId)
+              .order("ord", { ascending: true });
+
+            if (!rel.error && Array.isArray(rel.data) && rel.data.length) {
+              const ids = [...new Set(rel.data.map(r => r?.author_id).filter(Boolean))];
+              if (ids.length) {
+                const auth = await supabase
+                  .from("authors")
+                  .select("id, preferred_name, sort_name")
+                  .in("id", ids);
+
+                if (!auth.error && Array.isArray(auth.data)) {
+                  linkedAuthors = auth.data.map(row => ({
+                    id: row.id,
+                    displayName: String(row.preferred_name || row.sort_name || "").trim(),
+                    keys: [row.preferred_name, row.sort_name]
+                      .filter(Boolean)
+                      .flatMap(buildAuthorVariants)
+                  }));
+                }
               }
             }
           }
+        } catch (_) {
+          linkedAuthors = [];
         }
-      } catch (_) {
-        linkedAuthors = [];
       }
 
       host.innerHTML = "";
@@ -483,7 +500,7 @@
         return;
       }
 
-      const booksTable = await pickFirstExistingTable(["books_public", "v_books_public", "books"]);
+      const booksTable = await pickFirstExistingTable(["v_books_catalog_public", "books_public", "v_books_public", "books"]);
       if (!booksTable) {
         setStatus("Tabela de livros não encontrada.", "bad");
         return;
