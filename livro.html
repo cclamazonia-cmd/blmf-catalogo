@@ -193,6 +193,7 @@
       CADASTRO: `${GH_BASE}/blmf-conta/cadastro.html`,
       CONTA: `${GH_BASE}/blmf-conta/conta.html`,
       AUTOR: new URL("autor.html", location.href).toString(),
+      AUTHOR_PAGE_VERSION: '20260312-1',
     };
 
     document.getElementById("btnCatalogo").href = ROUTES.CATALOGO;
@@ -312,6 +313,7 @@
 
     function authorUrl(authorId, authorName = "") {
       const params = new URLSearchParams();
+      params.set("v", ROUTES.AUTHOR_PAGE_VERSION);
       if (authorId != null && String(authorId).trim()) {
         params.set("id", String(authorId).trim());
         params.set("author_id", String(authorId).trim());
@@ -381,11 +383,10 @@
           a.textContent = name;
           host.appendChild(a);
         } else {
-          const a = document.createElement("a");
-          a.className = "author-card-link";
-          a.href = authorUrl("", name);
-          a.textContent = name;
-          host.appendChild(a);
+          const span = document.createElement("span");
+          span.className = "author-name-plain";
+          span.textContent = name;
+          host.appendChild(span);
         }
 
         if (idx < names.length - 1) {
