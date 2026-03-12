@@ -193,7 +193,7 @@
       CADASTRO: `${GH_BASE}/blmf-conta/cadastro.html`,
       CONTA: `${GH_BASE}/blmf-conta/conta.html`,
       AUTOR: new URL("autor.html", location.href).toString(),
-      AUTHOR_PAGE_VERSION: '20260312-3',
+      AUTHOR_PAGE_VERSION: '20260312-4',
     };
 
     document.getElementById("btnCatalogo").href = ROUTES.CATALOGO;
@@ -318,8 +318,7 @@
       if (authorId != null && String(authorId).trim()) {
         params.set("id", String(authorId).trim());
         params.set("author_id", String(authorId).trim());
-      }
-      if (authorName && String(authorName).trim()) {
+      } else if (authorName && String(authorName).trim()) {
         params.set("author", String(authorName).trim());
       }
       return `${ROUTES.AUTOR}?${params.toString()}`;
@@ -329,7 +328,15 @@
       const host = $("authorLine");
       if (!host) return;
 
-      const names = splitAuthorDisplay(authorText);
+      let names = splitAuthorDisplay(authorText);
+
+      const authorsJsonInitial = Array.isArray(bookRow?.authors_json) ? bookRow.authors_json : [];
+      if (!names.length && authorsJsonInitial.length) {
+        names = authorsJsonInitial
+          .map(row => String(row?.preferred_name || row?.sort_name || "").trim())
+          .filter(Boolean);
+      }
+
       if (!names.length) {
         host.textContent = "—";
         return;
@@ -518,7 +525,9 @@
       const colRef = findCol(keys, ["bib_ref", "bibref", "ref", "referencia", "referência"]) || "bib_ref";
       const colTit = findCol(keys, ["titulo", "título", "title", "nome"]);
       const colSub = findCol(keys, ["subtitulo", "subtítulo", "subtitle"]);
-      const colAut = findCol(keys, ["autor", "author", "autores"]);
+      const colAut = findCol(keys, ["autor", "author", "autores"])
+        || findCol(keys, ["autor_exibicao"])
+        || findCol(keys, ["autor_texto_livro"]);
       const colAno = findCol(keys, ["ano", "year"]);
       const colEdi = findCol(keys, ["editora", "publisher"]);
       const colLoc = findCol(keys, ["local_publicacao", "local de publicação", "cidade", "place"]);
