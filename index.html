@@ -668,10 +668,10 @@ function buildAuthorMarkup(authorValue, authorIdsValue, terms) {
   const parts = names.map((name, idx) => {
     const authorId = ids[idx] ?? singleId ?? null;
     const label = highlightHTML(name, terms);
-    const href = authorId
-      ? `${AUTOR_URL}?id=${encodeURIComponent(authorId)}&author_id=${encodeURIComponent(authorId)}&author=${encodeURIComponent(name)}`
-      : `${AUTOR_URL}?author=${encodeURIComponent(name)}`;
-    return `<a class="tag-link author-chip" href="${href}" data-author="${escapeHTML(name)}"${authorId ? ` data-author-id="${authorId}"` : ''}>${label}</a>`;
+    if (authorId) {
+      return `<button class="tag-link author-chip" type="button" data-author="${escapeHTML(name)}" data-author-id="${authorId}">${label}</button>`;
+    }
+    return `<span class="tag-link author-chip-static">${label}</span>`;
   });
 
   return parts.length === 1 ? parts[0] : `<div class="author-chip-list">${parts.join('')}</div>`;
@@ -1248,14 +1248,21 @@ async function handleResultActions(e) {
   }
   const authorBtn = e.target.closest('.author-chip');
   if (authorBtn) {
-    const href = authorBtn.getAttribute('href');
-    if (href) return;
+    const href = (authorBtn.getAttribute('href') || '').trim();
     const authorId = (authorBtn.dataset.authorId || '').trim();
     const authorName = (authorBtn.dataset.author || '').trim();
-    if (authorId) {
-      location.assign(`${AUTOR_URL}?id=${encodeURIComponent(authorId)}&author_id=${encodeURIComponent(authorId)}${authorName ? `&author=${encodeURIComponent(authorName)}` : ''}`);
-    } else if (authorName) {
-      location.assign(`${AUTOR_URL}?author=${encodeURIComponent(authorName)}`);
+    if (href) {
+      location.assign(href);
+    } else if (authorId || authorName) {
+      const u = new URL(AUTOR_URL, location.href);
+      if (authorId) {
+        u.searchParams.set('id', authorId);
+        u.searchParams.set('author_id', authorId);
+      }
+      if (authorName) {
+        u.searchParams.set('author', authorName);
+      }
+      location.assign(u.toString());
     }
     return;
   }
