@@ -193,7 +193,7 @@
       CADASTRO: `${GH_BASE}/blmf-conta/cadastro.html`,
       CONTA: `${GH_BASE}/blmf-conta/conta.html`,
       AUTOR: new URL("autor.html", location.href).toString(),
-      AUTHOR_PAGE_VERSION: '20260312-3',
+      AUTHOR_PAGE_VERSION: '20260313-1',
     };
 
     document.getElementById("btnCatalogo").href = ROUTES.CATALOGO;
@@ -343,14 +343,22 @@
 
       if (!bookAuthors.length && bookRow?.id != null) {
         try {
-          const rel = await supabase
-            .from("v_book_author_links_public")
-            .select("author_id, preferred_name, sort_name")
+          let rel = await supabase
+            .from("v_book_author_links_public_v2")
+            .select("author_id, display_name, preferred_name, sort_name")
             .eq("book_id", bookRow.id);
+
+          if (rel.error || !Array.isArray(rel.data) || !rel.data.length) {
+            rel = await supabase
+              .from("v_book_author_links_public")
+              .select("author_id, preferred_name, sort_name")
+              .eq("book_id", bookRow.id);
+          }
 
           if (!rel.error && Array.isArray(rel.data) && rel.data.length) {
             bookAuthors.push(...rel.data.map(row => ({
               id: row.author_id,
+              display_name: row.display_name,
               preferred_name: row.preferred_name,
               sort_name: row.sort_name
             })));
@@ -363,7 +371,7 @@
 
       if (bookAuthors.length) {
         bookAuthors.forEach((row, idx) => {
-          const label = String(row?.preferred_name || row?.sort_name || names[idx] || "").trim();
+          const label = String(row?.display_name || row?.preferred_name || row?.sort_name || names[idx] || "").trim();
           if (!label) return;
           const a = document.createElement("a");
           a.className = "author-card-link";
@@ -484,7 +492,7 @@
         return;
       }
 
-      const booksTable = await pickFirstExistingTable(["v_books_catalog_public", "books_public", "v_books_public", "books"]);
+      const booksTable = await pickFirstExistingTable(["v_books_catalog_public_v2", "v_books_catalog_public", "books_public", "v_books_public", "books"]);
       if (!booksTable) {
         setStatus("Tabela de livros não encontrada.", "bad");
         return;
@@ -502,7 +510,7 @@
       const colRef = findCol(keys, ["bib_ref", "bibref", "ref", "referencia", "referência"]) || "bib_ref";
       const colTit = findCol(keys, ["titulo", "título", "title", "nome"]);
       const colSub = findCol(keys, ["subtitulo", "subtítulo", "subtitle"]);
-      const colAut = findCol(keys, ["autor_exibicao", "autor", "author", "autores"]);
+      const colAut = findCol(keys, ["autor_exibicao", "autor_texto_livro", "autor", "author", "autores"]);
       const colAno = findCol(keys, ["ano", "year"]);
       const colEdi = findCol(keys, ["editora", "publisher"]);
       const colLoc = findCol(keys, ["local_publicacao", "local de publicação", "cidade", "place"]);
