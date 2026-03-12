@@ -275,38 +275,28 @@
       el.style.display = txt ? "" : "none";
     }
 
+    function normalizeText(value) {
+      return String(value || "")
+        .normalize("NFD")
+        .replace(/[̀-ͯ]/g, "")
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, " ")
+        .trim()
+        .replace(/\s+/g, " ");
+    }
+
     function getAuthorParamsFromUrl() {
       const u = new URL(location.href);
-      const hash = String(u.hash || '').replace(/^#/, '');
-      const hashParams = new URLSearchParams(hash.includes('=') ? hash : '');
-      const rawSearch = String(u.search || '');
-
-      const pick = (...keys) => {
-        for (const k of keys) {
-          const v1 = (u.searchParams.get(k) || '').trim();
-          if (v1) return v1;
-          const v2 = (hashParams.get(k) || '').trim();
-          if (v2) return v2;
-        }
-        return '';
-      };
-
-      let rawId = pick('id', 'author_id');
-      let rawName = pick('author', 'name', 'author_name');
-
-      if (!rawId && !rawName && rawSearch.startsWith('?')) {
-        const loose = decodeURIComponent(rawSearch.slice(1));
-        const idMatch = loose.match(/(?:^|[?&#])(?:id|author_id)=([0-9]+)/i);
-        const nameMatch = loose.match(/(?:^|[?&#])(?:author|name|author_name)=([^&#]+)/i);
-        if (idMatch) rawId = (idMatch[1] || '').trim();
-        if (nameMatch) rawName = (nameMatch[1] || '').replace(/\+/g, ' ').trim();
-      }
-
+      const rawId = (u.searchParams.get("id") || u.searchParams.get("author_id") || "").trim();
       const n = Number(rawId);
-      return {
-        id: Number.isFinite(n) && n > 0 ? n : null,
-        name: rawName || null,
-      };
+      const authorId = Number.isFinite(n) && n > 0 ? n : null;
+      const authorName = (
+        u.searchParams.get("author") ||
+        u.searchParams.get("name") ||
+        u.searchParams.get("autor") ||
+        ""
+      ).trim();
+      return { authorId, authorName };
     }
 
     async function setupContaButton() {
@@ -406,6 +396,83 @@
       tryLoadImage(img, box, candidates, 0);
     }
 
+    async function fetchRestRows(path, schemaName) {
+      try {
+        const headers = {
+          apikey: SUPABASE_ANON_KEY,
+          Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
+          Accept: "application/json"
+        };
+        if (schemaName && schemaName !== "public") headers["Accept-Profile"] = schemaName;
+        const res = await fetch(`${SUPABASE_URL}/rest/v1/${path}`, { headers });
+        if (!res.ok) return [];
+        const text = await res.text();
+        return text ? JSON.parse(text) : [];
+      } catch (_) {
+        return [];
+      }
+    }
+
+    function chooseLargestDataset(...datasets) {
+      let chosen = [];
+      for (const dataset of datasets) {
+        if (Array.isArray(dataset) && dataset.length > chosen.length) chosen = dataset;
+      }
+      return chosen;
+    }
+
+    function splitAuthorNameVariants(name) {
+      const raw = String(name || "").trim();
+      if (!raw) return [];
+      const out = new Set();
+      const add = (v) => {
+        const n = normalizeText(v);
+        if (n) out.add(n);
+      };
+      add(raw);
+      if (raw.includes(",")) {
+        const bits = raw.split(",").map(v => v.trim()).filter(Boolean);
+        if (bits.length >= 2) add(bits.slice(1).join(" ") + " " + bits[0]);
+      } else {
+        const bits = raw.split(/\s+/).filter(Boolean);
+        if (bits.length >= 2) add(bits[bits.length - 1] + ", " + bits.slice(0, -1).join(" "));
+      }
+      return Array.from(out);
+    }
+
+    async function findAuthorByName(authorName) {
+      const variants = splitAuthorNameVariants(authorName);
+      if (!variants.length) return null;
+
+      const [vAuthorsPublic, authorsPublicApi, authorsPublicPublic, authorsRaw] = await Promise.all([
+        fetchRestRows(`v_authors_public?select=${encodeURIComponent('id,preferred_name,sort_name,biography,notes,birth_year,death_year,country,photo_object_path,viaf_id,isni,wikidata_id,source_kind,source_label,books_count')}&order=id.asc`, 'public'),
+        fetchRestRows(`authors_public?select=${encodeURIComponent('id,preferred_name,sort_name,biography,notes,birth_year,death_year,country,photo_object_path,viaf_id,isni,wikidata_id,source_kind,source_label,books_count')}&order=id.asc`, 'api'),
+        fetchRestRows(`authors_public?select=${encodeURIComponent('id,preferred_name,sort_name,biography,notes,birth_year,death_year,country,photo_object_path,viaf_id,isni,wikidata_id,source_kind,source_label,books_count')}&order=id.asc`, 'public'),
+        fetchRestRows(`authors?select=${encodeURIComponent('*')}&order=id.asc`, 'public')
+      ]);
+
+      const rows = chooseLargestDataset(vAuthorsPublic, authorsPublicApi, authorsPublicPublic, authorsRaw);
+      if (!rows.length) return null;
+
+      let best = null;
+      let bestScore = -1;
+      for (const row of rows) {
+        const keys = [String(row?.preferred_name || '').trim(), String(row?.sort_name || '').trim()].filter(Boolean);
+        if (!keys.length) continue;
+        const norms = keys.flatMap(splitAuthorNameVariants);
+        let score = -1;
+        for (const v of variants) {
+          if (norms.includes(v)) { score = Math.max(score, 4); }
+          else if (norms.some(k => k.includes(v) || v.includes(k))) { score = Math.max(score, 2); }
+        }
+        if (score > bestScore) {
+          bestScore = score;
+          best = row;
+        }
+      }
+      return bestScore >= 2 ? best : null;
+    }
+
     async function tryMaybeSingle(sources, id) {
       for (const src of sources) {
         const qb = src.schema
@@ -496,114 +563,6 @@
       });
     }
 
-    function fromMaybe(schema, table) {
-      return schema ? supabase.schema(schema).from(table) : supabase.from(table);
-    }
-
-    function normalizeName(value) {
-      return String(value || "")
-        .normalize("NFD")
-        .replace(/[̀-ͯ]/g, "")
-        .toLowerCase()
-        .replace(/[.,;:()\[\]{}\/\-]+/g, " ")
-        .replace(/\s+/g, " ")
-        .trim();
-    }
-
-    function nameVariants(authorName) {
-      const raw = String(authorName || "").trim();
-      if (!raw) return [];
-
-      const vars = new Set();
-      const push = (v) => {
-        const txt = String(v || "").replace(/\s+/g, " ").trim();
-        if (txt) vars.add(txt);
-      };
-
-      push(raw);
-      push(raw.replace(/\s+/g, " "));
-      push(raw.replace(/,/g, " "));
-
-      if (raw.includes(',')) {
-        const parts = raw.split(',');
-        const last = String(parts[0] || '').trim();
-        const first = String(parts.slice(1).join(' ') || '').trim();
-        if (last && first) {
-          push(`${first} ${last}`);
-          push(`${first} ${last}`.replace(/\s+/g, ' '));
-        }
-      }
-
-      const norm = normalizeName(raw);
-      if (norm) push(norm);
-
-      return Array.from(vars);
-    }
-
-    function candidateScore(candidate, variants) {
-      const pref = normalizeName(candidate?.preferred_name || "");
-      const sort = normalizeName(candidate?.sort_name || "");
-      let score = 0;
-
-      for (const v of variants.map(normalizeName).filter(Boolean)) {
-        if (!v) continue;
-        if (pref === v) score = Math.max(score, 100);
-        if (sort === v) score = Math.max(score, 100);
-        if (pref && (pref.includes(v) || v.includes(pref))) score = Math.max(score, 80);
-        if (sort && (sort.includes(v) || v.includes(sort))) score = Math.max(score, 80);
-
-        const vt = v.split(' ').filter(Boolean);
-        const prefHit = vt.filter(t => pref.includes(t)).length;
-        const sortHit = vt.filter(t => sort.includes(t)).length;
-        score = Math.max(score, prefHit * 10, sortHit * 10);
-      }
-
-      if (candidate?.id) score += 1;
-      return score;
-    }
-
-    async function tryFindAuthorByName(authorName) {
-      const variants = nameVariants(authorName);
-      if (!variants.length) return null;
-
-      const sources = [
-        { schema: "api", table: "authors_public" },
-        { table: "v_authors_public" },
-        { table: "authors_public" },
-        { table: "authors" },
-      ];
-
-      const candidates = [];
-      const seen = new Set();
-
-      for (const src of sources) {
-        for (const variant of variants) {
-          for (const col of ["preferred_name", "sort_name"]) {
-            try {
-              const { data, error } = await fromMaybe(src.schema, src.table)
-                .select('*')
-                .ilike(col, `%${variant}%`)
-                .limit(20);
-              if (!error && Array.isArray(data)) {
-                for (const row of data) {
-                  const key = `${src.schema || 'public'}.${src.table}:${row?.id || row?.preferred_name || row?.sort_name || Math.random()}`;
-                  if (seen.has(key)) continue;
-                  seen.add(key);
-                  candidates.push(row);
-                }
-              }
-            } catch (_) {}
-          }
-        }
-      }
-
-      if (!candidates.length) return null;
-
-      candidates.sort((a, b) => candidateScore(b, variants) - candidateScore(a, variants));
-      const best = candidates[0] || null;
-      return candidateScore(best, variants) >= 20 ? best : null;
-    }
-
     function renderBooks(books) {
       const list = $("booksList");
       const empty = $("booksEmpty");
@@ -655,16 +614,7 @@
     }
 
     async function loadAuthor() {
-      const { id: authorId, name: authorName } = getAuthorParamsFromUrl();
-
-      if (!authorId && !authorName) {
-        $("nameLine").textContent = "Autor não encontrado";
-        $("bioLine").textContent = "Faltou o id ou o nome do autor na URL.";
-        setPhoto("");
-        setStatus("Informe um autor válido.", "warn");
-        $("booksEmpty").style.display = "";
-        return;
-      }
+      const { authorId, authorName } = getAuthorParamsFromUrl();
 
       const authorSources = [
         { schema: "api", table: "authors_public" },
@@ -679,56 +629,42 @@
       ];
 
       let author = null;
-      let linkedBooks = [];
+      let resolutionMode = "";
 
       if (authorId) {
-        const loaded = await Promise.all([
-          tryMaybeSingle(authorSources, authorId),
-          tryMany(booksSources, authorId),
-        ]);
-        author = loaded[0]?.data || null;
-        linkedBooks = loaded[1]?.data || [];
+        const byId = await tryMaybeSingle(authorSources, authorId);
+        author = byId.data || null;
+        if (author) resolutionMode = "id";
       }
 
       if (!author && authorName) {
-        author = await tryFindAuthorByName(authorName);
-        if (author?.id) {
-          const booksRes = await tryMany(booksSources, author.id);
-          linkedBooks = booksRes?.data || [];
-        }
-      }
-
-      const textSeed = author || { preferred_name: authorName || '', sort_name: authorName || '' };
-      const textMatchedBooks = await fetchBooksByAuthorText(textSeed);
-      const books = sortBooks(uniqBooks([...(linkedBooks || []), ...(textMatchedBooks || [])]));
-
-      if (!author && authorName && books.length) {
-        $("nameLine").textContent = authorName;
-        $("bioLine").textContent = "Página carregada a partir do nome do autor. A ficha pública detalhada deste autor não foi encontrada, mas os livros ligados a este nome foram localizados.";
-        setPhoto("");
-        setStatus("Autor localizado pelo nome informado na URL.", "ok");
-        setPill("booksCountPill", "livros", String(books.length));
-        renderBooks(books || []);
-        document.title = `BLMF — ${authorName}`;
-        return;
+        author = await findAuthorByName(authorName);
+        if (author) resolutionMode = "name";
       }
 
       if (!author) {
         $("nameLine").textContent = "Autor não encontrado";
-        $("bioLine").textContent = authorName
-          ? `Não encontrei uma ficha pública para o nome: ${authorName}.`
-          : "Não encontrei este autor nas vistas públicas.";
+        $("bioLine").textContent = authorId
+          ? "Não encontrei este autor nas vistas públicas."
+          : "Faltou um id válido ou um nome de autor na URL.";
         setPhoto("");
         setStatus("Autor não encontrado.", "warn");
         $("booksEmpty").style.display = "";
         return;
       }
 
+      let linkedBooks = [];
+      if (author?.id) {
+        const linked = await tryMany(booksSources, author.id);
+        linkedBooks = linked.data || [];
+      }
+      const textMatchedBooks = await fetchBooksByAuthorText(author);
+      const books = sortBooks(uniqBooks([...(linkedBooks || []), ...(textMatchedBooks || [])]));
+
       $("nameLine").textContent = author.preferred_name || author.sort_name || authorName || "Sem nome";
       setLine("sortLine", author.sort_name && author.sort_name !== author.preferred_name ? author.sort_name : "");
       $("bioLine").textContent = (author.biography || author.notes || "—").trim() || "—";
 
-      setPill("authorIdPill", "id", String(author.id || ""), true);
       setPill("yearsPill", "nascimento - falecimento", yearsLabel(author.birth_year, author.death_year));
       setPill("countryPill", "País", author.country || "");
       setPill("booksCountPill", "livros", String(books.length || author.books_count || 0));
@@ -740,10 +676,9 @@
       setPill("sourcePill", "fonte", sourceLabel);
 
       setPhoto(author.photo_object_path || "");
-
       renderBooks(books || []);
-      setStatus("", "");
-      document.title = `BLMF — ${author.preferred_name || author.sort_name || "Autor"}`;
+      setStatus(resolutionMode === "name" ? "Autor localizado a partir do nome informado." : "", resolutionMode === "name" ? "ok" : "");
+      document.title = `BLMF — ${author.preferred_name || author.sort_name || authorName || "Autor"}`;
     }
 
     await setupContaButton();
