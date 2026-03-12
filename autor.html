@@ -187,7 +187,7 @@
 
         <div class="contentbox">
           <h1 class="title" id="nameLine">Carregando…</h1>
-          <div class="subtitle" id="sortLine" style="display:none"></div>
+          
 
           <div class="meta" style="margin-top:12px">
             <div class="pill" id="yearsPill" style="display:none"></div>
@@ -663,7 +663,6 @@
       const books = sortBooks(await fetchLinkedBooks(author.id, author));
 
       $("nameLine").textContent = author.preferred_name || author.sort_name || "Sem nome";
-      setLine("sortLine", author.sort_name && author.sort_name !== author.preferred_name ? author.sort_name : "");
       $("bioLine").textContent = String(author.biography || author.notes || "—").trim() || "—";
 
       setPill("yearsPill", "nascimento - falecimento", yearsLabel(author.birth_year, author.death_year));
