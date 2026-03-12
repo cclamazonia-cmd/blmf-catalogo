@@ -492,7 +492,7 @@ const SUPABASE_ANON_KEY = "sb_publishable_38cFV9vsGhmqMp-Z5gmV4w_HY6ReWSF";
 const GH_BASE = "https://cclamazonia-cmd.github.io";
 const LIVRO_URL = new URL("livro.html", location.href).toString();
 const AUTOR_URL = new URL("autor.html", location.href).toString();
-const AUTHOR_PAGE_VERSION = '20260312-3';
+const AUTHOR_PAGE_VERSION = '20260313-1';
 const CONTA_URL = `${GH_BASE}/blmf-conta/conta.html`;
 const CADASTRO_URL = `${GH_BASE}/blmf-conta/cadastro.html`;
 const PAINEL_URL = `${GH_BASE}/blmf-conta/painel.html`;
@@ -813,19 +813,15 @@ function prepareRows() {
 }
 async function loadRowsFromSupabase() {
   try {
-    const select = 'id,bib_ref,autor,titulo,ano,editora,cdd,loanable,available_count,created_at,author_id';
-    const url = `${SUPABASE_URL}/rest/v1/v_books_public?select=${encodeURIComponent(select)}&order=titulo.asc`;
-    const [authorRelations, authorLookup, res] = await Promise.all([
-      loadAuthorRelationsFromSupabase(),
-      loadAuthorLookupFromSupabase(),
-      fetch(url, {
-        headers: {
-          apikey: SUPABASE_ANON_KEY,
-          Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
-          Accept: 'application/json'
-        }
-      })
-    ]);
+    const select = 'id,bib_ref,titulo,subtitulo,autor_texto_livro,autor_exibicao,author_ids,authors_json,ano,editora,cdd,loanable,available_count,created_at';
+    const url = `${SUPABASE_URL}/rest/v1/v_books_catalog_public_v2?select=${encodeURIComponent(select)}&order=titulo.asc`;
+    const res = await fetch(url, {
+      headers: {
+        apikey: SUPABASE_ANON_KEY,
+        Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
+        Accept: 'application/json'
+      }
+    });
     const text = await res.text();
     if (!res.ok) {
       alert('Erro ao carregar catálogo: ' + res.status + ' — ' + text);
@@ -833,20 +829,21 @@ async function loadRowsFromSupabase() {
     }
     const data = text ? JSON.parse(text) : [];
     return (data || []).map(r => {
-      const authorId = normalizeAuthorIdValue(r.author_id);
-      const relationIds = authorRelations.get(String(r.id ?? '')) || [];
-      const authorIdsList = resolveAuthorIdsForRow(r.autor ?? '', relationIds, authorLookup, authorId);
+      const authorIdsList = Array.isArray(r.author_ids)
+        ? r.author_ids.map(v => normalizeAuthorIdValue(v)).filter(Boolean)
+        : [];
       return {
         id: r.id ?? null,
         bib_ref: r.bib_ref ?? '',
-        autor: r.autor ?? '',
+        autor: r.autor_exibicao ?? r.autor_texto_livro ?? '',
         titulo: r.titulo ?? '',
         ano: r.ano ?? '',
         editora: r.editora ?? '',
         cdd: r.cdd ?? '',
-        author_id: authorId,
-        author_ids: authorIdsList.length ? authorIdsList.join('; ') : (authorId ? String(authorId) : ''),
+        author_id: null,
+        author_ids: authorIdsList.length ? authorIdsList.join('; ') : '',
         author_ids_list: authorIdsList,
+        authors_json: Array.isArray(r.authors_json) ? r.authors_json : [],
         loanable: r.loanable === false ? false : true,
         available_count: Number(r.available_count ?? 0) || 0,
         created_at: r.created_at ?? null
