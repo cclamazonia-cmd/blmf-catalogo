@@ -275,49 +275,100 @@
       el.style.display = txt ? "" : "none";
     }
 
-    function getAuthorRequestFromUrl() {
+    function getAuthorIdFromUrl() {
       const u = new URL(location.href);
-      const rawId = (u.searchParams.get("id") || u.searchParams.get("author_id") || "").trim();
-      const n = Number(rawId);
-      const id = Number.isFinite(n) && n > 0 ? n : null;
-
-      const nameCandidates = [
-        u.searchParams.get("author"),
-        u.searchParams.get("autor"),
-        u.searchParams.get("name"),
-        u.searchParams.get("preferred_name"),
-        u.searchParams.get("sort_name")
-      ].map(v => String(v || "").trim()).filter(Boolean);
-
-      return { id, name: nameCandidates[0] || "" };
+      const raw = (u.searchParams.get("id") || u.searchParams.get("author_id") || "").trim();
+      const n = Number(raw);
+      return Number.isFinite(n) && n > 0 ? n : null;
     }
 
-    function normalizeLoose(value) {
+    function getAuthorNameFromUrl() {
+      const u = new URL(location.href);
+      const raw = (
+        u.searchParams.get("author")
+        || u.searchParams.get("name")
+        || u.searchParams.get("autor")
+        || u.searchParams.get("preferred_name")
+        || u.searchParams.get("sort_name")
+        || ""
+      ).trim();
+      return raw || null;
+    }
+
+    function normalizeText(value) {
       return String(value || "")
         .normalize("NFD")
         .replace(/[̀-ͯ]/g, "")
-        .replace(/[^\p{L}\p{N}]+/gu, " ")
-        .replace(/\s+/g, " ")
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, " ")
         .trim()
-        .toLowerCase();
+        .replace(/\s+/g, " ");
     }
 
-    function authorNameVariants(name) {
-      const raw = String(name || "").trim();
-      if (!raw) return [];
-      const out = new Set([raw]);
-      if (raw.includes(',')) {
-        const [last, first] = raw.split(',').map(s => s.trim()).filter(Boolean);
-        if (last && first) out.add(`${first} ${last}`);
+    function buildNameCandidates(name) {
+      const txt = String(name || "").trim();
+      const out = new Set();
+      if (!txt) return [];
+      out.add(normalizeText(txt));
+      if (txt.includes(",")) {
+        const bits = txt.split(",").map(v => v.trim()).filter(Boolean);
+        if (bits.length >= 2) out.add(normalizeText(bits.slice(1).join(" ") + " " + bits[0]));
       } else {
-        const parts = raw.split(/\s+/).filter(Boolean);
-        if (parts.length >= 2) {
-          const last = parts.pop();
-          const first = parts.join(' ');
-          if (first && last) out.add(`${last}, ${first}`);
+        const bits = txt.split(/\s+/).filter(Boolean);
+        if (bits.length >= 2) {
+          const last = bits[bits.length - 1];
+          const firsts = bits.slice(0, -1).join(" ");
+          out.add(normalizeText(`${last}, ${firsts}`));
         }
       }
       return [...out].filter(Boolean);
+    }
+
+    async function fetchRestRows(path, schemaName) {
+      try {
+        const headers = {
+          apikey: SUPABASE_ANON_KEY,
+          Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
+          Accept: "application/json"
+        };
+        if (schemaName && schemaName !== "public") headers["Accept-Profile"] = schemaName;
+        const res = await fetch(`${SUPABASE_URL}/rest/v1/${path}`, { headers });
+        if (!res.ok) return [];
+        const text = await res.text();
+        return text ? JSON.parse(text) : [];
+      } catch (_) {
+        return [];
+      }
+    }
+
+    async function resolveAuthorByName(authorName) {
+      const requested = buildNameCandidates(authorName);
+      if (!requested.length) return null;
+
+      const datasets = await Promise.all([
+        fetchRestRows(`v_authors_public?select=${encodeURIComponent("id,preferred_name,sort_name,biography,notes,birth_year,death_year,country,books_count,viaf_id,isni,wikidata_id,photo_object_path,source_kind,source_label")}&order=id.asc`, "public"),
+        fetchRestRows(`authors_public?select=${encodeURIComponent("id,preferred_name,sort_name,biography,notes,birth_year,death_year,country,books_count,viaf_id,isni,wikidata_id,photo_object_path,source_kind,source_label")}&order=id.asc`, "api"),
+        fetchRestRows(`authors_public?select=${encodeURIComponent("id,preferred_name,sort_name,biography,notes,birth_year,death_year,country,books_count,viaf_id,isni,wikidata_id,photo_object_path,source_kind,source_label")}&order=id.asc`, "public")
+      ]);
+
+      const rows = datasets.reduce((best, cur) => Array.isArray(cur) && cur.length > best.length ? cur : best, []);
+      let best = null;
+
+      for (const row of rows) {
+        const keys = [
+          ...buildNameCandidates(row?.preferred_name),
+          ...buildNameCandidates(row?.sort_name)
+        ];
+        const hit = requested.some(k => keys.includes(k));
+        if (!hit) continue;
+
+        const exact = requested.includes(normalizeText(row?.preferred_name)) || requested.includes(normalizeText(row?.sort_name));
+        if (!best || (exact && !best._exact)) {
+          best = { ...row, _exact: exact };
+        }
+      }
+
+      return best;
     }
 
     async function setupContaButton() {
@@ -441,41 +492,6 @@
       return { data: [], source: null };
     }
 
-    async function tryFindAuthorByName(sources, rawName) {
-      const variants = authorNameVariants(rawName);
-      if (!variants.length) return { data: null, source: null };
-
-      for (const src of sources) {
-        for (const field of ["preferred_name", "sort_name"]) {
-          for (const name of variants) {
-            const qb = src.schema
-              ? supabase.schema(src.schema).from(src.table)
-              : supabase.from(src.table);
-            const { data, error } = await qb.select("*").eq(field, name).limit(1);
-            if (!error && Array.isArray(data) && data[0]) return { data: data[0], source: src };
-          }
-        }
-      }
-
-      const normalizedVariants = new Set(variants.map(normalizeLoose).filter(Boolean));
-      for (const src of sources) {
-        for (const field of ["preferred_name", "sort_name"]) {
-          for (const name of variants) {
-            const qb = src.schema
-              ? supabase.schema(src.schema).from(src.table)
-              : supabase.from(src.table);
-            const { data, error } = await qb.select("*").ilike(field, `%${name}%`).limit(20);
-            if (!error && Array.isArray(data) && data.length) {
-              const exact = data.find(row => normalizedVariants.has(normalizeLoose(row?.preferred_name)) || normalizedVariants.has(normalizeLoose(row?.sort_name)));
-              if (exact) return { data: exact, source: src };
-              return { data: data[0], source: src };
-            }
-          }
-        }
-      }
-      return { data: null, source: null };
-    }
-
     function uniqBooks(rows) {
       const seen = new Set();
       const out = [];
@@ -593,18 +609,8 @@
     }
 
     async function loadAuthor() {
-      const req = getAuthorRequestFromUrl();
-      const requestedId = req.id;
-      const requestedName = req.name;
-
-      if (!requestedId && !requestedName) {
-        $("nameLine").textContent = "Autor não encontrado";
-        $("bioLine").textContent = "Faltou o id ou o nome do autor na URL.";
-        setPhoto("");
-        setStatus("Informe um id válido ou um nome de autor.", "warn");
-        $("booksEmpty").style.display = "";
-        return;
-      }
+      const authorId = getAuthorIdFromUrl();
+      const authorName = getAuthorNameFromUrl();
 
       const authorSources = [
         { schema: "api", table: "authors_public" },
@@ -621,22 +627,29 @@
       let author = null;
       let linkedBooks = [];
 
-      if (requestedId) {
-        const [{ data: foundAuthor }, { data: foundBooks }] = await Promise.all([
-          tryMaybeSingle(authorSources, requestedId),
-          tryMany(booksSources, requestedId),
-        ]);
-        author = foundAuthor || null;
-        linkedBooks = Array.isArray(foundBooks) ? foundBooks : [];
+      if (authorId) {
+        const foundAuthor = await tryMaybeSingle(authorSources, authorId);
+        author = foundAuthor.data || null;
+
+        const foundBooks = await tryMany(booksSources, authorId);
+        linkedBooks = foundBooks.data || [];
       }
 
-      if (!author && requestedName) {
-        const { data: foundByName } = await tryFindAuthorByName(authorSources, requestedName);
-        if (foundByName) {
-          author = foundByName;
-          const { data: foundBooks } = await tryMany(booksSources, author.id);
-          linkedBooks = Array.isArray(foundBooks) ? foundBooks : [];
+      if (!author && authorName) {
+        author = await resolveAuthorByName(authorName);
+        if (author?.id) {
+          const foundBooks = await tryMany(booksSources, author.id);
+          linkedBooks = foundBooks.data || [];
         }
+      }
+
+      if (!authorId && !authorName) {
+        $("nameLine").textContent = "Autor não encontrado";
+        $("bioLine").textContent = "Faltou um id válido ou um nome de autor na URL.";
+        setPhoto("");
+        setStatus("Abra esta página a partir de um nome de autor clicável no catálogo.", "warn");
+        $("booksEmpty").style.display = "";
+        return;
       }
 
       if (!author) {
@@ -655,6 +668,7 @@
       setLine("sortLine", author.sort_name && author.sort_name !== author.preferred_name ? author.sort_name : "");
       $("bioLine").textContent = (author.biography || author.notes || "—").trim() || "—";
 
+      setPill("authorIdPill", "id", String(author.id || ""), true);
       setPill("yearsPill", "nascimento - falecimento", yearsLabel(author.birth_year, author.death_year));
       setPill("countryPill", "País", author.country || "");
       setPill("booksCountPill", "livros", String(books.length || author.books_count || 0));
