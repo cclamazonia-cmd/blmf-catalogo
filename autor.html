@@ -277,8 +277,31 @@
 
     function getAuthorParamsFromUrl() {
       const u = new URL(location.href);
-      const rawId = (u.searchParams.get("id") || u.searchParams.get("author_id") || "").trim();
-      const rawName = (u.searchParams.get("author") || u.searchParams.get("name") || u.searchParams.get("author_name") || "").trim();
+      const hash = String(u.hash || '').replace(/^#/, '');
+      const hashParams = new URLSearchParams(hash.includes('=') ? hash : '');
+      const rawSearch = String(u.search || '');
+
+      const pick = (...keys) => {
+        for (const k of keys) {
+          const v1 = (u.searchParams.get(k) || '').trim();
+          if (v1) return v1;
+          const v2 = (hashParams.get(k) || '').trim();
+          if (v2) return v2;
+        }
+        return '';
+      };
+
+      let rawId = pick('id', 'author_id');
+      let rawName = pick('author', 'name', 'author_name');
+
+      if (!rawId && !rawName && rawSearch.startsWith('?')) {
+        const loose = decodeURIComponent(rawSearch.slice(1));
+        const idMatch = loose.match(/(?:^|[?&#])(?:id|author_id)=([0-9]+)/i);
+        const nameMatch = loose.match(/(?:^|[?&#])(?:author|name|author_name)=([^&#]+)/i);
+        if (idMatch) rawId = (idMatch[1] || '').trim();
+        if (nameMatch) rawName = (nameMatch[1] || '').replace(/\+/g, ' ').trim();
+      }
+
       const n = Number(rawId);
       return {
         id: Number.isFinite(n) && n > 0 ? n : null,
@@ -473,6 +496,42 @@
       });
     }
 
+    async function tryFindAuthorByName(authorName) {
+      const names = Array.from(new Set([
+        String(authorName || '').trim(),
+        String(authorName || '').replace(/\s+/g, ' ').trim()
+      ].filter(Boolean)));
+      if (!names.length) return null;
+
+      const sources = [
+        { schema: "api", table: "authors_public" },
+        { table: "v_authors_public" },
+        { table: "authors_public" },
+        { table: "authors" },
+      ];
+
+      for (const src of sources) {
+        for (const name of names) {
+          try {
+            let qb = fromMaybe(src.schema, src.table).select('*');
+            const exact = await qb.or(`preferred_name.eq.${name},sort_name.eq.${name}`).limit(1).maybeSingle();
+            if (!exact.error && exact.data) return exact.data;
+          } catch (_) {}
+          try {
+            let qb = fromMaybe(src.schema, src.table).select('*').ilike('preferred_name', `%${name}%`).limit(1);
+            const { data, error } = await qb;
+            if (!error && Array.isArray(data) && data[0]) return data[0];
+          } catch (_) {}
+          try {
+            let qb = fromMaybe(src.schema, src.table).select('*').ilike('sort_name', `%${name}%`).limit(1);
+            const { data, error } = await qb;
+            if (!error && Array.isArray(data) && data[0]) return data[0];
+          } catch (_) {}
+        }
+      }
+      return null;
+    }
+
     function renderBooks(books) {
       const list = $("booksList");
       const empty = $("booksEmpty");
@@ -560,42 +619,40 @@
       }
 
       if (!author && authorName) {
-        const nameSources = [
-          { schema: "api", table: "authors_public" },
-          { table: "v_authors_public" },
-          { table: "authors_public" },
-          { table: "authors" },
-        ];
-        for (const src of nameSources) {
-          try {
-            let qb = fromMaybe(src.schema, src.table).select('*');
-            qb = qb.or(`preferred_name.eq.${authorName},sort_name.eq.${authorName}`);
-            const { data, error } = await qb.limit(1).maybeSingle();
-            if (!error && data) {
-              author = data;
-              break;
-            }
-          } catch (_) {}
-        }
+        author = await tryFindAuthorByName(authorName);
         if (author?.id) {
           const booksRes = await tryMany(booksSources, author.id);
           linkedBooks = booksRes?.data || [];
         }
       }
 
+      const textSeed = author || { preferred_name: authorName || '', sort_name: authorName || '' };
+      const textMatchedBooks = await fetchBooksByAuthorText(textSeed);
+      const books = sortBooks(uniqBooks([...(linkedBooks || []), ...(textMatchedBooks || [])]));
+
+      if (!author && authorName && books.length) {
+        $("nameLine").textContent = authorName;
+        $("bioLine").textContent = "Página carregada a partir do nome do autor. A ficha pública detalhada deste autor não foi encontrada, mas os livros ligados a este nome foram localizados.";
+        setPhoto("");
+        setStatus("Autor localizado pelo nome informado na URL.", "ok");
+        setPill("booksCountPill", "livros", String(books.length));
+        renderBooks(books || []);
+        document.title = `BLMF — ${authorName}`;
+        return;
+      }
+
       if (!author) {
         $("nameLine").textContent = "Autor não encontrado";
-        $("bioLine").textContent = "Não encontrei este autor nas vistas públicas.";
+        $("bioLine").textContent = authorName
+          ? `Não encontrei uma ficha pública para o nome: ${authorName}.`
+          : "Não encontrei este autor nas vistas públicas.";
         setPhoto("");
         setStatus("Autor não encontrado.", "warn");
         $("booksEmpty").style.display = "";
         return;
       }
 
-      const textMatchedBooks = await fetchBooksByAuthorText(author);
-      const books = sortBooks(uniqBooks([...(linkedBooks || []), ...(textMatchedBooks || [])]));
-
-      $("nameLine").textContent = author.preferred_name || author.sort_name || "Sem nome";
+      $("nameLine").textContent = author.preferred_name || author.sort_name || authorName || "Sem nome";
       setLine("sortLine", author.sort_name && author.sort_name !== author.preferred_name ? author.sort_name : "");
       $("bioLine").textContent = (author.biography || author.notes || "—").trim() || "—";
 
