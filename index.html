@@ -490,9 +490,9 @@ mark { background: rgba(225,29,47,.35); color:#fff; padding:0 2px; border-radius
 const SUPABASE_URL = "https://asptfmokzykwzlshsncw.supabase.co";
 const SUPABASE_ANON_KEY = "sb_publishable_38cFV9vsGhmqMp-Z5gmV4w_HY6ReWSF";
 const GH_BASE = "https://cclamazonia-cmd.github.io";
-const LIVRO_URL = `${GH_BASE}/blmf-catalogo/livro.html`;
-const AUTOR_URL = `${GH_BASE}/blmf-catalogo/autor_20260312b.html`;
-const AUTHOR_PAGE_VERSION = '20260312-2';
+const LIVRO_URL = new URL("livro.html", location.href).toString();
+const AUTOR_URL = new URL("autor.html", location.href).toString();
+const AUTHOR_PAGE_VERSION = '20260312-3';
 const CONTA_URL = `${GH_BASE}/blmf-conta/conta.html`;
 const CADASTRO_URL = `${GH_BASE}/blmf-conta/cadastro.html`;
 const PAINEL_URL = `${GH_BASE}/blmf-conta/painel.html`;
@@ -663,6 +663,7 @@ function splitAuthorIds(value) {
 function buildAuthorHref(authorId, authorName) {
   const params = new URLSearchParams();
   params.set('v', AUTHOR_PAGE_VERSION);
+  params.set('_cb', `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`);
   if (authorId) params.set('id', String(authorId));
   if (authorName) params.set('author', String(authorName));
   return `${AUTOR_URL}?${params.toString()}`;
@@ -1269,6 +1270,7 @@ async function handleResultActions(e) {
       if (authorId) params.set('id', authorId);
       if (authorName) params.set('author', authorName);
       params.set('v', AUTHOR_PAGE_VERSION);
+      params.set('_cb', `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`);
       location.assign(`${AUTOR_URL}?${params.toString()}`);
     }
     return;
