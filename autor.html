@@ -189,7 +189,6 @@
           <div class="subtitle" id="sortLine" style="display:none"></div>
 
           <div class="meta" style="margin-top:12px">
-            <div class="pill" id="authorIdPill" style="display:none"></div>
             <div class="pill" id="yearsPill" style="display:none"></div>
             <div class="pill" id="countryPill" style="display:none"></div>
             <div class="pill" id="booksCountPill" style="display:none"></div>
@@ -720,7 +719,6 @@
       setLine("sortLine", author.sort_name && author.sort_name !== author.preferred_name ? author.sort_name : "");
       $("bioLine").textContent = (author.biography || author.notes || "—").trim() || "—";
 
-      setPill("authorIdPill", "id", String(author.id || ""), true);
       setPill("yearsPill", "nascimento - falecimento", yearsLabel(author.birth_year, author.death_year));
       setPill("countryPill", "País", author.country || "");
       setPill("booksCountPill", "livros", String(books.length || author.books_count || 0));
