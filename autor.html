@@ -496,12 +496,75 @@
       });
     }
 
+    function fromMaybe(schema, table) {
+      return schema ? supabase.schema(schema).from(table) : supabase.from(table);
+    }
+
+    function normalizeName(value) {
+      return String(value || "")
+        .normalize("NFD")
+        .replace(/[̀-ͯ]/g, "")
+        .toLowerCase()
+        .replace(/[.,;:()\[\]{}\/\-]+/g, " ")
+        .replace(/\s+/g, " ")
+        .trim();
+    }
+
+    function nameVariants(authorName) {
+      const raw = String(authorName || "").trim();
+      if (!raw) return [];
+
+      const vars = new Set();
+      const push = (v) => {
+        const txt = String(v || "").replace(/\s+/g, " ").trim();
+        if (txt) vars.add(txt);
+      };
+
+      push(raw);
+      push(raw.replace(/\s+/g, " "));
+      push(raw.replace(/,/g, " "));
+
+      if (raw.includes(',')) {
+        const parts = raw.split(',');
+        const last = String(parts[0] || '').trim();
+        const first = String(parts.slice(1).join(' ') || '').trim();
+        if (last && first) {
+          push(`${first} ${last}`);
+          push(`${first} ${last}`.replace(/\s+/g, ' '));
+        }
+      }
+
+      const norm = normalizeName(raw);
+      if (norm) push(norm);
+
+      return Array.from(vars);
+    }
+
+    function candidateScore(candidate, variants) {
+      const pref = normalizeName(candidate?.preferred_name || "");
+      const sort = normalizeName(candidate?.sort_name || "");
+      let score = 0;
+
+      for (const v of variants.map(normalizeName).filter(Boolean)) {
+        if (!v) continue;
+        if (pref === v) score = Math.max(score, 100);
+        if (sort === v) score = Math.max(score, 100);
+        if (pref && (pref.includes(v) || v.includes(pref))) score = Math.max(score, 80);
+        if (sort && (sort.includes(v) || v.includes(sort))) score = Math.max(score, 80);
+
+        const vt = v.split(' ').filter(Boolean);
+        const prefHit = vt.filter(t => pref.includes(t)).length;
+        const sortHit = vt.filter(t => sort.includes(t)).length;
+        score = Math.max(score, prefHit * 10, sortHit * 10);
+      }
+
+      if (candidate?.id) score += 1;
+      return score;
+    }
+
     async function tryFindAuthorByName(authorName) {
-      const names = Array.from(new Set([
-        String(authorName || '').trim(),
-        String(authorName || '').replace(/\s+/g, ' ').trim()
-      ].filter(Boolean)));
-      if (!names.length) return null;
+      const variants = nameVariants(authorName);
+      if (!variants.length) return null;
 
       const sources = [
         { schema: "api", table: "authors_public" },
@@ -510,26 +573,35 @@
         { table: "authors" },
       ];
 
+      const candidates = [];
+      const seen = new Set();
+
       for (const src of sources) {
-        for (const name of names) {
-          try {
-            let qb = fromMaybe(src.schema, src.table).select('*');
-            const exact = await qb.or(`preferred_name.eq.${name},sort_name.eq.${name}`).limit(1).maybeSingle();
-            if (!exact.error && exact.data) return exact.data;
-          } catch (_) {}
-          try {
-            let qb = fromMaybe(src.schema, src.table).select('*').ilike('preferred_name', `%${name}%`).limit(1);
-            const { data, error } = await qb;
-            if (!error && Array.isArray(data) && data[0]) return data[0];
-          } catch (_) {}
-          try {
-            let qb = fromMaybe(src.schema, src.table).select('*').ilike('sort_name', `%${name}%`).limit(1);
-            const { data, error } = await qb;
-            if (!error && Array.isArray(data) && data[0]) return data[0];
-          } catch (_) {}
+        for (const variant of variants) {
+          for (const col of ["preferred_name", "sort_name"]) {
+            try {
+              const { data, error } = await fromMaybe(src.schema, src.table)
+                .select('*')
+                .ilike(col, `%${variant}%`)
+                .limit(20);
+              if (!error && Array.isArray(data)) {
+                for (const row of data) {
+                  const key = `${src.schema || 'public'}.${src.table}:${row?.id || row?.preferred_name || row?.sort_name || Math.random()}`;
+                  if (seen.has(key)) continue;
+                  seen.add(key);
+                  candidates.push(row);
+                }
+              }
+            } catch (_) {}
+          }
         }
       }
-      return null;
+
+      if (!candidates.length) return null;
+
+      candidates.sort((a, b) => candidateScore(b, variants) - candidateScore(a, variants));
+      const best = candidates[0] || null;
+      return candidateScore(best, variants) >= 20 ? best : null;
     }
 
     function renderBooks(books) {
