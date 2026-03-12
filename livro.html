@@ -192,8 +192,8 @@
       CATALOGO: `${GH_BASE}/blmf-catalogo/`,
       CADASTRO: `${GH_BASE}/blmf-conta/cadastro.html`,
       CONTA: `${GH_BASE}/blmf-conta/conta.html`,
-      AUTOR: new URL("autor_20260312b.html", location.href).toString(),
-      AUTHOR_PAGE_VERSION: '20260312-2',
+      AUTOR: new URL("autor.html", location.href).toString(),
+      AUTHOR_PAGE_VERSION: '20260312-3',
     };
 
     document.getElementById("btnCatalogo").href = ROUTES.CATALOGO;
@@ -314,6 +314,7 @@
     function authorUrl(authorId, authorName = "") {
       const params = new URLSearchParams();
       params.set("v", ROUTES.AUTHOR_PAGE_VERSION);
+      params.set("_cb", `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`);
       if (authorId != null && String(authorId).trim()) {
         params.set("id", String(authorId).trim());
         params.set("author_id", String(authorId).trim());
