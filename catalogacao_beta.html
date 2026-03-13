@@ -2462,17 +2462,37 @@
       showMessage(refs.authorMessage, changes ? 'Sugestão de autor aplicada sem sobrescrever campos já preenchidos.' : 'Nada foi alterado: os campos principais já estavam preenchidos.', 'ok');
     }
 
-    function buildAuthorSortName(preferredName = '') {
+    function buildCanonicalAuthorNameParts(preferredName = '') {
       const clean = normalizeInlineWhitespace(String(preferredName || '').replace(/,/g, ' '));
-      if (!clean) return '';
+      if (!clean) return { given: '', surname: '', canonicalPreferred: '', canonicalSort: '' };
+
       const tokens = clean.split(' ').filter(Boolean);
-      if (!tokens.length) return '';
-      let surnameStart = tokens.findIndex((token, index) => index > 0 && isUppercaseNameToken(token));
-      if (surnameStart === -1 && tokens.length > 1) surnameStart = tokens.length - 1;
-      if (surnameStart <= 0) return clean;
-      const given = tokens.slice(0, surnameStart).join(' ').trim();
-      const surname = tokens.slice(surnameStart).join(' ').trim();
-      return given ? `${surname}, ${given}` : surname;
+      if (!tokens.length) return { given: '', surname: '', canonicalPreferred: '', canonicalSort: '' };
+
+      let surnameTokens = [];
+      let givenTokens = [];
+
+      const firstUpperIndex = tokens.findIndex((token, index) => index > 0 && isUppercaseNameToken(token));
+      if (firstUpperIndex > 0) {
+        givenTokens = tokens.slice(0, firstUpperIndex);
+        surnameTokens = tokens.slice(firstUpperIndex);
+      } else if (tokens.length >= 2) {
+        givenTokens = tokens.slice(0, -1);
+        surnameTokens = tokens.slice(-1);
+      } else {
+        givenTokens = tokens.slice(0, 1);
+      }
+
+      const surname = normalizeInlineWhitespace(surnameTokens.join(' ')).toLocaleUpperCase('pt-BR');
+      const given = normalizeInlineWhitespace(givenTokens.map(titleCaseLoose).join(' '));
+      const canonicalPreferred = [given, surname].filter(Boolean).join(' ').trim();
+      const canonicalSort = surname && given ? `${surname}, ${given}` : (surname || given || '');
+
+      return { given, surname, canonicalPreferred, canonicalSort };
+    }
+
+    function buildAuthorSortName(preferredName = '') {
+      return buildCanonicalAuthorNameParts(preferredName).canonicalSort;
     }
 
     function normalizeAuthorKeyJs(value = '') {
@@ -2484,16 +2504,33 @@
         .replace(/[^a-z0-9]+/g, '');
     }
 
+    function normalizeBrazilianAuthorSortKey(value = '') {
+      const raw = normalizeInlineWhitespace(String(value || ''));
+      if (!raw) return '';
+      const parts = raw.includes(',')
+        ? raw.split(',').map(item => normalizeInlineWhitespace(item)).filter(Boolean)
+        : [];
+      const left = parts[0] || '';
+      const right = parts.slice(1).join(' ') || '';
+      const canonicalFromComma = left && right
+        ? `${left.toLocaleUpperCase('pt-BR')}, ${titleCaseLoose(right)}`
+        : buildCanonicalAuthorNameParts(raw).canonicalSort;
+      return normalizeAuthorKeyJs(canonicalFromComma || raw);
+    }
+
     function findExistingPublishedAuthorMatch({ sortName = '', preferredName = '', excludePublishedAuthorId = '' } = {}) {
       const wantedSort = normalizeAuthorKeyJs(sortName);
       const wantedPreferred = normalizeAuthorKeyJs(preferredName);
-      if (!wantedSort && !wantedPreferred) return null;
+      const wantedBrazilianSort = normalizeBrazilianAuthorSortKey(sortName || preferredName || '');
+      if (!wantedSort && !wantedPreferred && !wantedBrazilianSort) return null;
       return (state.authors || []).find(author => {
         if (excludePublishedAuthorId && String(author.id) === String(excludePublishedAuthorId)) return false;
         const authorSort = normalizeAuthorKeyJs(author.sort_name || '');
         const authorPreferred = normalizeAuthorKeyJs(author.preferred_name || '');
+        const authorBrazilianSort = normalizeBrazilianAuthorSortKey(author.sort_name || author.preferred_name || '');
         if (wantedSort && authorSort && authorSort === wantedSort) return true;
         if (wantedPreferred && authorPreferred && authorPreferred === wantedPreferred) return true;
+        if (wantedBrazilianSort && authorBrazilianSort && authorBrazilianSort === wantedBrazilianSort) return true;
         return false;
       }) || null;
     }
@@ -2518,10 +2555,14 @@
     }
 
     function syncAuthorSortName(fallback = '') {
-      const computed = buildAuthorSortName(el('authorPreferredName')?.value || '');
+      const preferredField = el('authorPreferredName');
       const sortField = el('authorSortName');
-      if (!sortField) return;
-      sortField.value = computed || fallback || '';
+      if (!sortField || !preferredField) return;
+      const parts = buildCanonicalAuthorNameParts(preferredField.value || '');
+      if (parts.canonicalPreferred) {
+        preferredField.value = parts.canonicalPreferred;
+      }
+      sortField.value = parts.canonicalSort || fallback || '';
     }
 
     function compareSortableValues(left, right, direction = 'asc') {
