@@ -490,17 +490,17 @@ mark { background: rgba(225,29,47,.35); color:#fff; padding:0 2px; border-radius
 const SUPABASE_URL = "https://asptfmokzykwzlshsncw.supabase.co";
 const SUPABASE_ANON_KEY = "sb_publishable_38cFV9vsGhmqMp-Z5gmV4w_HY6ReWSF";
 const GH_BASE = "https://cclamazonia-cmd.github.io";
-const LIVRO_URL = `${GH_BASE}/blmf-catalogo/livro.html`;
-const AUTOR_URL = `${GH_BASE}/blmf-catalogo/autor.html`;
+const LIVRO_URL = new URL("livro.html", location.href).toString();
+const AUTOR_URL = new URL("autor.html", location.href).toString();
+const AUTHOR_PAGE_VERSION = '20260312-3';
 const CONTA_URL = `${GH_BASE}/blmf-conta/conta.html`;
 const CADASTRO_URL = `${GH_BASE}/blmf-conta/cadastro.html`;
 const PAINEL_URL = `${GH_BASE}/blmf-conta/painel.html`;
 const SUPABASE_PROJECT_REF = "asptfmokzykwzlshsncw";
 
-function buildCadastroUrlWithNext(nextUrl = window.location.href) {
-  const target = String(nextUrl || "").trim() || `${GH_BASE}/blmf-catalogo/`;
+function buildCadastroUrl(nextUrl = location.href) {
   const u = new URL(CADASTRO_URL);
-  u.searchParams.set('next', target);
+  u.searchParams.set('next', nextUrl);
   return u.toString();
 }
 
@@ -666,6 +666,14 @@ function splitAuthorIds(value) {
     .split(';')
     .map(part => normalizeAuthorIdValue(part));
 }
+function buildAuthorHref(authorId, authorName) {
+  const params = new URLSearchParams();
+  params.set('v', AUTHOR_PAGE_VERSION);
+  params.set('_cb', `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`);
+  if (authorId) params.set('id', String(authorId));
+  if (authorName) params.set('author', String(authorName));
+  return `${AUTOR_URL}?${params.toString()}`;
+}
 function buildAuthorMarkup(authorValue, authorIdsValue, terms) {
   const names = splitAuthorNames(authorValue);
   if (!names.length) return '<span class="muted">—</span>';
@@ -676,9 +684,10 @@ function buildAuthorMarkup(authorValue, authorIdsValue, terms) {
     const authorId = ids[idx] ?? singleId ?? null;
     const label = highlightHTML(name, terms);
     if (authorId) {
-      return `<button class="tag-link author-chip" type="button" data-author="${escapeHTML(name)}" data-author-id="${authorId}">${label}</button>`;
+      const href = buildAuthorHref(authorId, name);
+      return `<a class="tag-link author-chip" href="${href}" data-author="${escapeHTML(name)}" data-author-id="${authorId}">${label}</a>`;
     }
-    return `<span class="tag-link author-chip-static">${label}</span>`;
+    return `<span class="tag-link author-chip-static" title="Sem ficha de autor publicada para este nome.">${label}</span>`;
   });
 
   return parts.length === 1 ? parts[0] : `<div class="author-chip-list">${parts.join('')}</div>`;
@@ -723,12 +732,9 @@ async function loadAuthorLookupFromSupabase() {
   ]);
   const data = chooseLargestDataset(vAuthorsPublic, authorsPublicApi, authorsPublicPublic);
   const map = new Map();
-  authorDisplayById = new Map();
   for (const row of (data || [])) {
     const authorId = normalizeAuthorIdValue(row?.id);
     if (!authorId) continue;
-    const canonicalLabel = String(row?.sort_name || row?.preferred_name || '').trim();
-    if (canonicalLabel) authorDisplayById.set(String(authorId), canonicalLabel);
     const keys = [normalize(row?.sort_name), normalize(row?.preferred_name)].filter(Boolean);
     for (const key of keys) {
       if (!map.has(key)) map.set(key, new Set());
@@ -951,7 +957,7 @@ function mapReservaError(msg) {
 
 async function createReservaFromCatalog(bibRef) {
   if (!authState.user || !authState.accessToken) {
-    location.assign(buildCadastroUrlWithNext());
+    location.assign(buildCadastroUrl(location.href));
     return { ok: false, message: 'Entre na sua conta para reservar.' };
   }
   const res = await fetch(`${SUPABASE_URL}/rest/v1/rpc/fn_v2_create_reserva_by_bib_refs`, {
@@ -1143,8 +1149,13 @@ function clearFilters() {
 async function getCurrentUserAndRole() {
   const tokenKey = `sb-${SUPABASE_PROJECT_REF}-auth-token`;
   let tokenRaw = null;
-  try { tokenRaw = localStorage.getItem(tokenKey); } catch (e) {}
+
+  try { tokenRaw = sessionStorage.getItem(tokenKey); } catch (e) {}
+  if (!tokenRaw) {
+    try { tokenRaw = localStorage.getItem(tokenKey); } catch (e) {}
+  }
   if (!tokenRaw) return { user: null, isLibrarian: false, accessToken: null };
+
   let session = null;
   try {
     const parsed = JSON.parse(tokenRaw);
@@ -1175,7 +1186,7 @@ async function getCurrentUserAndRole() {
 async function handleContaClick() {
   const state = await getCurrentUserAndRole();
   if (!state.user) {
-    location.assign(buildCadastroUrlWithNext());
+    location.assign(buildCadastroUrl(location.href));
     return;
   }
   location.assign(state.isLibrarian ? PAINEL_URL : CONTA_URL);
@@ -1258,21 +1269,20 @@ async function handleResultActions(e) {
   }
   const authorBtn = e.target.closest('.author-chip');
   if (authorBtn) {
-    const href = (authorBtn.getAttribute('href') || '').trim();
-    const authorId = (authorBtn.dataset.authorId || '').trim();
-    const authorName = (authorBtn.dataset.author || '').trim();
+    const href = authorBtn.getAttribute('href');
     if (href) {
       location.assign(href);
-    } else if (authorId || authorName) {
-      const u = new URL(AUTOR_URL, location.href);
-      if (authorId) {
-        u.searchParams.set('id', authorId);
-        u.searchParams.set('author_id', authorId);
-      }
-      if (authorName) {
-        u.searchParams.set('author', authorName);
-      }
-      location.assign(u.toString());
+      return;
+    }
+    const authorId = (authorBtn.dataset.authorId || '').trim();
+    const authorName = (authorBtn.dataset.author || '').trim();
+    if (authorId || authorName) {
+      const params = new URLSearchParams();
+      if (authorId) params.set('id', authorId);
+      if (authorName) params.set('author', authorName);
+      params.set('v', AUTHOR_PAGE_VERSION);
+      params.set('_cb', `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`);
+      location.assign(`${AUTOR_URL}?${params.toString()}`);
     }
     return;
   }
