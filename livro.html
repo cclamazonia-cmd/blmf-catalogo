@@ -318,7 +318,8 @@
       if (authorId != null && String(authorId).trim()) {
         params.set("id", String(authorId).trim());
         params.set("author_id", String(authorId).trim());
-      } else if (authorName && String(authorName).trim()) {
+      }
+      if (authorName && String(authorName).trim()) {
         params.set("author", String(authorName).trim());
       }
       return `${ROUTES.AUTOR}?${params.toString()}`;
@@ -329,19 +330,19 @@
       if (!host) return;
 
       const names = splitAuthorDisplay(authorText);
-      const bookAuthors = [];
+      const linkedAuthors = [];
 
       const rawJson = bookRow?.authors_json;
       if (Array.isArray(rawJson)) {
-        bookAuthors.push(...rawJson);
+        linkedAuthors.push(...rawJson);
       } else if (typeof rawJson === "string" && rawJson.trim()) {
         try {
           const parsed = JSON.parse(rawJson);
-          if (Array.isArray(parsed)) bookAuthors.push(...parsed);
+          if (Array.isArray(parsed)) linkedAuthors.push(...parsed);
         } catch (_) {}
       }
 
-      if (!bookAuthors.length && bookRow?.id != null) {
+      if (!linkedAuthors.length && bookRow?.id != null) {
         try {
           let rel = await supabase
             .from("v_book_author_links_public_v2")
@@ -356,7 +357,7 @@
           }
 
           if (!rel.error && Array.isArray(rel.data) && rel.data.length) {
-            bookAuthors.push(...rel.data.map(row => ({
+            linkedAuthors.push(...rel.data.map(row => ({
               id: row.author_id,
               display_name: row.display_name,
               preferred_name: row.preferred_name,
@@ -369,8 +370,8 @@
       host.innerHTML = "";
       host.classList.add("author-inline-wrap");
 
-      if (bookAuthors.length) {
-        bookAuthors.forEach((row, idx) => {
+      if (linkedAuthors.length) {
+        linkedAuthors.forEach((row, idx) => {
           const label = String(row?.display_name || row?.preferred_name || row?.sort_name || names[idx] || "").trim();
           if (!label) return;
           const a = document.createElement("a");
@@ -378,7 +379,7 @@
           a.href = authorUrl(row?.id ?? row?.author_id ?? null, label);
           a.textContent = label;
           host.appendChild(a);
-          if (idx < bookAuthors.length - 1) {
+          if (idx < linkedAuthors.length - 1) {
             const sep = document.createElement("span");
             sep.className = "author-separator";
             sep.textContent = ";";
@@ -398,7 +399,6 @@
         span.className = "author-name-plain";
         span.textContent = name;
         host.appendChild(span);
-
         if (idx < names.length - 1) {
           const sep = document.createElement("span");
           sep.className = "author-separator";
