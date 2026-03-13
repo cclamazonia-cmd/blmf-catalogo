@@ -2518,47 +2518,6 @@
       }
     }
 
-    function convertIsbn13To10(isbn) {
-      const normalized = normalizeISBN(isbn);
-      if (!/^97[89]\d{10}$/.test(normalized)) return '';
-      const core = normalized.slice(3, 12);
-      let sum = 0;
-      for (let index = 0; index < core.length; index += 1) {
-        sum += Number(core[index]) * (10 - index);
-      }
-      const remainder = 11 - (sum % 11);
-      const checkDigit = remainder === 10 ? 'X' : remainder === 11 ? '0' : String(remainder % 11);
-      return `${core}${checkDigit}`;
-    }
-
-    function buildBnSearchCandidates(isbn) {
-      const isbn10 = convertIsbn13To10(isbn);
-      const values = Array.from(new Set([isbn, isbn10].filter(Boolean)));
-      const baseUrl = 'https://acervo.bn.gov.br/sophia_web/busca/acervo/isbn/';
-      const paramNames = [
-        'pesquisa',
-        'q',
-        'query',
-        'termo',
-        'keyword',
-        'keywords',
-        'palavraChave',
-        'palavra-chave',
-        'buscarPor',
-        'busca',
-        'value',
-      ];
-      const urls = [];
-      values.forEach((value) => {
-        paramNames.forEach((param) => {
-          const query = new URLSearchParams();
-          query.set(param, value);
-          urls.push(`${baseUrl}?${query.toString()}`);
-        });
-      });
-      return { baseUrl, values, urls };
-    }
-
     async function openIsbnLookup(source) {
       const raw = el('bookISBN')?.value || '';
       const isbn = normalizeISBN(raw);
@@ -2569,35 +2528,17 @@
       }
 
       const copied = await copyIsbnIfPossible(isbn);
+      const url = source === 'bn'
+        ? `https://acervo.bn.gov.br/sophia_web/busca/acervo/isbn/?PalavraChave=${encodeURIComponent(isbn)}`
+        : `https://servicos.cbl.org.br/isbn/pesquisa/?page=1&q=${encodeURIComponent(isbn)}&filtrar_por%5B0%5D=isbn&ord%5B0%5D=relevancia&dir%5B0%5D=asc`;
 
-      if (source !== 'bn') {
-        const url = `https://servicos.cbl.org.br/isbn/pesquisa/?page=1&q=${encodeURIComponent(isbn)}&filtrar_por%5B0%5D=isbn&ord%5B0%5D=relevancia&dir%5B0%5D=asc`;
-        window.open(url, '_blank', 'noopener');
-        showMessage(refs.bookMessage, copied
-          ? 'Busca de ISBN aberta na CBL com o número já copiado para conferência.'
-          : 'Busca de ISBN aberta na CBL.', 'info');
-        return;
-      }
+      window.open(url, '_blank', 'noopener');
 
-      const { baseUrl, values, urls } = buildBnSearchCandidates(isbn);
-      let bnWindow = null;
-      for (const candidateUrl of urls) {
-        try {
-          bnWindow = window.open(candidateUrl, '_blank', 'noopener');
-          if (bnWindow) break;
-        } catch {}
+      if (copied) {
+        showMessage(refs.bookMessage, `Busca de ISBN aberta em ${source === 'bn' ? 'Biblioteca Nacional' : 'CBL'} com o número já copiado para conferência.`, 'info');
+      } else {
+        showMessage(refs.bookMessage, `Busca de ISBN aberta em ${source === 'bn' ? 'Biblioteca Nacional' : 'CBL'}.`, 'info');
       }
-      if (!bnWindow) {
-        window.open(baseUrl, '_blank', 'noopener');
-      }
-
-      showMessage(
-        refs.bookMessage,
-        copied
-          ? `Busca aberta na Biblioteca Nacional. Tentei pré-preencher o ISBN automaticamente (${values.join(' / ')}). Se o campo não vier preenchido, o número já está copiado para colar e buscar.`
-          : `Busca aberta na Biblioteca Nacional. Tentei pré-preencher o ISBN automaticamente (${values.join(' / ')}). Se o campo não vier preenchido, copie o número da ficha e busque na página.`,
-        'info'
-      );
     }
 
     function normalizeIssn(value) {
