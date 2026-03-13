@@ -2518,6 +2518,39 @@
       }
     }
 
+    function submitBnSearchForm(isbn) {
+      const action = 'https://acervo.bn.gov.br/sophia_web/busca/acervo/isbn/';
+      const params = {
+        q: isbn,
+        query: isbn,
+        termo: isbn,
+        pesquisa: isbn,
+        palavra: isbn,
+        texto: isbn,
+        valor: isbn,
+        isbn: isbn,
+        isbn_issn: isbn,
+        palavraChave: isbn,
+        palavra_chave: isbn,
+        keyword: isbn,
+      };
+      const form = document.createElement('form');
+      form.method = 'GET';
+      form.action = action;
+      form.target = '_blank';
+      form.style.display = 'none';
+      Object.entries(params).forEach(([name, value]) => {
+        const input = document.createElement('input');
+        input.type = 'hidden';
+        input.name = name;
+        input.value = value;
+        form.appendChild(input);
+      });
+      document.body.appendChild(form);
+      form.submit();
+      form.remove();
+    }
+
     async function openIsbnLookup(source) {
       const raw = el('bookISBN')?.value || '';
       const isbn = normalizeISBN(raw);
@@ -2528,16 +2561,23 @@
       }
 
       const copied = await copyIsbnIfPossible(isbn);
-      const url = source === 'bn'
-        ? `https://acervo.bn.gov.br/sophia_web/busca/acervo/isbn/?q=${encodeURIComponent(isbn)}&termo=${encodeURIComponent(isbn)}&palavraChave=${encodeURIComponent(isbn)}&search=${encodeURIComponent(isbn)}#${encodeURIComponent(isbn)}`
-        : `https://servicos.cbl.org.br/isbn/pesquisa/?page=1&q=${encodeURIComponent(isbn)}&filtrar_por%5B0%5D=isbn&ord%5B0%5D=relevancia&dir%5B0%5D=asc`;
+      if (source === 'bn') {
+        submitBnSearchForm(isbn);
+        if (copied) {
+          showMessage(refs.bookMessage, 'Busca de ISBN aberta na BN com tentativa de preenchimento do campo e número já copiado para conferência.', 'info');
+        } else {
+          showMessage(refs.bookMessage, 'Busca de ISBN aberta na BN com tentativa de preenchimento do campo.', 'info');
+        }
+        return;
+      }
 
+      const url = `https://servicos.cbl.org.br/isbn/pesquisa/?page=1&q=${encodeURIComponent(isbn)}&filtrar_por%5B0%5D=isbn&ord%5B0%5D=relevancia&dir%5B0%5D=asc`;
       window.open(url, '_blank', 'noopener');
 
       if (copied) {
-        showMessage(refs.bookMessage, `Busca de ISBN aberta em ${source === 'bn' ? 'BN' : 'CBL'} com o número já copiado para conferência.`, 'info');
+        showMessage(refs.bookMessage, 'Busca de ISBN aberta na CBL com o número já copiado para conferência.', 'info');
       } else {
-        showMessage(refs.bookMessage, `Busca de ISBN aberta em ${source === 'bn' ? 'BN' : 'CBL'}.`, 'info');
+        showMessage(refs.bookMessage, 'Busca de ISBN aberta na CBL.', 'info');
       }
     }
 
