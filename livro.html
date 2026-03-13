@@ -561,7 +561,7 @@
       const idioma = colIdi ? (data[colIdi] || "") : "";
       const paginas = colPag ? (data[colPag] || "") : "";
       const tipoMaterial = colTipo ? (data[colTipo] || "") : "";
-      const colecao = colColecao ? (data[colColecao] || "") : "";
+      let colecao = colColecao ? (data[colColecao] || "") : "";
       const volume = colVolume ? (data[colVolume] || "") : "";
       const tradutor = colTradutor ? (data[colTradutor] || "") : "";
       const organizador = colOrganizador ? (data[colOrganizador] || "") : "";
@@ -584,6 +584,18 @@
         }
       }
 
+      if (!String(colecao || "").trim()) {
+        const fallbackColecao = await supabase
+          .from("books")
+          .select("colecao")
+          .eq("bib_ref", bib_ref)
+          .maybeSingle();
+
+        if (!fallbackColecao.error && fallbackColecao.data?.colecao) {
+          colecao = fallbackColecao.data.colecao;
+        }
+      }
+
       setCover(cover);
 
       $("title").textContent = titulo || "Sem título";
@@ -600,7 +612,7 @@
       setPill("langPill", "idioma", idioma);
       setPill("pagesPill", "páginas", paginas);
       setPill("typePill", "tipo", tipoMaterial);
-      setPill("collectionPill", "coleção", colecao);
+      setPill("collectionPill", "coleção / série", colecao);
       setPill("volumePill", "volume", volume);
       setPill("translatorPill", "tradutor", tradutor);
       setPill("organizerPill", "organizador", organizador);
