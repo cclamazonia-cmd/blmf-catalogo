@@ -1897,16 +1897,13 @@
       <div class="panel-body">
         <div class="grid cols-4" style="margin-bottom:16px;">
           <div class="field">
-            <label for="catalogSearch">Buscar no catálogo</label>
-            <input id="catalogSearch" type="text" placeholder="Título, autor, editora, referência…" />
+            <label for="catalogSearch">Buscar livros e autores</label>
+            <input id="catalogSearch" type="text" placeholder="Título, autor, editora, referência, país…" />
+            <small>Este campo único filtra ao mesmo tempo as tabelas de livros publicados e de autores publicados.</small>
           </div>
           <div class="field">
             <label for="catalogBatchId">Lote para o rascunho</label>
             <select id="catalogBatchId"></select>
-          </div>
-          <div class="field">
-            <label for="catalogAuthorSearch">Buscar autores</label>
-            <input id="catalogAuthorSearch" type="text" placeholder="Nome do autor" />
           </div>
           <div class="field">
             <label for="catalogExemplarSearch">Buscar exemplares</label>
@@ -2476,6 +2473,48 @@
       const given = tokens.slice(0, surnameStart).join(' ').trim();
       const surname = tokens.slice(surnameStart).join(' ').trim();
       return given ? `${surname}, ${given}` : surname;
+    }
+
+    function normalizeAuthorKeyJs(value = '') {
+      return String(value || '')
+        .normalize('NFD')
+        .replace(/[̀-ͯ]/g, '')
+        .toLowerCase()
+        .trim()
+        .replace(/[^a-z0-9]+/g, '');
+    }
+
+    function findExistingPublishedAuthorMatch({ sortName = '', preferredName = '', excludePublishedAuthorId = '' } = {}) {
+      const wantedSort = normalizeAuthorKeyJs(sortName);
+      const wantedPreferred = normalizeAuthorKeyJs(preferredName);
+      if (!wantedSort && !wantedPreferred) return null;
+      return (state.authors || []).find(author => {
+        if (excludePublishedAuthorId && String(author.id) === String(excludePublishedAuthorId)) return false;
+        const authorSort = normalizeAuthorKeyJs(author.sort_name || '');
+        const authorPreferred = normalizeAuthorKeyJs(author.preferred_name || '');
+        if (wantedSort && authorSort && authorSort === wantedSort) return true;
+        if (wantedPreferred && authorPreferred && authorPreferred === wantedPreferred) return true;
+        return false;
+      }) || null;
+    }
+
+    async function guardAuthorDuplicateBeforeSaveOrPublish(mode = 'salvar') {
+      const payload = getAuthorDraftPayload();
+      const duplicate = findExistingPublishedAuthorMatch({
+        sortName: payload.sort_name,
+        preferredName: payload.preferred_name,
+        excludePublishedAuthorId: payload.published_author_id,
+      });
+      if (!duplicate) return null;
+
+      await loadOrCreateAuthorDraftFromCatalog(duplicate.id);
+      const duplicateLabel = duplicate.sort_name || duplicate.preferred_name || `#${duplicate.id}`;
+      showMessage(
+        refs.authorMessage,
+        `Autor já existente no catálogo (${duplicateLabel}). Abri a ficha existente para evitar um novo doublon antes de ${mode}.`,
+        'info'
+      );
+      return duplicate;
     }
 
     function syncAuthorSortName(fallback = '') {
@@ -5100,20 +5139,9 @@
 
     function renderCatalogBooks() {
       const search = normalizeForSearch(el('catalogSearch').value);
-      const authorSearch = normalizeForSearch(el('catalogAuthorSearch').value);
       let items = [...state.books];
       if (search) {
         items = items.filter(book => getBookSearchIndex(book).includes(search));
-      }
-      if (authorSearch) {
-        items = items.filter(book => normalizeForSearch([
-          book.autor,
-          book.author,
-          book.titulo,
-          book.title,
-          book.subtitulo,
-          book.subtitle,
-        ].filter(Boolean).join(' ')).includes(authorSearch));
       }
       items = sortCatalogItems('books', items);
       if (!items.length) {
@@ -5221,10 +5249,16 @@
     }
 
     function renderCatalogAuthors() {
-      const search = el('catalogAuthorSearch').value.trim().toLowerCase();
+      const search = normalizeForSearch(el('catalogSearch').value);
       let items = [...state.authors];
       if (search) {
-        items = items.filter(author => [author.preferred_name, author.sort_name, author.country].filter(Boolean).join(' ').toLowerCase().includes(search));
+        items = items.filter(author => normalizeForSearch([
+          author.preferred_name,
+          author.sort_name,
+          author.country,
+          author.source_label,
+          author.source_kind,
+        ].filter(Boolean).join(' ')).includes(search));
       }
       items = sortCatalogItems('authors', items);
       if (!items.length) {
@@ -5516,6 +5550,8 @@
     el('authorForm').addEventListener('submit', async (event) => {
       event.preventDefault();
       try {
+        const duplicate = await guardAuthorDuplicateBeforeSaveOrPublish('salvar este rascunho');
+        if (duplicate) return;
         const payload = await reuseExistingDraftIdIfNeeded('author_drafts', getAuthorDraftPayload(), 'published_author_id');
         if (!payload.preferred_name) throw new Error('Informe o nome do autor em Nome, SOBRENOME.');
         const saved = await saveDraft('author_drafts', payload, refs.authorMessage, 'Rascunho de autor salvo com sucesso.');
@@ -5703,6 +5739,8 @@
         return;
       }
       try {
+        const duplicate = await guardAuthorDuplicateBeforeSaveOrPublish('publicar este rascunho');
+        if (duplicate) return;
         const draftId = el('authorDraftId').value;
         if (!draftId) throw new Error('Salve o rascunho antes de publicar.');
         setPublishLock('author', true);
@@ -5965,8 +6003,7 @@
         openActiveDraftsView();
       }
     });
-    el('catalogSearch').addEventListener('input', renderCatalogBooks);
-    el('catalogAuthorSearch').addEventListener('input', () => {
+    el('catalogSearch').addEventListener('input', () => {
       renderCatalogBooks();
       renderCatalogAuthors();
     });
