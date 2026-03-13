@@ -576,24 +576,13 @@
 
     .author-assist-panel {
       margin-top: 10px;
-      padding: 14px;
+      padding: 12px;
       border-radius: 16px;
-      border: 1px solid rgba(225,29,47,.35);
-      background: linear-gradient(180deg, rgba(179,0,24,.22), rgba(255,255,255,.03));
-      box-shadow: 0 0 0 1px rgba(225,29,47,.08) inset;
+      border: 1px solid rgba(255,255,255,.10);
+      background: linear-gradient(180deg, rgba(179,0,24,.14), rgba(255,255,255,.02));
       display: flex;
       flex-direction: column;
       gap: 12px;
-    }
-
-    .author-assist-callout {
-      display: inline-flex;
-      align-items: center;
-      gap: 8px;
-      font-size: .88rem;
-      font-weight: 800;
-      color: #ffe3e7;
-      letter-spacing: .02em;
     }
 
     .author-assist-preview {
@@ -1424,6 +1413,22 @@
               <input id="bookPages" type="number" min="1" />
             </div>
 
+            <div class="field" style="grid-column: span 3;">
+              <div class="book-quick-label-preview">
+                <div class="book-quick-label-top">
+                  <h4 class="autofill-panel-title">Prévia rápida da etiqueta de cote</h4>
+                  <div class="hint">Apenas visual: ajuda a ver na hora como a combinação autor + CDD + título vai aparecer.</div>
+                </div>
+                <div class="book-quick-label-card">
+                  <div id="bookQuickLabelCode" class="book-quick-label-code">---</div>
+                  <div id="bookQuickLabelTitle" class="book-quick-label-title">Título</div>
+                  <div id="bookQuickLabelAuthor" class="book-quick-label-meta">Autor: —</div>
+                  <div id="bookQuickLabelCDD" class="book-quick-label-meta">CDD: —</div>
+                  <div id="bookQuickLabelShelf" class="book-quick-label-meta">Leitura visual da etiqueta ainda durante a catalogação.</div>
+                </div>
+              </div>
+            </div>
+
             <div class="field">
               <label for="bookLoanable">Empréstimo</label>
               <select id="bookLoanable">
@@ -1504,23 +1509,6 @@
             </div>
 
             <div class="field" style="grid-column: span 2;">
-              <label for="authorAssistRawName">Assistência para variantes de nome</label>
-              <div class="author-assist-callout">Usa primeiro este bloco quando o nome tiver variante, partícula ou forma militante.</div>
-              <input id="authorAssistRawName" type="text" placeholder="Bakunin, Mikhail Aleksandrovich, 1814-1876 ou Rafael VIANA (DA SILVA)" />
-              <small>Use aqui o nome bruto vindo da BN, de um livro ou de outra fonte. O texto entre parênteses é tratado como complemento do sobrenome oficial.</small>
-              <div class="author-assist-panel">
-                <div class="autofill-actions">
-                  <button id="previewAuthorAssistBtn" type="button" class="btn-inline small secondary">Pré-visualizar sugestão</button>
-                  <button id="applyAuthorAssistBtn" type="button" class="btn-inline small primary">Preencher ficha de autor</button>
-                </div>
-                <div class="hint">Preencha aqui antes de mexer manualmente em “Nome SOBRENOME”. A sugestão nunca sobrescreve campos já preenchidos.</div>
-                <div id="authorAssistPreview" class="author-assist-preview">
-                  <div class="hint">Nenhuma sugestão calculada ainda.</div>
-                </div>
-              </div>
-            </div>
-
-            <div class="field" style="grid-column: span 2;">
               <label for="authorPreferredName">Nome SOBRENOME</label>
               <input id="authorPreferredName" type="text" placeholder="Osvaldo BAYER" required />
             </div>
@@ -1529,6 +1517,23 @@
               <label for="authorSortName">Nome para ordenação</label>
               <input id="authorSortName" class="author-sort-lock" type="text" placeholder="BAYER, Osvaldo" readonly aria-readonly="true" />
               <small>Preenchido automaticamente a partir do campo “Nome SOBRENOME”.</small>
+            </div>
+
+
+            <div class="field" style="grid-column: span 3;">
+              <label for="authorAssistRawName">Assistência para variantes de nome</label>
+              <input id="authorAssistRawName" type="text" placeholder="Bakunin, Mikhail Aleksandrovich, 1814-1876 ou Rafael VIANA (DA SILVA)" />
+              <small>Use aqui o nome bruto vindo da BN, de um livro ou de outra fonte. O texto entre parênteses é tratado como variante complementar do sobrenome oficial.</small>
+              <div class="author-assist-panel">
+                <div class="autofill-actions">
+                  <button id="previewAuthorAssistBtn" type="button" class="btn-inline small secondary">Pré-visualizar sugestão</button>
+                  <button id="applyAuthorAssistBtn" type="button" class="btn-inline small primary">Preencher ficha de autor</button>
+                </div>
+                <div class="hint">A sugestão nunca sobrescreve campos já preenchidos.</div>
+                <div id="authorAssistPreview" class="author-assist-preview">
+                  <div class="hint">Nenhuma sugestão calculada ainda.</div>
+                </div>
+              </div>
             </div>
 
             <div class="field">
@@ -1892,16 +1897,13 @@
       <div class="panel-body">
         <div class="grid cols-4" style="margin-bottom:16px;">
           <div class="field">
-            <label for="catalogSearch">Buscar no catálogo</label>
-            <input id="catalogSearch" type="text" placeholder="Título, autor, editora, referência…" />
+            <label for="catalogSearch">Buscar livros e autores</label>
+            <input id="catalogSearch" type="text" placeholder="Título, autor, editora, referência, país…" />
+            <small>Este campo único filtra ao mesmo tempo as tabelas de livros publicados e de autores publicados.</small>
           </div>
           <div class="field">
             <label for="catalogBatchId">Lote para o rascunho</label>
             <select id="catalogBatchId"></select>
-          </div>
-          <div class="field">
-            <label for="catalogAuthorSearch">Buscar autores</label>
-            <input id="catalogAuthorSearch" type="text" placeholder="Nome do autor" />
           </div>
           <div class="field">
             <label for="catalogExemplarSearch">Buscar exemplares</label>
@@ -2038,7 +2040,14 @@
       exemplarPublishedPopupBtn: el('exemplarPublishedPopupBtn'),
       labelPublishedPopupBtn: el('labelPublishedPopupBtn'),
       authorAssistRawName: el('authorAssistRawName'),
+      previewAuthorAssistBtn: el('previewAuthorAssistBtn'),
+      applyAuthorAssistBtn: el('applyAuthorAssistBtn'),
       authorAssistPreview: el('authorAssistPreview'),
+      bookQuickLabelCode: el('bookQuickLabelCode'),
+      bookQuickLabelCDD: el('bookQuickLabelCDD'),
+      bookQuickLabelTitle: el('bookQuickLabelTitle'),
+      bookQuickLabelAuthor: el('bookQuickLabelAuthor'),
+      bookQuickLabelShelf: el('bookQuickLabelShelf'),
 
     };
 
@@ -2053,6 +2062,8 @@
         bookDuplicateHint: el('bookDuplicateHint'),
         bookSubjectSuggestions: el('bookSubjectSuggestions'),
         copySubjectSuggestionsBtn: el('copySubjectSuggestionsBtn'),
+        bookSuggestedCollection: el('bookSuggestedCollection'),
+        applySuggestedCollectionBtn: el('applySuggestedCollectionBtn'),
         bookBnDebugWrap: el('bookBnDebugWrap'),
         bookBnDebugContent: el('bookBnDebugContent'),
       };
@@ -2216,6 +2227,35 @@
       return CDD_SUGGESTION_TABLE.find(item => item.match.some(term => haystack.includes(normalizeForSearch(term)))) || null;
     }
 
+    function detectCollectionSuggestion(rawData = {}) {
+      const sources = [];
+      const item = Array.isArray(rawData?.results) && rawData.results.length ? rawData.results[0] : null;
+      [
+        item?.collection,
+        item?.series,
+        rawData?.collection,
+        rawData?.series,
+        item?.title,
+        item?.publication,
+      ].forEach(value => {
+        const clean = decodeHtmlEntities(normalizeInlineWhitespace(String(value || '')));
+        if (clean) sources.push(clean);
+      });
+      const patterns = [
+        /(cole(?:ção|cao|c\.)\s+[A-ZÀ-ÿ0-9][^.;:|\]\[]*)/i,
+        /(s[ée]rie\s+[A-ZÀ-ÿ0-9][^.;:|\]\[]*)/i,
+      ];
+      for (const source of sources) {
+        for (const pattern of patterns) {
+          const match = source.match(pattern);
+          if (match && match[1]) {
+            return normalizeInlineWhitespace(match[1].replace(/\s+/g, ' '));
+          }
+        }
+      }
+      return '';
+    }
+
     function findDuplicateBookByIsbn(isbn = '') {
       const normalized = normalizeISBN(isbn);
       if (!normalized) return null;
@@ -2231,6 +2271,7 @@
       const subjects = extractSubjects(item.subject || '');
       const language = detectLanguageCode(item.material || '');
       const cdd = suggestCDD(subjects);
+      const collection = detectCollectionSuggestion(data);
       return {
         raw: data,
         title: titleInfo.title,
@@ -2241,6 +2282,7 @@
         subjects,
         language,
         cdd,
+        collection,
         detailUrl: item.detail_url || data.result_url || '',
         duplicate: findDuplicateBookByIsbn(el('bookISBN')?.value || ''),
         fieldMap: {
@@ -2252,6 +2294,7 @@
           year: publication.year,
           language,
           cdd,
+          collection,
           subjects,
         },
       };
@@ -2404,20 +2447,11 @@
       const parsed = previewAuthorAssist();
       if (!parsed) return;
       let changes = 0;
-      const preferredField = el('authorPreferredName');
-      const sortField = el('authorSortName');
-      const currentPreferred = String(preferredField?.value || '').trim();
-      const currentRaw = String(refs.authorAssistRawName?.value || '').trim();
-      if (!currentPreferred || currentPreferred === currentRaw) {
-        preferredField.value = parsed.preferredName || currentPreferred;
-        preferredField.dispatchEvent(new Event('input', { bubbles: true }));
-        preferredField.dispatchEvent(new Event('change', { bubbles: true }));
-        if (parsed.preferredName) changes += 1;
-      }
+      changes += fillIfEmpty(el('authorPreferredName'), parsed.preferredName) ? 1 : 0;
       changes += fillIfEmpty(el('authorBirthYear'), parsed.birthYear) ? 1 : 0;
       changes += fillIfEmpty(el('authorDeathYear'), parsed.deathYear) ? 1 : 0;
-      if ((!String(sortField?.value || '').trim() || String(sortField?.value || '').trim() === buildAuthorSortName(currentRaw)) && parsed.sortName) {
-        sortField.value = parsed.sortName;
+      if (!String(el('authorSortName')?.value || '').trim() && parsed.sortName) {
+        el('authorSortName').value = parsed.sortName;
         changes += 1;
       }
       if (parsed.variantNote && !String(el('authorNotes')?.value || '').trim()) {
@@ -2428,24 +2462,130 @@
       showMessage(refs.authorMessage, changes ? 'Sugestão de autor aplicada sem sobrescrever campos já preenchidos.' : 'Nada foi alterado: os campos principais já estavam preenchidos.', 'ok');
     }
 
-    function buildAuthorSortName(preferredName = '') {
+    function buildCanonicalAuthorNameParts(preferredName = '') {
       const clean = normalizeInlineWhitespace(String(preferredName || '').replace(/,/g, ' '));
-      if (!clean) return '';
+      if (!clean) return { given: '', surname: '', canonicalPreferred: '', canonicalSort: '' };
+
       const tokens = clean.split(' ').filter(Boolean);
-      if (!tokens.length) return '';
-      let surnameStart = tokens.findIndex((token, index) => index > 0 && isUppercaseNameToken(token));
-      if (surnameStart === -1 && tokens.length > 1) surnameStart = tokens.length - 1;
-      if (surnameStart <= 0) return clean;
-      const given = tokens.slice(0, surnameStart).join(' ').trim();
-      const surname = tokens.slice(surnameStart).join(' ').trim();
-      return given ? `${surname}, ${given}` : surname;
+      if (!tokens.length) return { given: '', surname: '', canonicalPreferred: '', canonicalSort: '' };
+
+      let surnameTokens = [];
+      let givenTokens = [];
+
+      const firstUpperIndex = tokens.findIndex((token, index) => index > 0 && isUppercaseNameToken(token));
+      if (firstUpperIndex > 0) {
+        givenTokens = tokens.slice(0, firstUpperIndex);
+        surnameTokens = tokens.slice(firstUpperIndex);
+      } else if (tokens.length >= 2) {
+        givenTokens = tokens.slice(0, -1);
+        surnameTokens = tokens.slice(-1);
+      } else {
+        givenTokens = tokens.slice(0, 1);
+      }
+
+      const surname = normalizeInlineWhitespace(surnameTokens.join(' ')).toLocaleUpperCase('pt-BR');
+      const given = normalizeInlineWhitespace(givenTokens.map(titleCaseLoose).join(' '));
+      const canonicalPreferred = [given, surname].filter(Boolean).join(' ').trim();
+      const canonicalSort = surname && given ? `${surname}, ${given}` : (surname || given || '');
+
+      return { given, surname, canonicalPreferred, canonicalSort };
     }
 
-    function syncAuthorSortName(fallback = '') {
-      const computed = buildAuthorSortName(el('authorPreferredName')?.value || '');
+    function buildAuthorSortName(preferredName = '') {
+      return buildCanonicalAuthorNameParts(preferredName).canonicalSort;
+    }
+
+    function normalizeAuthorKeyJs(value = '') {
+      return String(value || '')
+        .normalize('NFD')
+        .replace(/[̀-ͯ]/g, '')
+        .toLowerCase()
+        .trim()
+        .replace(/[^a-z0-9]+/g, '');
+    }
+
+    function normalizeBrazilianAuthorSortKey(value = '') {
+      const raw = normalizeInlineWhitespace(String(value || ''));
+      if (!raw) return '';
+      const parts = raw.includes(',')
+        ? raw.split(',').map(item => normalizeInlineWhitespace(item)).filter(Boolean)
+        : [];
+      const left = parts[0] || '';
+      const right = parts.slice(1).join(' ') || '';
+      const canonicalFromComma = left && right
+        ? `${left.toLocaleUpperCase('pt-BR')}, ${titleCaseLoose(right)}`
+        : buildCanonicalAuthorNameParts(raw).canonicalSort;
+      return normalizeAuthorKeyJs(canonicalFromComma || raw);
+    }
+
+    function normalizeAuthorTokenBagKey(value = '') {
+      const raw = normalizeInlineWhitespace(String(value || '').replace(/,/g, ' '));
+      if (!raw) return '';
+      const stopwords = new Set(['da', 'de', 'do', 'das', 'dos', 'e']);
+      const tokens = raw
+        .normalize('NFD')
+        .replace(/[̀-ͯ]/g, '')
+        .toLowerCase()
+        .split(/[^a-z0-9]+/)
+        .map(token => token.trim())
+        .filter(Boolean)
+        .filter(token => !stopwords.has(token));
+      if (!tokens.length) return '';
+      return tokens.sort().join('|');
+    }
+
+    function findExistingPublishedAuthorMatch({ sortName = '', preferredName = '', excludePublishedAuthorId = '' } = {}) {
+      const wantedSort = normalizeAuthorKeyJs(sortName);
+      const wantedPreferred = normalizeAuthorKeyJs(preferredName);
+      const wantedBrazilianSort = normalizeBrazilianAuthorSortKey(sortName || preferredName || '');
+      const wantedTokenBag = normalizeAuthorTokenBagKey(sortName || preferredName || '');
+      if (!wantedSort && !wantedPreferred && !wantedBrazilianSort && !wantedTokenBag) return null;
+      return (state.authors || []).find(author => {
+        if (excludePublishedAuthorId && String(author.id) === String(excludePublishedAuthorId)) return false;
+        const authorSort = normalizeAuthorKeyJs(author.sort_name || '');
+        const authorPreferred = normalizeAuthorKeyJs(author.preferred_name || '');
+        const authorBrazilianSort = normalizeBrazilianAuthorSortKey(author.sort_name || author.preferred_name || '');
+        const authorTokenBag = normalizeAuthorTokenBagKey(author.sort_name || author.preferred_name || '');
+        if (wantedSort && authorSort && authorSort === wantedSort) return true;
+        if (wantedPreferred && authorPreferred && authorPreferred === wantedPreferred) return true;
+        if (wantedBrazilianSort && authorBrazilianSort && authorBrazilianSort === wantedBrazilianSort) return true;
+        if (wantedTokenBag && authorTokenBag && authorTokenBag === wantedTokenBag) return true;
+        return false;
+      }) || null;
+    }
+
+    async function guardAuthorDuplicateBeforeSaveOrPublish(mode = 'salvar') {
+      const payload = getAuthorDraftPayload();
+      const duplicate = findExistingPublishedAuthorMatch({
+        sortName: payload.sort_name,
+        preferredName: payload.preferred_name,
+        excludePublishedAuthorId: payload.published_author_id,
+      });
+      if (!duplicate) return null;
+
+      await loadOrCreateAuthorDraftFromCatalog(duplicate.id);
+      const duplicateLabel = duplicate.sort_name || duplicate.preferred_name || `#${duplicate.id}`;
+      showMessage(
+        refs.authorMessage,
+        `Autor já existente no catálogo (${duplicateLabel}). Abri a ficha existente para evitar um novo doublon antes de ${mode}.`,
+        'info'
+      );
+      return duplicate;
+    }
+
+    function syncAuthorSortName(fallback = '', options = {}) {
+      const preferredField = el('authorPreferredName');
       const sortField = el('authorSortName');
-      if (!sortField) return;
-      sortField.value = computed || fallback || '';
+      if (!sortField || !preferredField) return;
+      const preservePublished = options.preservePublished ?? !!el('authorPublishedId')?.value;
+      if (preservePublished && !options.force) {
+        if (fallback && !String(sortField.value || '').trim()) {
+          sortField.value = fallback;
+        }
+        return;
+      }
+      const parts = buildCanonicalAuthorNameParts(preferredField.value || '');
+      sortField.value = parts.canonicalSort || fallback || '';
     }
 
     function compareSortableValues(left, right, direction = 'asc') {
@@ -2557,7 +2697,7 @@
       btn.classList.remove('is-hidden');
       btn.classList.add('show');
       btn.setAttribute('aria-hidden', 'false');
-      publishPopupTimers[kind] = window.setTimeout(() => hidePublishedPopup(kind), 2600);
+      publishPopupTimers[kind] = window.setTimeout(() => hidePublishedPopup(kind), 6200);
     }
 
     function showPublishedPopup(kind) {
@@ -3034,6 +3174,9 @@
       const bnRefs = getBnUiRefs();
       if (!bnRefs.bookAutofillPanel) return;
       bnRefs.bookSuggestedCDD.textContent = parsed?.cdd ? `${parsed.cdd.cdd} (${parsed.cdd.label})` : 'Nenhuma sugestão.';
+      if (bnRefs.bookSuggestedCollection) {
+        bnRefs.bookSuggestedCollection.textContent = parsed?.collection || 'Nenhuma sugestão.';
+      }
       bnRefs.bookDuplicateHint.innerHTML = parsed?.duplicate
         ? `⚠ livro já existe no catálogo: ${sanitize(getBookDisplayTitle(parsed.duplicate))} · ref. ${sanitize(parsed.duplicate.bib_ref || '—')}`
         : 'Nenhum ISBN idêntico encontrado no catálogo carregado.';
@@ -3042,6 +3185,7 @@
       bnRefs.openBnDetailBtn.disabled = !parsed?.detailUrl;
       bnRefs.toggleBnDebugBtn.disabled = !parsed;
       bnRefs.applySuggestedCDDBtn.disabled = !(parsed?.cdd?.cdd);
+      if (bnRefs.applySuggestedCollectionBtn) bnRefs.applySuggestedCollectionBtn.disabled = !(parsed?.collection);
       updateBnDebugContent();
     }
 
@@ -3098,6 +3242,10 @@
         bnRefs.copySubjectSuggestionsBtn.addEventListener('click', copySelectedSubjectSuggestions);
         bnRefs.copySubjectSuggestionsBtn.dataset.bound = '1';
       }
+      if (bnRefs.applySuggestedCollectionBtn && !bnRefs.applySuggestedCollectionBtn.dataset.bound) {
+        bnRefs.applySuggestedCollectionBtn.addEventListener('click', applySuggestedCollection);
+        bnRefs.applySuggestedCollectionBtn.dataset.bound = '1';
+      }
     }
 
     function applyBnAutofill() {
@@ -3113,6 +3261,7 @@
       changes += fillIfEmpty(el('bookPlace'), parsed.publication.place) ? 1 : 0;
       changes += fillIfEmpty(el('bookYear'), parsed.publication.year) ? 1 : 0;
       changes += fillIfEmpty(el('bookLanguage'), parsed.language) ? 1 : 0;
+      changes += fillIfEmpty(el('bookCollection'), parsed.collection) ? 1 : 0;
       if (contributorsFormIsEmpty() && parsed.authors?.length) {
         renderBookContributors(parsed.authors.map((name, index) => ({
           position: index + 1,
@@ -3141,7 +3290,23 @@
       }
       fillIfEmpty(el('bookCDD'), parsed.cdd.cdd);
       syncBookDraftVisualState();
+      updateBookQuickLabelPreview();
       showMessage(refs.bookMessage, 'CDD sugerida aplicada sem sobrescrever dados existentes.', 'ok');
+    }
+
+    function applySuggestedCollection() {
+      const parsed = state.bnLookup;
+      if (!parsed?.collection) {
+        showMessage(refs.bookMessage, 'Nenhuma sugestão de coleção disponível.', 'error');
+        return;
+      }
+      if (String(el('bookCollection')?.value || '').trim()) {
+        showMessage(refs.bookMessage, 'O campo Coleção já está preenchido; a sugestão continua visível apenas como apoio.', 'info');
+        return;
+      }
+      fillIfEmpty(el('bookCollection'), parsed.collection);
+      syncBookDraftVisualState();
+      showMessage(refs.bookMessage, 'Coleção sugerida aplicada sem sobrescrever dados existentes.', 'ok');
     }
 
     async function copySelectedSubjectSuggestions() {
@@ -3225,6 +3390,13 @@
                 <div id="bookSuggestedCDD" class="autofill-value">Nenhuma sugestão.</div>
                 <div class="row-actions" style="margin-top:8px;">
                   <button id="applySuggestedCDDBtn" type="button" class="btn-inline small secondary" disabled>Aplicar CDD</button>
+                </div>
+              </div>
+              <div class="autofill-box">
+                <strong>Coleção sugerida</strong>
+                <div id="bookSuggestedCollection" class="autofill-value">Nenhuma sugestão.</div>
+                <div class="row-actions" style="margin-top:8px;">
+                  <button id="applySuggestedCollectionBtn" type="button" class="btn-inline small secondary" disabled>Aplicar coleção</button>
                 </div>
               </div>
               <div class="autofill-box">
@@ -3508,9 +3680,11 @@
       if (!contributors.length) {
         refs.bookResponsibilityExtraWrap.innerHTML = '';
         refs.bookResponsibilityExtraWrap.classList.add('is-hidden');
+        updateBookQuickLabelPreview();
         return;
       }
       renderBookResponsibilitySummary(contributors);
+      updateBookQuickLabelPreview();
     }
 
     function syncBookTypeUI() {
@@ -3723,11 +3897,13 @@
     }
 
     function getAuthorDraftPayload() {
+      const publishedAuthorId = el('authorPublishedId').value || null;
+      const actionValue = publishedAuthorId ? 'update' : (el('authorAction').value || 'create');
       return {
         id: el('authorDraftId').value || undefined,
-        published_author_id: el('authorPublishedId').value || null,
+        published_author_id: publishedAuthorId,
         batch_id: el('authorBatchId').value || null,
-        action: el('authorAction').value || 'create',
+        action: actionValue,
         status: 'draft',
         preferred_name: el('authorPreferredName').value.trim(),
         sort_name: el('authorSortName').value.trim() || null,
@@ -3790,6 +3966,7 @@
       bookDraftBaseline = serializeBookFormState();
       setBookDraftVisualState('new');
       clearMessage(refs.bookMessage);
+      updateBookQuickLabelPreview();
     }
 
     function resetAuthorForm() {
@@ -3822,6 +3999,21 @@
       if (refs.labelCurrentBibRef) refs.labelCurrentBibRef.textContent = el('exemplarBibRef').value || '—';
       if (refs.labelCurrentTombo) refs.labelCurrentTombo.textContent = el('exemplarTombo').value || '—';
       if (refs.labelCurrentShelf) refs.labelCurrentShelf.textContent = el('exemplarShelf').value || '—';
+    }
+
+    function updateBookQuickLabelPreview() {
+      if (!refs.bookQuickLabelCode) return;
+      const author = String(el('bookAuthor')?.value || '').trim();
+      const title = String(el('bookTitle')?.value || '').trim();
+      const cdd = String(el('bookCDD')?.value || '').trim();
+      const collection = String(el('bookCollection')?.value || '').trim();
+      refs.bookQuickLabelCode.textContent = getAuthorTrigram(author || '---');
+      refs.bookQuickLabelTitle.textContent = title || 'Título';
+      refs.bookQuickLabelAuthor.textContent = `Autor: ${author || '—'}`;
+      refs.bookQuickLabelCDD.textContent = `CDD: ${cdd || '—'}`;
+      refs.bookQuickLabelShelf.textContent = collection
+        ? `Coleção / série: ${collection}`
+        : 'Sem coleção sugerida no momento.';
     }
 
     function resetLabelForm(clearMessageBox = true) {
@@ -3879,8 +4071,14 @@
     });
 
     Array.from(el('bookForm').querySelectorAll('input, textarea, select')).forEach(node => {
-      node.addEventListener('input', syncBookDraftVisualState);
-      node.addEventListener('change', syncBookDraftVisualState);
+      node.addEventListener('input', () => {
+        syncBookDraftVisualState();
+        updateBookQuickLabelPreview();
+      });
+      node.addEventListener('change', () => {
+        syncBookDraftVisualState();
+        updateBookQuickLabelPreview();
+      });
     });
 
     Array.from(el('authorForm').querySelectorAll('input, textarea, select')).forEach(node => {
@@ -4094,16 +4292,19 @@
       syncBookResponsibilitySummary();
       setPreviewImage(refs.bookCoverPreview, enriched.cover_object_path || '', 'covers');
       refs.bookCoverFileName.textContent = 'Nenhum arquivo selecionado';
+      updateBookQuickLabelPreview();
     }
 
     function fillAuthorForm(record) {
       setTab('authorsPanel');
+      const publishedAuthorId = record.published_author_id || '';
+      const resolvedAction = publishedAuthorId ? 'update' : (record.action || 'create');
       el('authorDraftId').value = record.id || '';
-      el('authorPublishedId').value = record.published_author_id || '';
-      el('authorAction').value = record.action || 'create';
+      el('authorPublishedId').value = publishedAuthorId;
+      el('authorAction').value = resolvedAction;
       el('authorBatchId').value = record.batch_id || '';
       el('authorPreferredName').value = record.preferred_name || '';
-      syncAuthorSortName(record.sort_name || '');
+      syncAuthorSortName(record.sort_name || '', { preservePublished: !!publishedAuthorId });
       el('authorBiography').value = record.biography || '';
       el('authorBirthYear').value = record.birth_year || '';
       el('authorDeathYear').value = record.death_year || '';
@@ -5006,20 +5207,9 @@
 
     function renderCatalogBooks() {
       const search = normalizeForSearch(el('catalogSearch').value);
-      const authorSearch = normalizeForSearch(el('catalogAuthorSearch').value);
       let items = [...state.books];
       if (search) {
         items = items.filter(book => getBookSearchIndex(book).includes(search));
-      }
-      if (authorSearch) {
-        items = items.filter(book => normalizeForSearch([
-          book.autor,
-          book.author,
-          book.titulo,
-          book.title,
-          book.subtitulo,
-          book.subtitle,
-        ].filter(Boolean).join(' ')).includes(authorSearch));
       }
       items = sortCatalogItems('books', items);
       if (!items.length) {
@@ -5127,10 +5317,16 @@
     }
 
     function renderCatalogAuthors() {
-      const search = el('catalogAuthorSearch').value.trim().toLowerCase();
+      const search = normalizeForSearch(el('catalogSearch').value);
       let items = [...state.authors];
       if (search) {
-        items = items.filter(author => [author.preferred_name, author.sort_name, author.country].filter(Boolean).join(' ').toLowerCase().includes(search));
+        items = items.filter(author => normalizeForSearch([
+          author.preferred_name,
+          author.sort_name,
+          author.country,
+          author.source_label,
+          author.source_kind,
+        ].filter(Boolean).join(' ')).includes(search));
       }
       items = sortCatalogItems('authors', items);
       if (!items.length) {
@@ -5422,8 +5618,12 @@
     el('authorForm').addEventListener('submit', async (event) => {
       event.preventDefault();
       try {
+        const currentPublishedAuthorId = el('authorPublishedId').value || '';
+        const duplicate = currentPublishedAuthorId ? null : await guardAuthorDuplicateBeforeSaveOrPublish('salvar este rascunho');
+        if (duplicate) return;
         const payload = await reuseExistingDraftIdIfNeeded('author_drafts', getAuthorDraftPayload(), 'published_author_id');
         if (!payload.preferred_name) throw new Error('Informe o nome do autor em Nome, SOBRENOME.');
+        if (payload.published_author_id) payload.action = 'update';
         const saved = await saveDraft('author_drafts', payload, refs.authorMessage, 'Rascunho de autor salvo com sucesso.');
         fillAuthorForm(saved);
       } catch (error) {
@@ -5609,10 +5809,14 @@
         return;
       }
       try {
+        const currentPublishedAuthorId = el('authorPublishedId').value || '';
+        const duplicate = currentPublishedAuthorId ? null : await guardAuthorDuplicateBeforeSaveOrPublish('publicar este rascunho');
+        if (duplicate) return;
         const draftId = el('authorDraftId').value;
         if (!draftId) throw new Error('Salve o rascunho antes de publicar.');
         setPublishLock('author', true);
         const authorPayload = getAuthorDraftPayload();
+        if (authorPayload.published_author_id) authorPayload.action = 'update';
         const { id: _ignoredAuthorId, ...authorUpdatePayload } = authorPayload;
         const { error: authorSaveError } = await supabase
           .from('author_drafts')
@@ -5654,7 +5858,17 @@
         await Promise.all([loadQueue(), loadBatches(), loadCatalog()]);
         setTab(currentTab);
         updateStats();
-        resetAuthorForm();
+        const publishedDraftId = Number(draftId);
+        const { data: finalDraftState, error: finalDraftError } = await supabase
+          .from('author_drafts')
+          .select('*')
+          .eq('id', publishedDraftId)
+          .single();
+        if (finalDraftError) throw finalDraftError;
+        fillAuthorForm(finalDraftState);
+        authorDraftStableState = 'published';
+        authorDraftBaseline = serializeAuthorFormState();
+        setAuthorDraftVisualState('published');
         setTab(currentTab);
         showPublishedPopup('author');
         showMessage(refs.authorMessage, `Rascunho de autor publicado com sucesso.${authorLinkMessage}`, authorLinkMessage ? 'error' : 'ok');
@@ -5772,21 +5986,20 @@
     el('exemplarDraftResetBtn').addEventListener('click', resetExemplarForm);
     el('labelDraftResetBtn').addEventListener('click', resetExemplarForm);
 
-    el('bookType').addEventListener('change', syncBookTypeUI);
+    el('bookType').addEventListener('change', () => {
+      syncBookTypeUI();
+      updateBookQuickLabelPreview();
+    });
+    if (refs.previewAuthorAssistBtn) refs.previewAuthorAssistBtn.addEventListener('click', previewAuthorAssist);
+    if (refs.applyAuthorAssistBtn) refs.applyAuthorAssistBtn.addEventListener('click', applyAuthorAssist);
     el('authorPreferredName').addEventListener('input', () => {
-      syncAuthorSortName();
+      syncAuthorSortName('', { preservePublished: !!el('authorPublishedId').value });
       syncAuthorDraftVisualState();
     });
     el('authorPreferredName').addEventListener('change', () => {
-      syncAuthorSortName();
+      syncAuthorSortName('', { preservePublished: !!el('authorPublishedId').value });
       syncAuthorDraftVisualState();
     });
-    if (el('previewAuthorAssistBtn')) {
-      el('previewAuthorAssistBtn').addEventListener('click', previewAuthorAssist);
-    }
-    if (el('applyAuthorAssistBtn')) {
-      el('applyAuthorAssistBtn').addEventListener('click', applyAuthorAssist);
-    }
 
     el('openIsbnBnBtn').addEventListener('click', () => openIsbnLookup('bn'));
     el('openIsbnCblBtn').addEventListener('click', () => openIsbnLookup('cbl'));
@@ -5872,8 +6085,7 @@
         openActiveDraftsView();
       }
     });
-    el('catalogSearch').addEventListener('input', renderCatalogBooks);
-    el('catalogAuthorSearch').addEventListener('input', () => {
+    el('catalogSearch').addEventListener('input', () => {
       renderCatalogBooks();
       renderCatalogAuthors();
     });
