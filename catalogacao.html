@@ -2528,74 +2528,16 @@
       }
 
       const copied = await copyIsbnIfPossible(isbn);
+      const url = source === 'bn'
+        ? `https://acervo.bn.gov.br/sophia_web/acervo/ISBN/${encodeURIComponent(isbn)}`
+        : `https://servicos.cbl.org.br/isbn/pesquisa/?page=1&q=${encodeURIComponent(isbn)}&filtrar_por%5B0%5D=isbn&ord%5B0%5D=relevancia&dir%5B0%5D=asc`;
 
-      if (source === 'bn') {
-        const bnSearchUrl = 'https://acervo.bn.gov.br/sophia_web/busca/acervo/isbn/';
-        const bnResultUrl = 'https://acervo.bn.gov.br/Sophia_Web/Resultado/Listar';
-        const targetName = `bn_isbn_${Date.now()}`;
-        const searchWindow = window.open('about:blank', targetName);
-
-        if (!searchWindow) {
-          showMessage(refs.bookMessage, 'Não foi possível abrir a janela da BN. Verifique se o navegador bloqueou a abertura.', 'error');
-          return;
-        }
-
-        const fields = [
-          ['q', isbn],
-          ['query', isbn],
-          ['isbn', isbn],
-          ['termo', isbn],
-          ['texto', isbn],
-          ['palavraChave', isbn],
-          ['busca', isbn],
-          ['pesquisa', isbn],
-          ['quickSearch', isbn],
-          ['consulta', isbn],
-          ['valor', isbn],
-        ];
-
-        const html = `<!DOCTYPE html>
-<html lang="pt-BR">
-<head><meta charset="utf-8"><title>Redirecionando…</title></head>
-<body>
-<form id="bnResultForm" method="get" action="${bnResultUrl}">
-  ${fields.map(([name, value]) => `<input type="hidden" name="${name}" value="${String(value).replace(/&/g, '&amp;').replace(/"/g, '&quot;')}">`).join('')}
-</form>
-<form id="bnSearchForm" method="get" action="${bnSearchUrl}">
-  ${fields.map(([name, value]) => `<input type="hidden" name="${name}" value="${String(value).replace(/&/g, '&amp;').replace(/"/g, '&quot;')}">`).join('')}
-</form>
-<script>
-  try {
-    document.getElementById('bnResultForm').submit();
-    setTimeout(function () {
-      try { document.getElementById('bnSearchForm').submit(); } catch (e) {}
-    }, 900);
-  } catch (e) {
-    try { document.getElementById('bnSearchForm').submit(); } catch (err) {}
-  }
-<\/script>
-</body>
-</html>`;
-
-        searchWindow.document.open();
-        searchWindow.document.write(html);
-        searchWindow.document.close();
-
-        if (copied) {
-          showMessage(refs.bookMessage, 'Busca de ISBN aberta na BN com o número já copiado para conferência.', 'info');
-        } else {
-          showMessage(refs.bookMessage, 'Busca de ISBN aberta na BN.', 'info');
-        }
-        return;
-      }
-
-      const url = `https://servicos.cbl.org.br/isbn/pesquisa/?page=1&q=${encodeURIComponent(isbn)}&filtrar_por%5B0%5D=isbn&ord%5B0%5D=relevancia&dir%5B0%5D=asc`;
       window.open(url, '_blank', 'noopener');
 
       if (copied) {
-        showMessage(refs.bookMessage, 'Busca de ISBN aberta na CBL com o número já copiado para conferência.', 'info');
+        showMessage(refs.bookMessage, `Busca de ISBN aberta em ${source === 'bn' ? 'BN' : 'CBL'} com o número já copiado para conferência.`, 'info');
       } else {
-        showMessage(refs.bookMessage, 'Busca de ISBN aberta na CBL.', 'info');
+        showMessage(refs.bookMessage, `Busca de ISBN aberta em ${source === 'bn' ? 'BN' : 'CBL'}.`, 'info');
       }
     }
 
