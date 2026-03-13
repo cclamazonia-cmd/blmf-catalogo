@@ -1212,7 +1212,7 @@
               <input id="bookISBN" type="text" placeholder="8527100053 ou 9788527409453" />
               <div class="row-actions">
                 <button id="openIsbnCblBtn" type="button" class="btn-inline small primary">Buscar ISBN na CBL</button>
-                <button id="openIsbnBnBtn" type="button" class="btn-inline small secondary">BN</button>
+                <button id="openIsbnBnBtn" type="button" class="btn-inline small primary">Biblioteca Nacional</button>
               </div>
             </div>
 
@@ -2518,13 +2518,17 @@
       }
     }
 
-    function convertISBN13To10(isbn) {
-      const clean = normalizeISBN(isbn);
-      if (!/^978\d{10}$/.test(clean)) return '';
-      const body = clean.slice(3, 12);
-      const total = body.split('').reduce((sum, digit, index) => sum + ((10 - index) * Number(digit)), 0);
-      const check = (11 - (total % 11)) % 11;
-      return body + (check === 10 ? 'X' : String(check));
+    function isbn13To10(isbn) {
+      const normalized = normalizeISBN(isbn);
+      if (!/^97[89]\d{10}$/.test(normalized)) return '';
+      const core = normalized.slice(3, 12);
+      let sum = 0;
+      for (let index = 0; index < core.length; index += 1) {
+        sum += Number(core[index]) * (10 - index);
+      }
+      const remainder = 11 - (sum % 11);
+      const checkDigit = remainder === 10 ? 'X' : remainder === 11 ? '0' : String(remainder);
+      return `${core}${checkDigit}`;
     }
 
     async function openIsbnLookup(source) {
@@ -2538,8 +2542,8 @@
 
       const copied = await copyIsbnIfPossible(isbn);
       if (source !== 'bn') {
-        const url = `https://servicos.cbl.org.br/isbn/pesquisa/?page=1&q=${encodeURIComponent(isbn)}&filtrar_por%5B0%5D=isbn&ord%5B0%5D=relevancia&dir%5B0%5D=asc`;
-        window.open(url, '_blank', 'noopener');
+        const cblUrl = `https://servicos.cbl.org.br/isbn/pesquisa/?page=1&q=${encodeURIComponent(isbn)}&filtrar_por%5B0%5D=isbn&ord%5B0%5D=relevancia&dir%5B0%5D=asc`;
+        window.open(cblUrl, '_blank', 'noopener');
         showMessage(refs.bookMessage, copied
           ? 'Busca de ISBN aberta na CBL com o número já copiado para conferência.'
           : 'Busca de ISBN aberta na CBL.', 'info');
@@ -2547,40 +2551,55 @@
       }
 
       const bnSearchUrl = 'https://acervo.bn.gov.br/sophia_web/busca/acervo/isbn/';
-      const isbn10 = convertISBN13To10(isbn);
       const popup = window.open('', '_blank');
-      const hiddenFields = [
-        ['isbn', isbn],
-        ['ISBN', isbn],
-        ['q', isbn],
-        ['query', isbn],
-        ['termo', isbn],
-        ['texto', isbn],
-        ['buscar', isbn],
-        ['pesquisa', isbn],
-        ['Pesquisa', isbn],
-        ['PalavraChave', isbn],
-        ['palavraChave', isbn],
-        ['palavra', isbn],
-        ['value', isbn],
-      ];
-      if (isbn10 && isbn10 !== isbn) {
-        hiddenFields.push(['isbn10', isbn10], ['ISBN10', isbn10], ['termo10', isbn10]);
+      if (!popup) {
+        showMessage(refs.bookMessage, 'Não foi possível abrir a janela da Biblioteca Nacional. Verifique o bloqueador de pop-ups.', 'error');
+        return;
       }
 
-      if (popup) {
-        const inputs = hiddenFields.map(([name, value]) => `<input type="hidden" name="${name}" value="${value}">`).join('');
-        popup.document.open();
-        popup.document.write(`<!DOCTYPE html><html lang="pt-BR"><head><meta charset="utf-8"><title>BN</title></head><body><form id="bnIsbnForm" method="get" action="${bnSearchUrl}">${inputs}</form><script>document.getElementById('bnIsbnForm').submit();<\/script></body></html>`);
-        popup.document.close();
-      } else {
-        const fallbackUrl = `${bnSearchUrl}?isbn=${encodeURIComponent(isbn)}`;
-        window.open(fallbackUrl, '_blank', 'noopener');
-      }
+      const isbn10 = isbn13To10(isbn);
+      const queryCandidates = Array.from(new Set([isbn, isbn10].filter(Boolean)));
+      const hiddenInputs = queryCandidates.map(value => `
+      <input type="hidden" name="q" value="${value}">
+      <input type="hidden" name="query" value="${value}">
+      <input type="hidden" name="termo" value="${value}">
+      <input type="hidden" name="texto" value="${value}">
+      <input type="hidden" name="pesquisa" value="${value}">
+      <input type="hidden" name="buscar" value="${value}">
+      <input type="hidden" name="palavra" value="${value}">
+      <input type="hidden" name="palavraChave" value="${value}">
+      <input type="hidden" name="descricao" value="${value}">
+      <input type="hidden" name="isbn" value="${value}">
+      <input type="hidden" name="isbnissn" value="${value}">
+      <input type="hidden" name="valor" value="${value}">
+      <input type="hidden" name="Value" value="${value}">`).join('');
+      const html = `<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8" />
+  <title>Biblioteca Nacional</title>
+</head>
+<body>
+  <form id="bnForm" method="GET" action="${bnSearchUrl}">${hiddenInputs}
+    <noscript><button type="submit">Abrir busca</button></noscript>
+  </form>
+  <script>
+    const form = document.getElementById('bnForm');
+    if (form) form.submit();
+  <\/script>
+</body>
+</html>`;
+      popup.document.open();
+      popup.document.write(html);
+      popup.document.close();
 
-      showMessage(refs.bookMessage, copied
-        ? 'Busca de ISBN aberta na BN com o número já copiado para conferência.'
-        : 'Busca de ISBN aberta na BN.', 'info');
+      showMessage(
+        refs.bookMessage,
+        copied
+          ? 'Busca aberta na Biblioteca Nacional com o ISBN enviado automaticamente. O número também foi copiado para a área de transferência.'
+          : 'Busca aberta na Biblioteca Nacional com o ISBN enviado automaticamente.',
+        'info'
+      );
     }
 
     function normalizeIssn(value) {
@@ -2735,15 +2754,6 @@
         return { mainValue: '', extraLines: [] };
       }
 
-      const formatGroupNames = (groupName, names = []) => {
-        const cleanedNames = names.filter(Boolean).map(name => name.trim()).filter(Boolean);
-        if (!cleanedNames.length) return '';
-        if (groupName === 'organizador') {
-          return `${cleanedNames.join('; ')} (Org.)`;
-        }
-        return cleanedNames.join('; ');
-      };
-
       const groupedMap = new Map();
       for (const item of validContributors) {
         if (!groupedMap.has(item.group)) {
@@ -2758,10 +2768,10 @@
 
       const grouped = Array.from(groupedMap.values());
       const mainGroup = grouped.find(group => group.group === 'autoria') || grouped[0];
-      const mainValue = formatGroupNames(mainGroup?.group, mainGroup?.names || []);
+      const mainValue = mainGroup?.names?.join('; ') || '';
       const extraLines = grouped
         .filter(group => group.group !== mainGroup.group)
-        .map(group => ({ label: group.label, value: formatGroupNames(group.group, group.names) }));
+        .map(group => ({ label: group.label, value: group.names.join('; ') }));
 
       return { mainValue, extraLines };
     }
