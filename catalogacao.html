@@ -1164,11 +1164,22 @@
               <input id="bookSubtitle" type="text" />
             </div>
 
-            <div class="field" style="grid-column: span 2;">
-              <label for="bookAuthor">Autoria / Organização / etc.</label>
-              <input id="bookAuthor" type="text" placeholder="BAKUNIN, Mikhail" />
-              <div id="bookResponsibilityExtraWrap" class="generated-responsibility-lines is-hidden"></div>
-              <small>Quando houver nomes em “Autores e outras responsabilidades”, este campo passa a seguir automaticamente essa lista.</small>
+            <div class="field" style="grid-column: span 3;">
+              <div class="section-block">
+                <div class="inline">
+                  <div>
+                    <h4 class="section-title">Autores e outras responsabilidades</h4>
+                    <div class="hint">Use esta área para autor(a), coautor(a), coletivo, tradução, ilustração, prefácio e outras funções.</div>
+                  </div>
+                  <div class="row-actions">
+                    <button id="addAuthorContributorBtn" type="button" class="button secondary small">Adicionar autor(a)</button>
+                    <button id="addCoauthorContributorBtn" type="button" class="button secondary small">Adicionar coautor(a)</button>
+                    <button id="addOrganizationContributorBtn" type="button" class="button secondary small">Adicionar coletivo</button>
+                    <button id="addContributorBtn" type="button" class="button secondary small">Adicionar pessoa</button>
+                  </div>
+                </div>
+                <div id="bookContributorsWrap" class="contrib-list"></div>
+              </div>
             </div>
 
             <div class="field">
@@ -1249,22 +1260,11 @@
               </div>
             </div>
 
-            <div class="field" style="grid-column: span 3;">
-              <div class="section-block">
-                <div class="inline">
-                  <div>
-                    <h4 class="section-title">Autores e outras responsabilidades</h4>
-                    <div class="hint">Use esta área para autor(a), coautor(a), coletivo, tradução, ilustração, prefácio e outras funções.</div>
-                  </div>
-                  <div class="row-actions">
-                    <button id="addAuthorContributorBtn" type="button" class="button secondary small">Adicionar autor(a)</button>
-                    <button id="addCoauthorContributorBtn" type="button" class="button secondary small">Adicionar coautor(a)</button>
-                    <button id="addOrganizationContributorBtn" type="button" class="button secondary small">Adicionar coletivo</button>
-                    <button id="addContributorBtn" type="button" class="button secondary small">Adicionar pessoa</button>
-                  </div>
-                </div>
-                <div id="bookContributorsWrap" class="contrib-list"></div>
-              </div>
+            <div class="field">
+              <label for="bookAuthor">Autoria / Organização / etc.</label>
+              <input id="bookAuthor" type="text" placeholder="BAKUNIN, Mikhail" readonly />
+              <div id="bookResponsibilityExtraWrap" class="generated-responsibility-lines is-hidden"></div>
+              <small>Este campo é preenchido automaticamente a partir de “Autores e outras responsabilidades”.</small>
             </div>
 
             <div class="field">
