@@ -2528,16 +2528,40 @@
       }
 
       const copied = await copyIsbnIfPossible(isbn);
-      const url = source === 'bn'
-        ? `https://acervo.bn.gov.br/sophia_web/busca/acervo/isbn/?PalavraChave=${encodeURIComponent(isbn)}`
-        : `https://servicos.cbl.org.br/isbn/pesquisa/?page=1&q=${encodeURIComponent(isbn)}&filtrar_por%5B0%5D=isbn&ord%5B0%5D=relevancia&dir%5B0%5D=asc`;
 
+      if (source === 'bn') {
+        const actionUrl = 'https://acervo.bn.gov.br/sophia_web/busca/acervo/isbn/';
+        const form = document.createElement('form');
+        form.method = 'GET';
+        form.action = actionUrl;
+        form.target = '_blank';
+        form.style.display = 'none';
+
+        const input = document.createElement('input');
+        input.type = 'hidden';
+        input.name = 'PalavraChave';
+        input.value = isbn;
+        form.appendChild(input);
+
+        document.body.appendChild(form);
+        form.submit();
+        form.remove();
+
+        if (copied) {
+          showMessage(refs.bookMessage, 'Busca de ISBN aberta na Biblioteca Nacional com o número já copiado para conferência.', 'info');
+        } else {
+          showMessage(refs.bookMessage, 'Busca de ISBN aberta na Biblioteca Nacional.', 'info');
+        }
+        return;
+      }
+
+      const url = `https://servicos.cbl.org.br/isbn/pesquisa/?page=1&q=${encodeURIComponent(isbn)}&filtrar_por%5B0%5D=isbn&ord%5B0%5D=relevancia&dir%5B0%5D=asc`;
       window.open(url, '_blank', 'noopener');
 
       if (copied) {
-        showMessage(refs.bookMessage, `Busca de ISBN aberta em ${source === 'bn' ? 'Biblioteca Nacional' : 'CBL'} com o número já copiado para conferência.`, 'info');
+        showMessage(refs.bookMessage, 'Busca de ISBN aberta na CBL com o número já copiado para conferência.', 'info');
       } else {
-        showMessage(refs.bookMessage, `Busca de ISBN aberta em ${source === 'bn' ? 'Biblioteca Nacional' : 'CBL'}.`, 'info');
+        showMessage(refs.bookMessage, 'Busca de ISBN aberta na CBL.', 'info');
       }
     }
 
@@ -2693,15 +2717,6 @@
         return { mainValue: '', extraLines: [] };
       }
 
-      const formatGroupNames = (groupName, names = []) => {
-        const cleanedNames = names.filter(Boolean).map(name => name.trim()).filter(Boolean);
-        if (!cleanedNames.length) return '';
-        if (groupName === 'organizador') {
-          return `${cleanedNames.join('; ')} (Org.)`;
-        }
-        return cleanedNames.join('; ');
-      };
-
       const groupedMap = new Map();
       for (const item of validContributors) {
         if (!groupedMap.has(item.group)) {
@@ -2716,10 +2731,10 @@
 
       const grouped = Array.from(groupedMap.values());
       const mainGroup = grouped.find(group => group.group === 'autoria') || grouped[0];
-      const mainValue = formatGroupNames(mainGroup?.group, mainGroup?.names || []);
+      const mainValue = mainGroup?.names?.join('; ') || '';
       const extraLines = grouped
         .filter(group => group.group !== mainGroup.group)
-        .map(group => ({ label: group.label, value: formatGroupNames(group.group, group.names) }));
+        .map(group => ({ label: group.label, value: group.names.join('; ') }));
 
       return { mainValue, extraLines };
     }
@@ -4395,7 +4410,8 @@
                 <td>${sanitize(author.source_label || author.source_kind || '—')}</td>
                 <td>
                   <div class="row-actions">
-                    <button class="btn-inline small secondary" data-action="author-edit-draft" data-author-id="${author.id}">Criar rascunho de edição</button>
+                    <button class="btn-inline small secondary" data-action="load-author-edit" data-author-id="${author.id}">Carregar para editar</button>
+                    <button class="btn-inline small ghost" data-action="draft-author" data-author-id="${author.id}">Criar novo rascunho</button>
                   </div>
                 </td>
               </tr>`).join('')}
@@ -4404,10 +4420,27 @@
 
       bindCatalogSortButtons(refs.catalogAuthorsWrap, renderCatalogAuthors);
 
-      refs.catalogAuthorsWrap.querySelectorAll('[data-action="author-edit-draft"]').forEach(btn => {
+      refs.catalogAuthorsWrap.querySelectorAll('[data-action="load-author-edit"]').forEach(btn => {
         btn.addEventListener('click', async () => {
           try {
             await loadOrCreateAuthorDraftFromCatalog(btn.dataset.authorId);
+          } catch (error) {
+            showMessage(refs.catalogMessage, error.message, 'error');
+          }
+        });
+      });
+
+      refs.catalogAuthorsWrap.querySelectorAll('[data-action="draft-author"]').forEach(btn => {
+        btn.addEventListener('click', async () => {
+          try {
+            const currentTab = getActiveCatalogacaoTab();
+            const batchId = el('catalogBatchId').value || null;
+            const { data, error } = await supabase.rpc('create_author_draft_from_author', { p_author_id: Number(btn.dataset.authorId), p_batch_id: batchId ? Number(batchId) : null });
+            if (error) throw error;
+            await Promise.all([loadQueue(), loadCatalog(), loadBatches()]);
+            setTab(currentTab);
+            updateStats();
+            showMessage(refs.catalogMessage, `Novo rascunho de edição de autor criado (#${data}). O rascunho ficou na fila editorial sem mudar a aba atual.`, 'ok');
           } catch (error) {
             showMessage(refs.catalogMessage, error.message, 'error');
           }
