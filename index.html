@@ -488,7 +488,7 @@ mark { background: rgba(225,29,47,.35); color:#fff; padding:0 2px; border-radius
 
 <script>
 const SUPABASE_URL = "https://asptfmokzykwzlshsncw.supabase.co";
-const SUPABASE_ANON_KEY = "sb_publishable_38cFV9vsGhmqMp-Z5gmV4w_HY6ReWSF";
+const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFzcHRmbW9renlrd3psc2hzbmN3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzI1MzcxNzcsImV4cCI6MjA4ODExMzE3N30.JkMLHPCV2AH5ELZV_1RfcoW250QEofLGvnDKSDpkcn0";
 const GH_BASE = "https://cclamazonia-cmd.github.io";
 const LIVRO_URL = new URL("livro.html", location.href).toString();
 const AUTOR_URL = new URL("autor.html", location.href).toString();
@@ -660,18 +660,40 @@ function splitAuthorIds(value) {
     .split(';')
     .map(part => normalizeAuthorIdValue(part));
 }
+function normalizeAuthorsJson(value) {
+  if (Array.isArray(value)) return value;
+  if (typeof value === 'string' && value.trim()) {
+    try {
+      const parsed = JSON.parse(value);
+      return Array.isArray(parsed) ? parsed : [];
+    } catch (e) {}
+  }
+  return [];
+}
 function buildAuthorHref(authorId, authorName) {
   const params = new URLSearchParams();
   params.set('v', AUTHOR_PAGE_VERSION);
   params.set('_cb', `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`);
-  if (authorId) {
-    params.set('id', String(authorId));
-  } else if (authorName) {
-    params.set('author', String(authorName));
-  }
+  if (authorId) params.set('id', String(authorId));
+  if (authorName) params.set('author', String(authorName));
   return `${AUTOR_URL}?${params.toString()}`;
 }
-function buildAuthorMarkup(authorValue, authorIdsValue, terms) {
+function buildAuthorMarkup(authorValue, authorIdsValue, terms, authorsJsonValue) {
+  const authorsJson = normalizeAuthorsJson(authorsJsonValue);
+  if (authorsJson.length) {
+    const parts = authorsJson.map((row) => {
+      const authorId = normalizeAuthorIdValue(row?.id ?? row?.author_id);
+      const labelText = String(row?.display_name || row?.preferred_name || '').trim();
+      if (!labelText) return '';
+      const label = highlightHTML(labelText, terms);
+      if (authorId) {
+        return `<button class="tag-link author-chip" type="button" data-author-id="${authorId}">${label}</button>`;
+      }
+      return `<span class="tag-link author-chip-static">${label}</span>`;
+    }).filter(Boolean);
+    return parts.length === 1 ? parts[0] : `<div class="author-chip-list">${parts.join('')}</div>`;
+  }
+
   const names = splitAuthorNames(authorValue);
   if (!names.length) return '<span class="muted">—</span>';
 
@@ -681,10 +703,9 @@ function buildAuthorMarkup(authorValue, authorIdsValue, terms) {
     const authorId = ids[idx] ?? singleId ?? null;
     const label = highlightHTML(name, terms);
     if (authorId) {
-      const href = buildAuthorHref(authorId, name);
-      return `<a class="tag-link author-chip" href="${href}" data-author="${escapeHTML(name)}" data-author-id="${authorId}">${label}</a>`;
+      return `<button class="tag-link author-chip" type="button" data-author="${escapeHTML(name)}" data-author-id="${authorId}">${label}</button>`;
     }
-    return `<span class="tag-link author-chip-static" title="Sem ficha de autor publicada para este nome.">${label}</span>`;
+    return `<span class="tag-link author-chip-static">${label}</span>`;
   });
 
   return parts.length === 1 ? parts[0] : `<div class="author-chip-list">${parts.join('')}</div>`;
@@ -820,18 +841,19 @@ async function loadRowsFromSupabase() {
         apikey: SUPABASE_ANON_KEY,
         Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
         Accept: 'application/json'
-      }
+      },
+      cache: 'no-store'
     });
     const text = await res.text();
     if (!res.ok) {
-      alert('Erro ao carregar catálogo: ' + res.status + ' — ' + text);
+      alert('Erro ao carregar o catálogo: ' + res.status + ' — ' + text);
       return [];
     }
     const data = text ? JSON.parse(text) : [];
     return (data || []).map(r => {
       const authorIdsList = Array.isArray(r.author_ids)
         ? r.author_ids.map(v => normalizeAuthorIdValue(v)).filter(Boolean)
-        : [];
+        : splitAuthorIds(r.author_ids).filter(Boolean);
       return {
         id: r.id ?? null,
         bib_ref: r.bib_ref ?? '',
@@ -840,17 +862,17 @@ async function loadRowsFromSupabase() {
         ano: r.ano ?? '',
         editora: r.editora ?? '',
         cdd: r.cdd ?? '',
-        author_id: null,
+        author_id: authorIdsList.length === 1 ? authorIdsList[0] : null,
         author_ids: authorIdsList.length ? authorIdsList.join('; ') : '',
         author_ids_list: authorIdsList,
-        authors_json: Array.isArray(r.authors_json) ? r.authors_json : [],
+        authors_json: normalizeAuthorsJson(r.authors_json),
         loanable: r.loanable === false ? false : true,
         available_count: Number(r.available_count ?? 0) || 0,
         created_at: r.created_at ?? null
       };
     });
   } catch (e) {
-    alert('Erro ao carregar catálogo: ' + (e?.message || String(e)));
+    alert('Erro ao carregar o catálogo: ' + (e?.message || String(e)));
     return [];
   }
 }
@@ -984,7 +1006,7 @@ function buildRowMarkup(r) {
   const ref = r.bib_ref || '';
   const terms = [...(lastQuery.phrases || []), ...(lastQuery.tokens || [])];
   const refHtml = ref ? highlightHTML(ref, terms) : '<span class="muted">—</span>';
-  const autorHtml = buildAuthorMarkup(r.autor, r.author_ids_list ?? r.author_ids ?? r.author_id, terms);
+  const autorHtml = buildAuthorMarkup(r.autor, r.author_ids_list ?? r.author_ids ?? r.author_id, terms, r.authors_json);
   const livroUrl = ref ? `${LIVRO_URL}?ref=${encodeURIComponent(ref)}` : '#';
   const tituloHtml = r.titulo ? highlightHTML(r.titulo, terms) : '<span class="muted">—</span>';
   const tituloCell = ref ? `<a href="${livroUrl}" style="text-decoration:none; font-weight:700;">${tituloHtml}</a>` : tituloHtml;
@@ -1267,11 +1289,8 @@ async function handleResultActions(e) {
     const authorName = (authorBtn.dataset.author || '').trim();
     if (authorId || authorName) {
       const params = new URLSearchParams();
-      if (authorId) {
-        params.set('id', authorId);
-      } else if (authorName) {
-        params.set('author', authorName);
-      }
+      if (authorId) params.set('id', authorId);
+      if (authorName) params.set('author', authorName);
       params.set('v', AUTHOR_PAGE_VERSION);
       params.set('_cb', `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`);
       location.assign(`${AUTOR_URL}?${params.toString()}`);
