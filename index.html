@@ -497,6 +497,13 @@ const CADASTRO_URL = `${GH_BASE}/blmf-conta/cadastro.html`;
 const PAINEL_URL = `${GH_BASE}/blmf-conta/painel.html`;
 const SUPABASE_PROJECT_REF = "asptfmokzykwzlshsncw";
 
+function buildCadastroUrlWithNext(nextUrl = window.location.href) {
+  const target = String(nextUrl || "").trim() || `${GH_BASE}/blmf-catalogo/`;
+  const u = new URL(CADASTRO_URL);
+  u.searchParams.set('next', target);
+  return u.toString();
+}
+
 let rows = [];
 let lastQuery = { tokens: [], phrases: [] };
 let sortKey = 'relevance';
@@ -944,7 +951,7 @@ function mapReservaError(msg) {
 
 async function createReservaFromCatalog(bibRef) {
   if (!authState.user || !authState.accessToken) {
-    location.assign(CADASTRO_URL);
+    location.assign(buildCadastroUrlWithNext());
     return { ok: false, message: 'Entre na sua conta para reservar.' };
   }
   const res = await fetch(`${SUPABASE_URL}/rest/v1/rpc/fn_v2_create_reserva_by_bib_refs`, {
@@ -1168,22 +1175,10 @@ async function getCurrentUserAndRole() {
 async function handleContaClick() {
   const state = await getCurrentUserAndRole();
   if (!state.user) {
-    location.assign(CADASTRO_URL);
+    location.assign(buildCadastroUrlWithNext());
     return;
   }
   location.assign(state.isLibrarian ? PAINEL_URL : CONTA_URL);
-}
-
-async function syncAuthAndRender(forceRender = false) {
-  const prevUserId = authState?.user?.id || null;
-  const prevRole = !!authState?.isLibrarian;
-  const prevToken = authState?.accessToken || null;
-  const nextState = await getCurrentUserAndRole();
-  authState = nextState;
-  const changed = (nextState?.user?.id || null) !== prevUserId
-    || (!!nextState?.isLibrarian) !== prevRole
-    || (nextState?.accessToken || null) !== prevToken;
-  if (forceRender || changed) render();
 }
 search.addEventListener('input', debouncedRender);
 authorFilter.addEventListener('input', render);
@@ -1299,33 +1294,6 @@ document.addEventListener('keydown', (e) => {
     debouncedRender();
   }
 });
-
-window.addEventListener('pageshow', async (event) => {
-  const navEntry = performance.getEntriesByType('navigation')[0];
-  const cameFromHistory = event.persisted || navEntry?.type === 'back_forward';
-  if (cameFromHistory) {
-    location.reload();
-    return;
-  }
-  await syncAuthAndRender(true);
-});
-
-window.addEventListener('focus', () => {
-  syncAuthAndRender(false);
-});
-
-document.addEventListener('visibilitychange', () => {
-  if (document.visibilityState === 'visible') {
-    syncAuthAndRender(false);
-  }
-});
-
-window.addEventListener('storage', (event) => {
-  if (event.key && event.key.includes(`sb-${SUPABASE_PROJECT_REF}-auth-token`)) {
-    syncAuthAndRender(true);
-  }
-});
-
 (async function init() {
   authState = await getCurrentUserAndRole();
   rows = await loadRowsFromSupabase();
