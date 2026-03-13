@@ -1164,11 +1164,22 @@
               <input id="bookSubtitle" type="text" />
             </div>
 
-            <div class="field" style="grid-column: span 2;">
-              <label for="bookAuthor">Autoria / Organização / etc.</label>
-              <input id="bookAuthor" type="text" placeholder="BAKUNIN, Mikhail" />
-              <div id="bookResponsibilityExtraWrap" class="generated-responsibility-lines is-hidden"></div>
-              <small>Quando houver nomes em “Autores e outras responsabilidades”, este campo passa a seguir automaticamente essa lista.</small>
+            <div class="field" style="grid-column: span 3;">
+              <div class="section-block">
+                <div class="inline">
+                  <div>
+                    <h4 class="section-title">Autores e outras responsabilidades</h4>
+                    <div class="hint">Use esta área para autor(a), coautor(a), coletivo, tradução, ilustração, prefácio e outras funções.</div>
+                  </div>
+                  <div class="row-actions">
+                    <button id="addAuthorContributorBtn" type="button" class="button secondary small">Adicionar autor(a)</button>
+                    <button id="addCoauthorContributorBtn" type="button" class="button secondary small">Adicionar coautor(a)</button>
+                    <button id="addOrganizationContributorBtn" type="button" class="button secondary small">Adicionar coletivo</button>
+                    <button id="addContributorBtn" type="button" class="button secondary small">Adicionar pessoa</button>
+                  </div>
+                </div>
+                <div id="bookContributorsWrap" class="contrib-list"></div>
+              </div>
             </div>
 
             <div class="field">
@@ -1200,14 +1211,17 @@
               <label for="bookISBN">ISBN</label>
               <input id="bookISBN" type="text" placeholder="8527100053 ou 9788527409453" />
               <div class="row-actions">
-                <button id="openIsbnBnBtn" type="button" class="btn-inline small secondary">Abrir BN</button>
-                <button id="openIsbnCblBtn" type="button" class="btn-inline small secondary">Abrir CBL</button>
+                <button id="openIsbnCblBtn" type="button" class="btn-inline small primary">Buscar ISBN na CBL</button>
+                <button id="openIsbnBnBtn" type="button" class="btn-inline small secondary">BN</button>
               </div>
             </div>
 
             <div id="bookISSNField" class="field">
               <label for="bookISSN">ISSN</label>
               <input id="bookISSN" type="text" placeholder="0251-1479" />
+              <div class="row-actions">
+                <button id="openIssnPortalBtn" type="button" class="btn-inline small secondary">Buscar ISSN no Portal ISSN</button>
+              </div>
               <small>Para periódicos e outras publicações seriadas.</small>
             </div>
 
@@ -1246,22 +1260,11 @@
               </div>
             </div>
 
-            <div class="field" style="grid-column: span 3;">
-              <div class="section-block">
-                <div class="inline">
-                  <div>
-                    <h4 class="section-title">Autores e outras responsabilidades</h4>
-                    <div class="hint">Use esta área para autor(a), coautor(a), coletivo, tradução, ilustração, prefácio e outras funções.</div>
-                  </div>
-                  <div class="row-actions">
-                    <button id="addAuthorContributorBtn" type="button" class="button secondary small">Adicionar autor(a)</button>
-                    <button id="addCoauthorContributorBtn" type="button" class="button secondary small">Adicionar coautor(a)</button>
-                    <button id="addOrganizationContributorBtn" type="button" class="button secondary small">Adicionar coletivo</button>
-                    <button id="addContributorBtn" type="button" class="button secondary small">Adicionar pessoa</button>
-                  </div>
-                </div>
-                <div id="bookContributorsWrap" class="contrib-list"></div>
-              </div>
+            <div class="field">
+              <label for="bookAuthor">Autoria / Organização / etc.</label>
+              <input id="bookAuthor" type="text" placeholder="BAKUNIN, Mikhail" readonly />
+              <div id="bookResponsibilityExtraWrap" class="generated-responsibility-lines is-hidden"></div>
+              <small>Este campo é preenchido automaticamente a partir de “Autores e outras responsabilidades”.</small>
             </div>
 
             <div class="field">
@@ -2049,6 +2052,7 @@
     function hidePublishedPopup(kind) {
       const btn = refs[`${kind}PublishedPopupBtn`];
       if (!btn) return;
+      btn.textContent = 'ficha publicada';
       btn.classList.add('is-hidden');
       btn.classList.remove('show');
       btn.setAttribute('aria-hidden', 'true');
@@ -2058,14 +2062,20 @@
       }
     }
 
-    function showPublishedPopup(kind) {
+    function showStatusPopup(kind, label = 'ficha publicada') {
       const btn = refs[`${kind}PublishedPopupBtn`];
       if (!btn) return;
+      btn.textContent = 'ficha publicada';
       if (publishPopupTimers[kind]) clearTimeout(publishPopupTimers[kind]);
+      btn.textContent = label;
       btn.classList.remove('is-hidden');
       btn.classList.add('show');
       btn.setAttribute('aria-hidden', 'false');
       publishPopupTimers[kind] = window.setTimeout(() => hidePublishedPopup(kind), 2600);
+    }
+
+    function showPublishedPopup(kind) {
+      showStatusPopup(kind, 'ficha publicada');
     }
 
     function setPublishLock(kind, locked) {
@@ -2518,47 +2528,58 @@
       }
 
       const copied = await copyIsbnIfPossible(isbn);
+
       if (source === 'bn') {
         const bnSearchUrl = 'https://acervo.bn.gov.br/sophia_web/busca/acervo/isbn/';
         const bnResultUrl = 'https://acervo.bn.gov.br/Sophia_Web/Resultado/Listar';
-        const win = window.open('', '_blank', 'noopener');
-        if (!win) {
-          showMessage(refs.bookMessage, 'Não consegui abrir a janela da BN. Verifique se o navegador bloqueou o pop-up.', 'error');
+        const targetName = `bn_isbn_${Date.now()}`;
+        const searchWindow = window.open('about:blank', targetName);
+
+        if (!searchWindow) {
+          showMessage(refs.bookMessage, 'Não foi possível abrir a janela da BN. Verifique se o navegador bloqueou a abertura.', 'error');
           return;
         }
+
+        const fields = [
+          ['q', isbn],
+          ['query', isbn],
+          ['isbn', isbn],
+          ['termo', isbn],
+          ['texto', isbn],
+          ['palavraChave', isbn],
+          ['busca', isbn],
+          ['pesquisa', isbn],
+          ['quickSearch', isbn],
+          ['consulta', isbn],
+          ['valor', isbn],
+        ];
+
         const html = `<!DOCTYPE html>
 <html lang="pt-BR">
-<head><meta charset="utf-8"><title>Abrindo busca BN…</title></head>
-<body style="font-family:Arial,sans-serif;padding:20px;background:#111;color:#fff;">
-  <p>Abrindo a busca de ISBN na BN…</p>
-  <form id="bnForm" method="get" action="${bnResultUrl}">
-    <input type="hidden" name="isbn" value="${isbn}">
-    <input type="hidden" name="isbnIssn" value="${isbn}">
-    <input type="hidden" name="termo" value="${isbn}">
-    <input type="hidden" name="texto" value="${isbn}">
-    <input type="hidden" name="q" value="${isbn}">
-    <input type="hidden" name="query" value="${isbn}">
-    <input type="hidden" name="palavraChave" value="${isbn}">
-    <input type="hidden" name="pesquisa" value="${isbn}">
-    <input type="hidden" name="busca" value="${isbn}">
-    <input type="hidden" name="tipo" value="isbn">
-    <input type="hidden" name="campo" value="isbn">
-    <input type="hidden" name="filtro" value="isbn">
-  </form>
-  <script>
-    const fallback = () => { window.location.replace('${bnSearchUrl}?isbn=${isbn}&termo=${isbn}&texto=${isbn}&q=${isbn}'); };
-    try {
-      document.getElementById('bnForm').submit();
-      setTimeout(fallback, 1200);
-    } catch (e) {
-      fallback();
-    }
-  <\/script>
+<head><meta charset="utf-8"><title>Redirecionando…</title></head>
+<body>
+<form id="bnResultForm" method="get" action="${bnResultUrl}">
+  ${fields.map(([name, value]) => `<input type="hidden" name="${name}" value="${String(value).replace(/&/g, '&amp;').replace(/"/g, '&quot;')}">`).join('')}
+</form>
+<form id="bnSearchForm" method="get" action="${bnSearchUrl}">
+  ${fields.map(([name, value]) => `<input type="hidden" name="${name}" value="${String(value).replace(/&/g, '&amp;').replace(/"/g, '&quot;')}">`).join('')}
+</form>
+<script>
+  try {
+    document.getElementById('bnResultForm').submit();
+    setTimeout(function () {
+      try { document.getElementById('bnSearchForm').submit(); } catch (e) {}
+    }, 900);
+  } catch (e) {
+    try { document.getElementById('bnSearchForm').submit(); } catch (err) {}
+  }
+<\/script>
 </body>
 </html>`;
-        win.document.open();
-        win.document.write(html);
-        win.document.close();
+
+        searchWindow.document.open();
+        searchWindow.document.write(html);
+        searchWindow.document.close();
 
         if (copied) {
           showMessage(refs.bookMessage, 'Busca de ISBN aberta na BN com o número já copiado para conferência.', 'info');
@@ -2569,14 +2590,37 @@
       }
 
       const url = `https://servicos.cbl.org.br/isbn/pesquisa/?page=1&q=${encodeURIComponent(isbn)}&filtrar_por%5B0%5D=isbn&ord%5B0%5D=relevancia&dir%5B0%5D=asc`;
-
       window.open(url, '_blank', 'noopener');
 
       if (copied) {
-        showMessage(refs.bookMessage, 'Busca de ISBN aberta em CBL com o número já copiado para conferência.', 'info');
+        showMessage(refs.bookMessage, 'Busca de ISBN aberta na CBL com o número já copiado para conferência.', 'info');
       } else {
-        showMessage(refs.bookMessage, 'Busca de ISBN aberta em CBL.', 'info');
+        showMessage(refs.bookMessage, 'Busca de ISBN aberta na CBL.', 'info');
       }
+    }
+
+    function normalizeIssn(value) {
+      return String(value || '').replace(/[^0-9Xx]/g, '').toUpperCase();
+    }
+
+    function formatIssnForLookup(value) {
+      const normalized = normalizeIssn(value);
+      if (normalized.length === 8) return `${normalized.slice(0, 4)}-${normalized.slice(4)}`;
+      return normalized;
+    }
+
+    function openIssnLookup() {
+      const raw = el('bookISSN')?.value || '';
+      const issn = formatIssnForLookup(raw);
+
+      if (!issn) {
+        showMessage(refs.bookMessage, 'Informe um ISSN antes de abrir a busca.', 'error');
+        return;
+      }
+
+      const url = `https://portal.issn.org/resource/ISSN/${encodeURIComponent(issn)}`;
+      window.open(url, '_blank', 'noopener');
+      showMessage(refs.bookMessage, 'Busca de ISSN aberta no Portal ISSN.', 'info');
     }
 
     function contributorRoleOptions(selected = 'autor') {
@@ -2707,6 +2751,15 @@
         return { mainValue: '', extraLines: [] };
       }
 
+      const formatGroupNames = (groupName, names = []) => {
+        const cleanedNames = names.filter(Boolean).map(name => name.trim()).filter(Boolean);
+        if (!cleanedNames.length) return '';
+        if (groupName === 'organizador') {
+          return `${cleanedNames.join('; ')} (Org.)`;
+        }
+        return cleanedNames.join('; ');
+      };
+
       const groupedMap = new Map();
       for (const item of validContributors) {
         if (!groupedMap.has(item.group)) {
@@ -2721,10 +2774,10 @@
 
       const grouped = Array.from(groupedMap.values());
       const mainGroup = grouped.find(group => group.group === 'autoria') || grouped[0];
-      const mainValue = mainGroup?.names?.join('; ') || '';
+      const mainValue = formatGroupNames(mainGroup?.group, mainGroup?.names || []);
       const extraLines = grouped
         .filter(group => group.group !== mainGroup.group)
-        .map(group => ({ label: group.label, value: group.names.join('; ') }));
+        .map(group => ({ label: group.label, value: formatGroupNames(group.group, group.names) }));
 
       return { mainValue, extraLines };
     }
@@ -3286,6 +3339,14 @@
 
       if (result.error) throw result.error;
       showMessage(messageTarget, successText, 'ok');
+      const popupKindMap = {
+        bookMessage: 'book',
+        authorMessage: 'author',
+        exemplarMessage: 'exemplar',
+        labelMessage: 'label',
+      };
+      const popupKind = Object.entries(refs).find(([_, node]) => node === messageTarget)?.[0];
+      if (popupKindMap[popupKind]) showStatusPopup(popupKindMap[popupKind], 'rascunho salvado');
       await Promise.all([loadQueue(), loadBatches(), loadCatalog()]);
       setTab(currentTab);
       updateStats();
@@ -4392,8 +4453,7 @@
                 <td>${sanitize(author.source_label || author.source_kind || '—')}</td>
                 <td>
                   <div class="row-actions">
-                    <button class="btn-inline small secondary" data-action="load-author-edit" data-author-id="${author.id}">Carregar para editar</button>
-                    <button class="btn-inline small ghost" data-action="draft-author" data-author-id="${author.id}">Criar novo rascunho</button>
+                    <button class="btn-inline small secondary" data-action="author-edit-draft" data-author-id="${author.id}">Criar rascunho de edição</button>
                   </div>
                 </td>
               </tr>`).join('')}
@@ -4402,27 +4462,10 @@
 
       bindCatalogSortButtons(refs.catalogAuthorsWrap, renderCatalogAuthors);
 
-      refs.catalogAuthorsWrap.querySelectorAll('[data-action="load-author-edit"]').forEach(btn => {
+      refs.catalogAuthorsWrap.querySelectorAll('[data-action="author-edit-draft"]').forEach(btn => {
         btn.addEventListener('click', async () => {
           try {
             await loadOrCreateAuthorDraftFromCatalog(btn.dataset.authorId);
-          } catch (error) {
-            showMessage(refs.catalogMessage, error.message, 'error');
-          }
-        });
-      });
-
-      refs.catalogAuthorsWrap.querySelectorAll('[data-action="draft-author"]').forEach(btn => {
-        btn.addEventListener('click', async () => {
-          try {
-            const currentTab = getActiveCatalogacaoTab();
-            const batchId = el('catalogBatchId').value || null;
-            const { data, error } = await supabase.rpc('create_author_draft_from_author', { p_author_id: Number(btn.dataset.authorId), p_batch_id: batchId ? Number(batchId) : null });
-            if (error) throw error;
-            await Promise.all([loadQueue(), loadCatalog(), loadBatches()]);
-            setTab(currentTab);
-            updateStats();
-            showMessage(refs.catalogMessage, `Novo rascunho de edição de autor criado (#${data}). O rascunho ficou na fila editorial sem mudar a aba atual.`, 'ok');
           } catch (error) {
             showMessage(refs.catalogMessage, error.message, 'error');
           }
@@ -4734,6 +4777,14 @@
         labelDraftBaseline = serializeLabelFormState();
         setLabelDraftVisualState('ready');
       }
+      const popupKindMap = {
+        bookMessage: 'book',
+        authorMessage: 'author',
+        exemplarMessage: 'exemplar',
+        labelMessage: 'label',
+      };
+      const popupKind = Object.entries(refs).find(([_, node]) => node === target)?.[0];
+      if (popupKindMap[popupKind]) showStatusPopup(popupKindMap[popupKind], 'rascunho pronto');
       showMessage(target, 'Rascunho marcado como pronto.', 'ok');
     }
 
@@ -5028,6 +5079,7 @@
     });
     el('openIsbnBnBtn').addEventListener('click', () => openIsbnLookup('bn'));
     el('openIsbnCblBtn').addEventListener('click', () => openIsbnLookup('cbl'));
+    el('openIssnPortalBtn').addEventListener('click', openIssnLookup);
     el('addContributorBtn').addEventListener('click', () => addTypedContributor('outro'));
     el('addAuthorContributorBtn').addEventListener('click', () => addTypedContributor('autor'));
     el('addCoauthorContributorBtn').addEventListener('click', () => addTypedContributor('coautor'));
