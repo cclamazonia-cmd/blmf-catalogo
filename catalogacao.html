@@ -2529,13 +2529,13 @@
 
       const copied = await copyIsbnIfPossible(isbn);
       const url = source === 'bn'
-        ? 'https://acervo.bn.gov.br/sophia_web/busca/acervo/isbn'
+        ? `https://acervo.bn.gov.br/sophia_web/busca/acervo/isbn/?q=${encodeURIComponent(isbn)}&termo=${encodeURIComponent(isbn)}&palavraChave=${encodeURIComponent(isbn)}&search=${encodeURIComponent(isbn)}#${encodeURIComponent(isbn)}`
         : `https://servicos.cbl.org.br/isbn/pesquisa/?page=1&q=${encodeURIComponent(isbn)}&filtrar_por%5B0%5D=isbn&ord%5B0%5D=relevancia&dir%5B0%5D=asc`;
 
       window.open(url, '_blank', 'noopener');
 
       if (copied) {
-        showMessage(refs.bookMessage, `Busca de ISBN aberta em ${source === 'bn' ? 'BN' : 'CBL'} com o número já copiado para colar na busca.`, 'info');
+        showMessage(refs.bookMessage, `Busca de ISBN aberta em ${source === 'bn' ? 'BN' : 'CBL'} com o número já copiado para conferência.`, 'info');
       } else {
         showMessage(refs.bookMessage, `Busca de ISBN aberta em ${source === 'bn' ? 'BN' : 'CBL'}.`, 'info');
       }
@@ -2693,15 +2693,6 @@
         return { mainValue: '', extraLines: [] };
       }
 
-      const formatGroupNames = (groupName, names = []) => {
-        const cleanedNames = names.filter(Boolean).map(name => name.trim()).filter(Boolean);
-        if (!cleanedNames.length) return '';
-        if (groupName === 'organizador') {
-          return `${cleanedNames.join('; ')} (Org.)`;
-        }
-        return cleanedNames.join('; ');
-      };
-
       const groupedMap = new Map();
       for (const item of validContributors) {
         if (!groupedMap.has(item.group)) {
@@ -2716,10 +2707,10 @@
 
       const grouped = Array.from(groupedMap.values());
       const mainGroup = grouped.find(group => group.group === 'autoria') || grouped[0];
-      const mainValue = formatGroupNames(mainGroup?.group, mainGroup?.names || []);
+      const mainValue = mainGroup?.names?.join('; ') || '';
       const extraLines = grouped
         .filter(group => group.group !== mainGroup.group)
-        .map(group => ({ label: group.label, value: formatGroupNames(group.group, group.names) }));
+        .map(group => ({ label: group.label, value: group.names.join('; ') }));
 
       return { mainValue, extraLines };
     }
