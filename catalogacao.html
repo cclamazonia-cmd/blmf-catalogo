@@ -4386,8 +4386,7 @@
                 <td>${sanitize(author.source_label || author.source_kind || '—')}</td>
                 <td>
                   <div class="row-actions">
-                    <button class="btn-inline small secondary" data-action="load-author-edit" data-author-id="${author.id}">Carregar para editar</button>
-                    <button class="btn-inline small ghost" data-action="draft-author" data-author-id="${author.id}">Criar novo rascunho</button>
+                    <button class="btn-inline small secondary" data-action="author-edit-draft" data-author-id="${author.id}">Criar rascunho de edição</button>
                   </div>
                 </td>
               </tr>`).join('')}
@@ -4396,27 +4395,10 @@
 
       bindCatalogSortButtons(refs.catalogAuthorsWrap, renderCatalogAuthors);
 
-      refs.catalogAuthorsWrap.querySelectorAll('[data-action="load-author-edit"]').forEach(btn => {
+      refs.catalogAuthorsWrap.querySelectorAll('[data-action="author-edit-draft"]').forEach(btn => {
         btn.addEventListener('click', async () => {
           try {
             await loadOrCreateAuthorDraftFromCatalog(btn.dataset.authorId);
-          } catch (error) {
-            showMessage(refs.catalogMessage, error.message, 'error');
-          }
-        });
-      });
-
-      refs.catalogAuthorsWrap.querySelectorAll('[data-action="draft-author"]').forEach(btn => {
-        btn.addEventListener('click', async () => {
-          try {
-            const currentTab = getActiveCatalogacaoTab();
-            const batchId = el('catalogBatchId').value || null;
-            const { data, error } = await supabase.rpc('create_author_draft_from_author', { p_author_id: Number(btn.dataset.authorId), p_batch_id: batchId ? Number(batchId) : null });
-            if (error) throw error;
-            await Promise.all([loadQueue(), loadCatalog(), loadBatches()]);
-            setTab(currentTab);
-            updateStats();
-            showMessage(refs.catalogMessage, `Novo rascunho de edição de autor criado (#${data}). O rascunho ficou na fila editorial sem mudar a aba atual.`, 'ok');
           } catch (error) {
             showMessage(refs.catalogMessage, error.message, 'error');
           }
