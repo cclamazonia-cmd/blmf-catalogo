@@ -2674,6 +2674,7 @@
     }
 
     const publishPopupTimers = {};
+    const POPUP_DURATION = 6200;
 
     function hidePublishedPopup(kind) {
       const btn = refs[`${kind}PublishedPopupBtn`];
@@ -2697,7 +2698,7 @@
       btn.classList.remove('is-hidden');
       btn.classList.add('show');
       btn.setAttribute('aria-hidden', 'false');
-      publishPopupTimers[kind] = window.setTimeout(() => hidePublishedPopup(kind), 6200);
+      publishPopupTimers[kind] = window.setTimeout(() => hidePublishedPopup(kind), POPUP_DURATION);
     }
 
     function showPublishedPopup(kind) {
@@ -4001,6 +4002,13 @@
       if (refs.labelCurrentShelf) refs.labelCurrentShelf.textContent = el('exemplarShelf').value || '—';
     }
 
+    function truncatePreviewText(value = '', maxLength = 80) {
+      const clean = String(value || '').trim();
+      if (!clean) return '';
+      if (clean.length <= maxLength) return clean;
+      return `${clean.slice(0, maxLength - 1).trimEnd()}…`;
+    }
+
     function updateBookQuickLabelPreview() {
       if (!refs.bookQuickLabelCode) return;
       const author = String(el('bookAuthor')?.value || '').trim();
@@ -4008,7 +4016,7 @@
       const cdd = String(el('bookCDD')?.value || '').trim();
       const collection = String(el('bookCollection')?.value || '').trim();
       refs.bookQuickLabelCode.textContent = getAuthorTrigram(author || '---');
-      refs.bookQuickLabelTitle.textContent = title || 'Título';
+      refs.bookQuickLabelTitle.textContent = truncatePreviewText(title, 80) || 'Título';
       refs.bookQuickLabelAuthor.textContent = `Autor: ${author || '—'}`;
       refs.bookQuickLabelCDD.textContent = `CDD: ${cdd || '—'}`;
       refs.bookQuickLabelShelf.textContent = collection
