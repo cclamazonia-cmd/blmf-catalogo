@@ -2529,7 +2529,7 @@
 
       const copied = await copyIsbnIfPossible(isbn);
       const url = source === 'bn'
-        ? 'https://acervo.bn.gov.br/sophia_web/busca/acervo/isbn/issn'
+        ? 'https://acervo.bn.gov.br/sophia_web/busca/acervo/isbn'
         : `https://servicos.cbl.org.br/isbn/pesquisa/?page=1&q=${encodeURIComponent(isbn)}&filtrar_por%5B0%5D=isbn&ord%5B0%5D=relevancia&dir%5B0%5D=asc`;
 
       window.open(url, '_blank', 'noopener');
