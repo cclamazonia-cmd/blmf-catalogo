@@ -4772,6 +4772,16 @@
         } catch (contributorsError) {
           contributorSyncMessage = ` Livro publicado, mas não consegui copiar os autores múltiplos: ${contributorsError.message}`;
         }
+        let authorLinkMessage = '';
+        try {
+          const publishedBookId = await resolvePublishedBookIdFromDraft(draftId);
+          if (publishedBookId) {
+            const { error: linkError } = await supabase.rpc('link_book_contributors_to_authors', { p_book_id: Number(publishedBookId) });
+            if (linkError) throw linkError;
+          }
+        } catch (linkingError) {
+          authorLinkMessage = ` Não consegui atualizar automaticamente os vínculos entre autores e obras: ${linkingError.message}`;
+        }
         await Promise.all([loadQueue(), loadBatches(), loadCatalog()]);
         setTab(currentTab);
         updateStats();
@@ -4779,7 +4789,8 @@
         bookDraftBaseline = serializeBookFormState();
         setBookDraftVisualState('published');
         showPublishedPopup('book');
-        showMessage(refs.bookMessage, `Rascunho de livro publicado com sucesso.${contributorSyncMessage}`, contributorSyncMessage ? 'error' : 'ok');
+        const publishMessage = `${contributorSyncMessage}${authorLinkMessage}`;
+        showMessage(refs.bookMessage, `Rascunho de livro publicado com sucesso.${publishMessage}`, publishMessage ? 'error' : 'ok');
       } catch (error) {
         showMessage(refs.bookMessage, error.message, 'error');
       } finally {
@@ -4820,13 +4831,29 @@
         }
         const { error } = await supabase.rpc('publish_author_draft', { p_draft_id: Number(draftId) });
         if (error) throw error;
+        let authorLinkMessage = '';
+        try {
+          const { data: publishedDraftState, error: publishedDraftStateError } = await supabase
+            .from('author_drafts')
+            .select('published_author_id')
+            .eq('id', Number(draftId))
+            .single();
+          if (publishedDraftStateError) throw publishedDraftStateError;
+          const publishedAuthorId = Number(publishedDraftState?.published_author_id || 0);
+          if (publishedAuthorId) {
+            const { error: linkError } = await supabase.rpc('link_author_to_book_contributors', { p_author_id: publishedAuthorId });
+            if (linkError) throw linkError;
+          }
+        } catch (linkingError) {
+          authorLinkMessage = ` Não consegui atualizar automaticamente os vínculos entre este autor e as obras já cadastradas: ${linkingError.message}`;
+        }
         await Promise.all([loadQueue(), loadBatches(), loadCatalog()]);
         setTab(currentTab);
         updateStats();
         resetAuthorForm();
         setTab(currentTab);
         showPublishedPopup('author');
-        showMessage(refs.authorMessage, 'Rascunho de autor publicado com sucesso.', 'ok');
+        showMessage(refs.authorMessage, `Rascunho de autor publicado com sucesso.${authorLinkMessage}`, authorLinkMessage ? 'error' : 'ok');
       } catch (error) {
         const message = /duplicate|already exists|já existe|unique/i.test(String(error?.message || ''))
           ? 'autor já existente'
