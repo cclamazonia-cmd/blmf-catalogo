@@ -573,6 +573,46 @@
       border: 1px solid rgba(255,255,255,.08);
     }
 
+
+    .author-assist-panel {
+      margin-top: 10px;
+      padding: 12px;
+      border-radius: 16px;
+      border: 1px solid rgba(255,255,255,.10);
+      background: linear-gradient(180deg, rgba(179,0,24,.14), rgba(255,255,255,.02));
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .author-assist-preview {
+      padding: 10px 12px;
+      border-radius: 14px;
+      border: 1px solid rgba(255,255,255,.08);
+      background: rgba(255,255,255,.03);
+      display: grid;
+      gap: 8px;
+    }
+
+    .author-assist-preview-line {
+      display: grid;
+      grid-template-columns: minmax(140px, 180px) minmax(0, 1fr);
+      gap: 10px;
+      align-items: start;
+    }
+
+    .author-assist-preview-line strong {
+      color: #ffe3e7;
+      font-size: .88rem;
+    }
+
+    .author-assist-preview-line span {
+      color: var(--text);
+      line-height: 1.4;
+      word-break: break-word;
+      overflow-wrap: anywhere;
+    }
+
     .table-wrap {
       overflow: auto;
       max-height: 72vh;
@@ -1463,6 +1503,23 @@
               <small>Preenchido automaticamente a partir do campo “Nome SOBRENOME”.</small>
             </div>
 
+
+            <div class="field" style="grid-column: span 3;">
+              <label for="authorAssistRawName">Assistência para variantes de nome</label>
+              <input id="authorAssistRawName" type="text" placeholder="Bakunin, Mikhail Aleksandrovich, 1814-1876 ou Rafael VIANA (DA SILVA)" />
+              <small>Use aqui o nome bruto vindo da BN, de um livro ou de outra fonte. O texto entre parênteses é tratado como variante complementar do sobrenome oficial.</small>
+              <div class="author-assist-panel">
+                <div class="autofill-actions">
+                  <button id="previewAuthorAssistBtn" type="button" class="btn-inline small secondary">Pré-visualizar sugestão</button>
+                  <button id="applyAuthorAssistBtn" type="button" class="btn-inline small primary">Preencher ficha de autor</button>
+                </div>
+                <div class="hint">A sugestão nunca sobrescreve campos já preenchidos.</div>
+                <div id="authorAssistPreview" class="author-assist-preview">
+                  <div class="hint">Nenhuma sugestão calculada ainda.</div>
+                </div>
+              </div>
+            </div>
+
             <div class="field">
               <label for="authorBirthYear">Ano de nascimento</label>
               <input id="authorBirthYear" type="number" />
@@ -2216,6 +2273,137 @@
       const cleaned = String(token || '').replace(/^[^0-9A-Za-zÀ-ÿ]+|[^0-9A-Za-zÀ-ÿ]+$/g, '');
       if (!cleaned) return false;
       return cleaned === cleaned.toLocaleUpperCase('pt-BR') && cleaned !== cleaned.toLocaleLowerCase('pt-BR');
+    }
+
+    function formatAuthorPreferredName(given = '', surname = '') {
+      const givenClean = normalizeInlineWhitespace(given);
+      const surnameClean = normalizeInlineWhitespace(surname).toLocaleUpperCase('pt-BR');
+      return [titleCaseLoose(givenClean), surnameClean].filter(Boolean).join(' ').trim();
+    }
+
+    function parseAuthorAssistName(rawValue = '') {
+      const raw = normalizeInlineWhitespace(String(rawValue || ''));
+      if (!raw) {
+        return {
+          raw: '',
+          preferredName: '',
+          sortName: '',
+          birthYear: '',
+          deathYear: '',
+          variantNote: '',
+          displayLines: [],
+        };
+      }
+
+      const yearsMatch = raw.match(/(\d{4})\s*-\s*(\d{0,4})$/);
+      const birthYear = yearsMatch ? yearsMatch[1] : '';
+      const deathYear = yearsMatch ? (yearsMatch[2] || '') : '';
+      let work = raw.replace(/,?\s*\d{4}\s*-\s*\d{0,4}\s*$/,'').trim();
+      work = work.replace(/\.+$/,'').trim();
+
+      let variantNote = '';
+      const parenMatches = [...work.matchAll(/\(([^)]+)\)/g)].map(m => normalizeInlineWhitespace(m[1])).filter(Boolean);
+      if (parenMatches.length) {
+        variantNote = `Nome conhecido em meio militante sem a parte entre parênteses: ${parenMatches.join(' ; ')}`;
+        work = normalizeInlineWhitespace(work.replace(/\s*\(([^)]+)\)\s*/g, ' '));
+      }
+
+      let preferredName = '';
+      let sortName = '';
+
+      if (work.includes(',')) {
+        const parts = work.split(',').map(item => normalizeInlineWhitespace(item)).filter(Boolean);
+        const surname = parts[0] || '';
+        const given = (parts[1] || '').split(/\s+/).filter(Boolean)[0] || parts[1] || '';
+        preferredName = formatAuthorPreferredName(given, surname);
+        sortName = `${surname.toLocaleUpperCase('pt-BR')}, ${titleCaseLoose(given)}`.trim();
+      } else {
+        const tokens = work.split(/\s+/).filter(Boolean);
+        const upperTokens = tokens.filter(isUppercaseNameToken);
+        let surname = '';
+        let givenTokens = [];
+        if (upperTokens.length >= 1 && tokens.length >= 2) {
+          const firstUpperIndex = tokens.findIndex(isUppercaseNameToken);
+          if (firstUpperIndex > 0) {
+            givenTokens = tokens.slice(0, firstUpperIndex);
+            surname = tokens.slice(firstUpperIndex).join(' ');
+          } else {
+            givenTokens = tokens.slice(0, 1);
+            surname = tokens.slice(1).join(' ');
+          }
+        } else if (tokens.length >= 2) {
+          givenTokens = tokens.slice(0, -1);
+          surname = tokens.slice(-1).join(' ');
+        } else {
+          givenTokens = tokens;
+          surname = '';
+        }
+        const given = givenTokens.join(' ');
+        preferredName = formatAuthorPreferredName(given, surname);
+        sortName = surname ? `${surname.toLocaleUpperCase('pt-BR')}, ${titleCaseLoose(givenTokens[0] || given)}`.trim() : titleCaseLoose(given);
+      }
+
+      const displayLines = [
+        { label: 'Nome SOBRENOME', value: preferredName || '—' },
+        { label: 'Nome para ordenação', value: sortName || '—' },
+        { label: 'Nascimento', value: birthYear || '—' },
+        { label: 'Falecimento', value: deathYear || '—' },
+      ];
+      if (variantNote) displayLines.push({ label: 'Nota de variante', value: variantNote });
+
+      return {
+        raw,
+        preferredName,
+        sortName,
+        birthYear,
+        deathYear,
+        variantNote,
+        displayLines,
+      };
+    }
+
+    function renderAuthorAssistPreview(parsed) {
+      if (!refs.authorAssistPreview) return;
+      if (!parsed?.raw) {
+        refs.authorAssistPreview.innerHTML = '<div class="hint">Nenhuma sugestão calculada ainda.</div>';
+        return;
+      }
+      refs.authorAssistPreview.innerHTML = parsed.displayLines.map(line => `
+        <div class="author-assist-preview-line">
+          <strong>${sanitize(line.label)}</strong>
+          <span>${sanitize(line.value)}</span>
+        </div>
+      `).join('');
+    }
+
+    function previewAuthorAssist() {
+      const parsed = parseAuthorAssistName(refs.authorAssistRawName?.value || '');
+      renderAuthorAssistPreview(parsed);
+      if (!parsed.raw) {
+        showMessage(refs.authorMessage, 'Informe um nome bruto para gerar a sugestão.', 'error');
+        return null;
+      }
+      clearMessage(refs.authorMessage);
+      return parsed;
+    }
+
+    function applyAuthorAssist() {
+      const parsed = previewAuthorAssist();
+      if (!parsed) return;
+      let changes = 0;
+      changes += fillIfEmpty(el('authorPreferredName'), parsed.preferredName) ? 1 : 0;
+      changes += fillIfEmpty(el('authorBirthYear'), parsed.birthYear) ? 1 : 0;
+      changes += fillIfEmpty(el('authorDeathYear'), parsed.deathYear) ? 1 : 0;
+      if (!String(el('authorSortName')?.value || '').trim() && parsed.sortName) {
+        el('authorSortName').value = parsed.sortName;
+        changes += 1;
+      }
+      if (parsed.variantNote && !String(el('authorNotes')?.value || '').trim()) {
+        el('authorNotes').value = parsed.variantNote;
+        changes += 1;
+      }
+      syncAuthorDraftVisualState();
+      showMessage(refs.authorMessage, changes ? 'Sugestão de autor aplicada sem sobrescrever campos já preenchidos.' : 'Nada foi alterado: os campos principais já estavam preenchidos.', 'ok');
     }
 
     function buildAuthorSortName(preferredName = '') {
@@ -3584,6 +3772,8 @@
 
     function resetAuthorForm() {
       el('authorForm').reset();
+      if (refs.authorAssistRawName) refs.authorAssistRawName.value = '';
+      renderAuthorAssistPreview(parseAuthorAssistName(''));
       el('authorDraftId').value = '';
       el('authorPublishedId').value = '';
       el('authorAction').value = 'create';
@@ -3904,6 +4094,8 @@
       el('authorWikidata').value = record.wikidata_id || '';
       el('authorPhotoPath').value = record.photo_object_path || '';
       el('authorNotes').value = record.notes || '';
+      if (refs.authorAssistRawName) refs.authorAssistRawName.value = '';
+      renderAuthorAssistPreview(parseAuthorAssistName(''));
       setPreviewImage(refs.authorPhotoPreview, record.photo_object_path || '', 'authors');
       refs.authorPhotoFileName.textContent = 'Nenhum arquivo selecionado';
       authorDraftStableState = record.status === 'ready' ? 'ready' : (record.status === 'published' ? 'published' : (record.id ? 'saved' : 'new'));
