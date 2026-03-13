@@ -238,7 +238,7 @@
       auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true }
     });
 
-    const AUTHOR_BUILD = "20260312-3";
+    const AUTHOR_BUILD = "20260313-1";
     document.documentElement.setAttribute("data-author-build", AUTHOR_BUILD);
 
     const $ = (id) => document.getElementById(id);
@@ -428,45 +428,45 @@
 
     async function fetchAuthorPageById(authorId) {
       if (!authorId) return null;
-      try {
-        const { data, error } = await supabase
-          .from("v_author_page_public")
-          .select("*")
-          .eq("id", authorId)
-          .limit(1)
-          .maybeSingle();
-        if (!error && data) return data;
-      } catch (_) {}
-      const rows = await fetchRest(`v_author_page_public?select=*&id=eq.${encodeURIComponent(authorId)}&limit=1`);
-      return rows[0] || null;
+
+      let data = await fetchViewOneById("v_author_page_public_v2", authorId);
+      if (data) return data;
+
+      data = await fetchViewOneById("v_author_page_public", authorId);
+      if (data) return data;
+
+      const rowsV2 = await fetchRest(`v_author_page_public_v2?select=*&id=eq.${encodeURIComponent(authorId)}&limit=1`);
+      if (rowsV2[0]) return rowsV2[0];
+
+      const rowsV1 = await fetchRest(`v_author_page_public?select=*&id=eq.${encodeURIComponent(authorId)}&limit=1`);
+      return rowsV1[0] || null;
     }
 
     async function fetchBooksByAuthorName(bookName) {
       const out = [];
-      try {
-        const exact = await supabase
-          .from("books_public")
-          .select("*")
-          .eq("autor", bookName)
-          .order("titulo", { ascending: true });
-        if (!exact.error && Array.isArray(exact.data) && exact.data.length) out.push(...exact.data);
-      } catch (_) {}
-      try {
-        const broad = await supabase
-          .from("books_public")
-          .select("*")
-          .ilike("autor", `%${bookName}%`)
-          .order("titulo", { ascending: true });
-        if (!broad.error && Array.isArray(broad.data) && broad.data.length) out.push(...broad.data);
-      } catch (_) {}
+      for (const tableName of ["v_books_catalog_public_v2", "v_books_catalog_public", "books_public"]) {
+        try {
+          const exact = await supabase
+            .from(tableName)
+            .select("*")
+            .eq("autor_exibicao", bookName)
+            .order("titulo", { ascending: true });
+          if (!exact.error && Array.isArray(exact.data) && exact.data.length) out.push(...exact.data);
+        } catch (_) {}
+        try {
+          const broad = await supabase
+            .from(tableName)
+            .select("*")
+            .or(`autor_exibicao.ilike.%${bookName}%,autor_texto_livro.ilike.%${bookName}%,autor.ilike.%${bookName}%`)
+            .order("titulo", { ascending: true });
+          if (!broad.error && Array.isArray(broad.data) && broad.data.length) out.push(...broad.data);
+        } catch (_) {}
+      }
       return out;
     }
 
     async function fetchAuthorById(authorId) {
       if (!authorId) return null;
-
-      const fromPage = await fetchAuthorPageById(authorId);
-      if (fromPage) return fromPage;
 
       const fromView = await fetchViewOneById("v_authors_public", authorId);
       if (fromView) return fromView;
@@ -557,25 +557,27 @@
 
       let rows = [];
       if (authorId) {
-        rows = await fetchViewManyByAuthorId("v_author_books_public_compat", authorId);
-        if (!rows.length) {
-          rows = await fetchViewManyByAuthorId("author_books_public", authorId);
-        }
-        if (!rows.length) {
-          rows = await fetchRest(`v_author_books_public_compat?select=*&author_id=eq.${encodeURIComponent(authorId)}&order=ord.asc,titulo.asc`);
-        }
-        if (!rows.length) {
-          rows = await fetchRest(`author_books_public?select=*&author_id=eq.${encodeURIComponent(authorId)}&order=ord.asc,titulo.asc`);
-        }
+        rows = await fetchViewManyByAuthorId("v_author_books_public_compat_v2", authorId);
+        if (!rows.length) rows = await fetchViewManyByAuthorId("v_author_books_public_compat", authorId);
+        if (!rows.length) rows = await fetchViewManyByAuthorId("author_books_public", authorId);
+        if (!rows.length) rows = await fetchRest(`v_author_books_public_compat_v2?select=*&author_id=eq.${encodeURIComponent(authorId)}&order=ord.asc,titulo.asc`);
+        if (!rows.length) rows = await fetchRest(`v_author_books_public_compat?select=*&author_id=eq.${encodeURIComponent(authorId)}&order=ord.asc,titulo.asc`);
+        if (!rows.length) rows = await fetchRest(`author_books_public?select=*&author_id=eq.${encodeURIComponent(authorId)}&order=ord.asc,titulo.asc`);
       }
       if (Array.isArray(rows) && rows.length) return rows;
 
-      const names = [author?.sort_name, author?.preferred_name].map(v => String(v || "").trim()).filter(Boolean);
+      const names = [author?.display_name, author?.preferred_name, author?.sort_name].map(v => String(v || "").trim()).filter(Boolean);
+      const out = [];
       for (const name of names) {
-        rows = await fetchBooksByAuthorName(name);
-        if (Array.isArray(rows) && rows.length) return rows;
+        out.push(...await fetchBooksByAuthorName(name));
       }
-      return [];
+      const seen = new Set();
+      return out.filter(row => {
+        const key = String(row?.bib_ref || row?.id || "").trim();
+        if (!key || seen.has(key)) return false;
+        seen.add(key);
+        return true;
+      });
     }
 
     function sortBooks(rows) {
@@ -686,7 +688,7 @@
 
       const books = sortBooks(await fetchLinkedBooks(author.id, author));
 
-      $("nameLine").textContent = author.preferred_name || author.sort_name || "Sem nome";
+      $("nameLine").textContent = author.display_name || author.preferred_name || author.sort_name || "Sem nome";
       setLine("sortLine", "");
       $("bioLine").textContent = String(author.biography || author.notes || "—").trim() || "—";
 
@@ -702,7 +704,7 @@
       setPhoto(author.photo_object_path || "");
       renderBooks(books || []);
       setStatus("", "");
-      document.title = `BLMF — ${author.preferred_name || author.sort_name || "Autor"}`;
+      document.title = `BLMF — ${author.display_name || author.preferred_name || author.sort_name || "Autor"}`;
     }
 
     await setupContaButton();
