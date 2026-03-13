@@ -486,6 +486,93 @@
       min-height: 1.2em;
     }
 
+
+    .autofill-panel {
+      margin-top: 10px;
+      padding: 12px;
+      border-radius: 16px;
+      border: 1px solid rgba(255,255,255,.10);
+      background: linear-gradient(180deg, rgba(179,0,24,.14), rgba(255,255,255,.02));
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .autofill-panel-title {
+      margin: 0;
+      font-size: .96rem;
+      color: #fff;
+    }
+
+    .autofill-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 12px;
+    }
+
+    .autofill-box {
+      padding: 10px 12px;
+      border-radius: 14px;
+      border: 1px solid rgba(255,255,255,.08);
+      background: rgba(255,255,255,.03);
+      min-width: 0;
+    }
+
+    .autofill-box strong {
+      display: block;
+      margin-bottom: 6px;
+      font-size: .88rem;
+      color: #ffe3e7;
+    }
+
+    .autofill-value {
+      color: var(--text);
+      font-size: .92rem;
+      line-height: 1.45;
+      word-break: break-word;
+      overflow-wrap: anywhere;
+    }
+
+    .autofill-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      align-items: center;
+    }
+
+    .assunto-suggestions {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .checkbox-line {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      font-weight: 600;
+      color: #fff;
+    }
+
+    .checkbox-line input {
+      width: auto;
+      margin: 0;
+      box-shadow: none;
+    }
+
+    .autofill-debug {
+      white-space: pre-wrap;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      font-size: .82rem;
+      line-height: 1.45;
+      max-height: 260px;
+      overflow: auto;
+      background: rgba(0,0,0,.32);
+      border-radius: 12px;
+      padding: 12px;
+      border: 1px solid rgba(255,255,255,.08);
+    }
+
     .table-wrap {
       overflow: auto;
       max-height: 72vh;
@@ -1217,6 +1304,7 @@
               <div id="bookIsbnLookupResult" class="card is-hidden" style="margin-top:10px; padding:12px;">
                 <div id="bookIsbnLookupResultContent" class="small">Nenhum resultado carregado.</div>
               </div>
+
             </div>
 
             <div id="bookISSNField" class="field">
@@ -1812,6 +1900,7 @@
         exemplar: false,
         label: false,
       },
+      bnLookup: null,
     };
 
     const el = (id) => document.getElementById(id);
@@ -1880,7 +1969,24 @@
       authorPublishedPopupBtn: el('authorPublishedPopupBtn'),
       exemplarPublishedPopupBtn: el('exemplarPublishedPopupBtn'),
       labelPublishedPopupBtn: el('labelPublishedPopupBtn'),
+
     };
+
+    function getBnUiRefs() {
+      return {
+        bookAutofillPanel: el('bookAutofillPanel'),
+        applyBnAutofillBtn: el('applyBnAutofillBtn'),
+        openBnDetailBtn: el('openBnDetailBtn'),
+        toggleBnDebugBtn: el('toggleBnDebugBtn'),
+        applySuggestedCDDBtn: el('applySuggestedCDDBtn'),
+        bookSuggestedCDD: el('bookSuggestedCDD'),
+        bookDuplicateHint: el('bookDuplicateHint'),
+        bookSubjectSuggestions: el('bookSubjectSuggestions'),
+        copySubjectSuggestionsBtn: el('copySubjectSuggestionsBtn'),
+        bookBnDebugWrap: el('bookBnDebugWrap'),
+        bookBnDebugContent: el('bookBnDebugContent'),
+      };
+    }
 
     function showMessage(target, text, kind = 'info') {
       target.textContent = text;
@@ -1912,6 +2018,173 @@
 
     function normalizeInlineWhitespace(value) {
       return String(value || '').replace(/\s+/g, ' ').trim();
+    }
+
+
+    const BN_LANGUAGE_MAP = [
+      { match: /portugu[eê]s/i, value: 'pt' },
+      { match: /english|ingl[eê]s/i, value: 'en' },
+      { match: /fran[cç]ais/i, value: 'fr' },
+      { match: /espa[nñ]ol|espanhol/i, value: 'es' },
+    ];
+
+    const CDD_SUGGESTION_TABLE = [
+      { cdd: '335.83', label: 'Anarquismo', match: ['anarquismo'] },
+      { cdd: '335', label: 'Socialismo', match: ['socialismo'] },
+      { cdd: '335.4', label: 'Comunismo', match: ['comunismo'] },
+      { cdd: '331.88', label: 'Sindicatos', match: ['sindicato', 'sindicatos'] },
+      { cdd: '334', label: 'Autogestão', match: ['autogestao', 'autogestão'] },
+      { cdd: '320.01', label: 'Filosofia política', match: ['filosofia politica', 'filosofia política'] },
+    ];
+
+    function titleCaseLoose(value) {
+      return String(value || '').toLocaleLowerCase('pt-BR').replace(/(^|[\s-])([\p{L}])/gu, (m, sep, ch) => `${sep}${ch.toLocaleUpperCase('pt-BR')}`);
+    }
+
+    function splitBnTitleAndSubtitle(rawTitle = '') {
+      const clean = normalizeInlineWhitespace(String(rawTitle || ''));
+      const parts = clean.split(/\s*:\s+/);
+      if (parts.length >= 2) {
+        return { title: parts.shift().trim(), subtitle: parts.join(': ').trim() };
+      }
+      return { title: clean, subtitle: '' };
+    }
+
+    function cleanAuthorName(rawAuthor = '') {
+      const noDates = normalizeInlineWhitespace(String(rawAuthor || '').replace(/,?\s*\d{3,4}\s*-\s*\d{0,4}\.?$/g, '').replace(/,?\s*\d{3,4}\.?$/g, '').replace(/\.+$/g, ''));
+      if (!noDates) return { sortName: '', displayName: '' };
+      const commaParts = noDates.split(',').map(part => normalizeInlineWhitespace(part)).filter(Boolean);
+      if (commaParts.length >= 2) {
+        const surname = commaParts[0].toLocaleUpperCase('pt-BR');
+        const firstGiven = commaParts[1].split(/\s+/).filter(Boolean)[0] || commaParts[1];
+        const sortName = `${surname}, ${titleCaseLoose(firstGiven)}`.trim();
+        const displayName = `${titleCaseLoose(firstGiven)} ${titleCaseLoose(commaParts[0])}`.trim();
+        return { sortName, displayName };
+      }
+      const parts = noDates.split(/\s+/).filter(Boolean);
+      if (!parts.length) return { sortName: '', displayName: '' };
+      const displayName = parts.map(titleCaseLoose).join(' ');
+      return { sortName: displayName, displayName };
+    }
+
+    function splitBnAuthors(rawAuthor = '') {
+      return String(rawAuthor || '')
+        .split(/\s*;\s*|\s+\/\s+/)
+        .map(item => cleanAuthorName(item).sortName)
+        .filter(Boolean);
+    }
+
+    function extractPublicationData(publication = '') {
+      const raw = normalizeInlineWhitespace(decodeHtmlEntities(String(publication || '')));
+      const yearMatch = raw.match(/(1[0-9]{3}|20[0-9]{2}|2100)(?!.*(1[0-9]{3}|20[0-9]{2}|2100))/);
+      const year = yearMatch ? yearMatch[1] : '';
+      const withoutYear = normalizeInlineWhitespace(
+        raw
+          .replace(/,?\s*(1[0-9]{3}|20[0-9]{2}|2100)\.?\s*$/, '')
+          .replace(/[\s.;:,]+$/, '')
+      );
+
+      const cleanSegment = (value = '') => normalizeInlineWhitespace(
+        String(value || '')
+          .replace(/\[[^\]]*\]/g, ' ')
+          .replace(/^\[|\]$/g, '')
+          .replace(/^[,;:\s]+|[,;:\s]+$/g, '')
+      );
+
+      let place = '';
+      const bracketMatch = withoutYear.match(/\[\s*([^\]]+?)\s*\]/);
+      if (bracketMatch) {
+        place = cleanSegment(bracketMatch[1]);
+      }
+      if (!place) {
+        const beforeColon = withoutYear.split(':')[0] || '';
+        const placeCandidates = beforeColon
+          .split(';')
+          .map(cleanSegment)
+          .filter(Boolean)
+          .filter(segment => !/^[A-Z]{2,3}$/.test(segment));
+        place = placeCandidates[0] || '';
+      }
+
+      const publisherCandidates = withoutYear
+        .split(':')
+        .map(cleanSegment)
+        .filter(Boolean)
+        .filter(segment => segment !== place)
+        .filter(segment => !/^\[?[A-Z]{2,3}\]?$/.test(segment));
+      const publisher = publisherCandidates.length ? publisherCandidates[publisherCandidates.length - 1] : '';
+
+      return { place, publisher, year, raw };
+    }
+
+    function extractSubjects(subjectValue) {
+      if (Array.isArray(subjectValue)) return subjectValue.map(item => normalizeInlineWhitespace(item)).filter(Boolean);
+      return String(subjectValue || '').split(/\s*;\s*|\s*\|\s*|\s*•\s*/).map(item => normalizeInlineWhitespace(item)).filter(Boolean);
+    }
+
+    function decodeHtmlEntities(value = '') {
+      const txt = document.createElement('textarea');
+      txt.innerHTML = String(value || '');
+      return txt.value;
+    }
+
+    function detectLanguageCode(material = '') {
+      const clean = decodeHtmlEntities(String(material || ''));
+      const normalized = clean.toLowerCase();
+
+      if (normalized.includes('portugu')) return 'pt';
+      if (normalized.includes('english') || normalized.includes('ingl')) return 'en';
+      if (normalized.includes('franç') || normalized.includes('franc')) return 'fr';
+      if (normalized.includes('espa')) return 'es';
+
+      const match = BN_LANGUAGE_MAP.find(item => item.match.test(clean));
+      return match ? match.value : '';
+    }
+
+    function suggestCDD(subjects = []) {
+      const haystack = normalizeForSearch((subjects || []).join(' '));
+      return CDD_SUGGESTION_TABLE.find(item => item.match.some(term => haystack.includes(normalizeForSearch(term)))) || null;
+    }
+
+    function findDuplicateBookByIsbn(isbn = '') {
+      const normalized = normalizeISBN(isbn);
+      if (!normalized) return null;
+      return state.books.find(book => normalizeISBN(book.isbn || '') === normalized) || null;
+    }
+
+    function parseBnLookupPayload(data) {
+      const item = Array.isArray(data?.results) && data.results.length ? data.results[0] : null;
+      if (!item) return null;
+      const titleInfo = splitBnTitleAndSubtitle(item.title || '');
+      const publication = extractPublicationData(item.publication || '');
+      const authors = splitBnAuthors(item.author || '');
+      const subjects = extractSubjects(item.subject || '');
+      const language = detectLanguageCode(item.material || '');
+      const cdd = suggestCDD(subjects);
+      return {
+        raw: data,
+        title: titleInfo.title,
+        subtitle: titleInfo.subtitle,
+        authors,
+        primaryAuthor: authors[0] || '',
+        publication,
+        subjects,
+        language,
+        cdd,
+        detailUrl: item.detail_url || data.result_url || '',
+        duplicate: findDuplicateBookByIsbn(el('bookISBN')?.value || ''),
+        fieldMap: {
+          title: titleInfo.title,
+          subtitle: titleInfo.subtitle,
+          author: authors,
+          publisher: publication.publisher,
+          place: publication.place,
+          year: publication.year,
+          language,
+          cdd,
+          subjects,
+        },
+      };
     }
 
     function getMarcJsonObject(rawValue) {
@@ -2511,6 +2784,170 @@
       return String(value || '').replace(/[^0-9Xx]/g, '').toUpperCase();
     }
 
+
+    function updateBnDebugContent() {
+      const bnRefs = getBnUiRefs();
+      if (!bnRefs.bookBnDebugContent) return;
+      const payload = state.bnLookup ? {
+        parsed: state.bnLookup.fieldMap,
+        cddSuggestion: state.bnLookup.cdd,
+        detailUrl: state.bnLookup.detailUrl,
+        duplicate: state.bnLookup.duplicate ? {
+          id: state.bnLookup.duplicate.id,
+          bib_ref: state.bnLookup.duplicate.bib_ref,
+          title: getBookDisplayTitle(state.bnLookup.duplicate),
+        } : null,
+        raw: state.bnLookup.raw,
+      } : { info: 'Nenhum resultado BN carregado.' };
+      bnRefs.bookBnDebugContent.textContent = JSON.stringify(payload, null, 2);
+    }
+
+    function renderSubjectSuggestions(subjects = []) {
+      const bnRefs = getBnUiRefs();
+      if (!bnRefs.bookSubjectSuggestions) return;
+      if (!subjects.length) {
+        bnRefs.bookSubjectSuggestions.innerHTML = '<div class="hint">Nenhum assunto sugerido pela BN.</div>';
+        if (bnRefs.copySubjectSuggestionsBtn) bnRefs.copySubjectSuggestionsBtn.disabled = true;
+        return;
+      }
+      bnRefs.bookSubjectSuggestions.innerHTML = subjects.map(subject => `
+        <label class="checkbox-line">
+          <input type="checkbox" data-bn-subject value="${sanitize(subject)}" checked>
+          <span>${sanitize(subject)}</span>
+        </label>
+      `).join('');
+      if (bnRefs.copySubjectSuggestionsBtn) bnRefs.copySubjectSuggestionsBtn.disabled = false;
+    }
+
+    function renderBnAutofillPanel() {
+      const parsed = state.bnLookup;
+      const bnRefs = getBnUiRefs();
+      if (!bnRefs.bookAutofillPanel) return;
+      bnRefs.bookSuggestedCDD.textContent = parsed?.cdd ? `${parsed.cdd.cdd} (${parsed.cdd.label})` : 'Nenhuma sugestão.';
+      bnRefs.bookDuplicateHint.innerHTML = parsed?.duplicate
+        ? `⚠ livro já existe no catálogo: ${sanitize(getBookDisplayTitle(parsed.duplicate))} · ref. ${sanitize(parsed.duplicate.bib_ref || '—')}`
+        : 'Nenhum ISBN idêntico encontrado no catálogo carregado.';
+      renderSubjectSuggestions(parsed?.subjects || []);
+      bnRefs.applyBnAutofillBtn.disabled = !parsed;
+      bnRefs.openBnDetailBtn.disabled = !parsed?.detailUrl;
+      bnRefs.toggleBnDebugBtn.disabled = !parsed;
+      bnRefs.applySuggestedCDDBtn.disabled = !(parsed?.cdd?.cdd);
+      updateBnDebugContent();
+    }
+
+    function fillIfEmpty(node, value) {
+      if (!node) return false;
+      const current = String(node.value || '').trim();
+      const next = String(value || '').trim();
+      if (current || !next) return false;
+      node.value = next;
+      node.dispatchEvent(new Event('input', { bubbles: true }));
+      node.dispatchEvent(new Event('change', { bubbles: true }));
+      return true;
+    }
+
+    function contributorsFormIsEmpty() {
+      const snapshot = getBookContributorsSnapshot({ keepEmpty: true });
+      return !snapshot.some(item => String(item.name || '').trim());
+    }
+
+    function bindBnAutofillPanelEvents() {
+      const bnRefs = getBnUiRefs();
+      if (bnRefs.applyBnAutofillBtn && !bnRefs.applyBnAutofillBtn.dataset.bound) {
+        bnRefs.applyBnAutofillBtn.addEventListener('click', applyBnAutofill);
+        bnRefs.applyBnAutofillBtn.dataset.bound = '1';
+      }
+      if (bnRefs.openBnDetailBtn && !bnRefs.openBnDetailBtn.dataset.bound) {
+        bnRefs.openBnDetailBtn.addEventListener('click', () => {
+          const url = state.bnLookup?.detailUrl;
+          if (!url) {
+            showMessage(refs.bookMessage, 'Nenhum registro BN carregado para abrir.', 'error');
+            return;
+          }
+          window.open(url, '_blank', 'noopener');
+        });
+        bnRefs.openBnDetailBtn.dataset.bound = '1';
+      }
+      if (bnRefs.toggleBnDebugBtn && !bnRefs.toggleBnDebugBtn.dataset.bound) {
+        bnRefs.toggleBnDebugBtn.addEventListener('click', () => {
+          const currentRefs = getBnUiRefs();
+          if (!state.bnLookup) {
+            showMessage(refs.bookMessage, 'Faça primeiro uma busca bem-sucedida na Biblioteca Nacional.', 'error');
+            return;
+          }
+          currentRefs.bookBnDebugWrap?.classList.toggle('is-hidden');
+          updateBnDebugContent();
+        });
+        bnRefs.toggleBnDebugBtn.dataset.bound = '1';
+      }
+      if (bnRefs.applySuggestedCDDBtn && !bnRefs.applySuggestedCDDBtn.dataset.bound) {
+        bnRefs.applySuggestedCDDBtn.addEventListener('click', applySuggestedCDD);
+        bnRefs.applySuggestedCDDBtn.dataset.bound = '1';
+      }
+      if (bnRefs.copySubjectSuggestionsBtn && !bnRefs.copySubjectSuggestionsBtn.dataset.bound) {
+        bnRefs.copySubjectSuggestionsBtn.addEventListener('click', copySelectedSubjectSuggestions);
+        bnRefs.copySubjectSuggestionsBtn.dataset.bound = '1';
+      }
+    }
+
+    function applyBnAutofill() {
+      const parsed = state.bnLookup;
+      if (!parsed) {
+        showMessage(refs.bookMessage, 'Faça primeiro uma busca bem-sucedida na Biblioteca Nacional.', 'error');
+        return;
+      }
+      let changes = 0;
+      changes += fillIfEmpty(el('bookTitle'), parsed.title) ? 1 : 0;
+      changes += fillIfEmpty(el('bookSubtitle'), parsed.subtitle) ? 1 : 0;
+      changes += fillIfEmpty(el('bookPublisher'), parsed.publication.publisher) ? 1 : 0;
+      changes += fillIfEmpty(el('bookPlace'), parsed.publication.place) ? 1 : 0;
+      changes += fillIfEmpty(el('bookYear'), parsed.publication.year) ? 1 : 0;
+      changes += fillIfEmpty(el('bookLanguage'), parsed.language) ? 1 : 0;
+      if (contributorsFormIsEmpty() && parsed.authors?.length) {
+        renderBookContributors(parsed.authors.map((name, index) => ({
+          position: index + 1,
+          name,
+          role: index === 0 ? 'autor' : 'coautor',
+          is_primary: index === 0,
+        })));
+        changes += parsed.authors.length;
+      } else if (!el('bookAuthor').value.trim() && parsed.primaryAuthor) {
+        changes += fillIfEmpty(el('bookAuthor'), parsed.primaryAuthor) ? 1 : 0;
+      }
+      syncBookResponsibilitySummary();
+      syncBookDraftVisualState();
+      showMessage(refs.bookMessage, changes ? 'Sugestões da BN aplicadas sem sobrescrever campos já preenchidos.' : 'Nada foi alterado: os campos principais já estavam preenchidos.', 'ok');
+    }
+
+    function applySuggestedCDD() {
+      const parsed = state.bnLookup;
+      if (!parsed?.cdd?.cdd) {
+        showMessage(refs.bookMessage, 'Nenhuma sugestão de CDD disponível.', 'error');
+        return;
+      }
+      if (String(el('bookCDD')?.value || '').trim()) {
+        showMessage(refs.bookMessage, 'O campo CDD já está preenchido; a sugestão continua visível apenas como apoio.', 'info');
+        return;
+      }
+      fillIfEmpty(el('bookCDD'), parsed.cdd.cdd);
+      syncBookDraftVisualState();
+      showMessage(refs.bookMessage, 'CDD sugerida aplicada sem sobrescrever dados existentes.', 'ok');
+    }
+
+    async function copySelectedSubjectSuggestions() {
+      const checked = Array.from(document.querySelectorAll('[data-bn-subject]:checked')).map(node => node.value).filter(Boolean);
+      if (!checked.length) {
+        showMessage(refs.bookMessage, 'Nenhum assunto selecionado para copiar.', 'error');
+        return;
+      }
+      const text = checked.join(' ; ');
+      try {
+        await navigator.clipboard.writeText(text);
+        showMessage(refs.bookMessage, 'Sugestões copiadas para a área de transferência.', 'ok');
+      } catch {
+        showMessage(refs.bookMessage, `Copie manualmente: ${text}`, 'info');
+      }
+    }
     async function copyIsbnIfPossible(isbn) {
       try {
         if (!navigator.clipboard?.writeText) return false;
@@ -2525,8 +2962,12 @@
       const wrap = el('bookIsbnLookupResult');
       const content = el('bookIsbnLookupResultContent');
       if (!wrap || !content) return;
+      state.bnLookup = null;
       wrap.classList.add('is-hidden');
       content.innerHTML = 'Nenhum resultado carregado.';
+      const bnRefs = getBnUiRefs();
+      if (bnRefs.bookBnDebugWrap) bnRefs.bookBnDebugWrap.classList.add('is-hidden');
+      renderBnAutofillPanel();
     }
 
     function renderIsbnLookupResult(data, isbn) {
@@ -2536,12 +2977,15 @@
 
       const total = Number(data?.total || 0);
       if (!total || !Array.isArray(data?.results) || !data.results.length) {
+        state.bnLookup = null;
         content.innerHTML = `<strong>Biblioteca Nacional</strong><br><span class="hint">Nenhum resultado encontrado para o ISBN ${sanitize(isbn)}.</span>`;
         wrap.classList.remove('is-hidden');
+        renderBnAutofillPanel();
         return;
       }
 
       const item = data.results[0] || {};
+      state.bnLookup = parseBnLookupPayload(data);
       content.innerHTML = `
         <div class="section-block">
           <div>
@@ -2551,11 +2995,51 @@
           <div><strong>Título:</strong><br>${sanitize(item.title || '—')}</div>
           <div><strong>Autor:</strong><br>${sanitize(item.author || '—')}</div>
           <div><strong>Publicação:</strong><br>${sanitize(item.publication || '—')}</div>
+          <div><strong>Material:</strong><br>${sanitize(item.material || '—')}</div>
           <div class="row-actions">
             <a class="btn-inline small secondary" href="${sanitize(item.detail_url || data.result_url || '#')}" target="_blank" rel="noopener noreferrer">Abrir ficha na BN</a>
           </div>
+          <div id="bookAutofillPanel" class="autofill-panel">
+            <div style="display:flex; flex-wrap:wrap; justify-content:space-between; gap:12px; align-items:center;">
+              <h4 class="autofill-panel-title">Assistência bibliográfica pela BN</h4>
+              <div class="autofill-actions">
+                <button id="applyBnAutofillBtn" type="button" class="btn-inline small primary" disabled>Preencher ficha automaticamente</button>
+                <button id="openBnDetailBtn" type="button" class="btn-inline small secondary" disabled>Abrir registro BN</button>
+                <button id="toggleBnDebugBtn" type="button" class="btn-inline small secondary" disabled>Debug catalogação</button>
+              </div>
+            </div>
+            <div class="hint">Este painel só sugere informações e nunca sobrescreve campos já preenchidos.</div>
+            <div class="autofill-grid">
+              <div class="autofill-box">
+                <strong>CDD sugerido</strong>
+                <div id="bookSuggestedCDD" class="autofill-value">Nenhuma sugestão.</div>
+                <div class="row-actions" style="margin-top:8px;">
+                  <button id="applySuggestedCDDBtn" type="button" class="btn-inline small secondary" disabled>Aplicar CDD</button>
+                </div>
+              </div>
+              <div class="autofill-box">
+                <strong>Duplicata por ISBN</strong>
+                <div id="bookDuplicateHint" class="autofill-value">Nenhum ISBN idêntico encontrado no catálogo carregado.</div>
+              </div>
+            </div>
+            <div class="autofill-box">
+              <strong>Assuntos sugeridos pela BN</strong>
+              <div id="bookSubjectSuggestions" class="assunto-suggestions">
+                <div class="hint">Nenhum assunto sugerido pela BN.</div>
+              </div>
+              <div class="row-actions" style="margin-top:8px;">
+                <button id="copySubjectSuggestionsBtn" type="button" class="btn-inline small secondary" disabled>Copiar sugestões</button>
+              </div>
+            </div>
+            <div id="bookBnDebugWrap" class="autofill-box is-hidden">
+              <strong>Debug catalogação</strong>
+              <div id="bookBnDebugContent" class="autofill-debug"></div>
+            </div>
+          </div>
         </div>`;
       wrap.classList.remove('is-hidden');
+      bindBnAutofillPanelEvents();
+      renderBnAutofillPanel();
     }
 
     async function openIsbnLookup(source) {
@@ -5083,6 +5567,7 @@
       syncAuthorSortName();
       syncAuthorDraftVisualState();
     });
+
     el('openIsbnBnBtn').addEventListener('click', () => openIsbnLookup('bn'));
     el('openIsbnCblBtn').addEventListener('click', () => openIsbnLookup('cbl'));
     el('openIssnPortalBtn').addEventListener('click', openIssnLookup);
