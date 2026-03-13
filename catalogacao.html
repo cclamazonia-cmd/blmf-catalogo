@@ -1211,8 +1211,8 @@
               <label for="bookISBN">ISBN</label>
               <input id="bookISBN" type="text" placeholder="8527100053 ou 9788527409453" />
               <div class="row-actions">
-                <button id="openIsbnCblBtn" type="button" class="btn-inline small primary">Buscar ISBN na CBL</button>
-                <button id="openIsbnBnBtn" type="button" class="btn-inline small secondary">BN (legado)</button>
+                <button id="openIsbnBnBtn" type="button" class="btn-inline small primary">Biblioteca Nacional</button>
+                <button id="openIsbnWorldcatBtn" type="button" class="btn-inline small secondary">WorldCat</button>
               </div>
             </div>
 
@@ -2529,15 +2529,15 @@
 
       const copied = await copyIsbnIfPossible(isbn);
       const url = source === 'bn'
-        ? `http://www.isbn.bn.br/website/consulta/cadastro/isbn/${encodeURIComponent(isbn)}`
-        : `https://servicos.cbl.org.br/isbn/pesquisa/?page=1&q=${encodeURIComponent(isbn)}&filtrar_por%5B0%5D=isbn&ord%5B0%5D=relevancia&dir%5B0%5D=asc`;
+        ? `https://acervo.bn.gov.br/sophia_web/busca/acervo/isbn/?PalavraChave=${encodeURIComponent(isbn)}`
+        : `https://search.worldcat.org/search?q=${encodeURIComponent(isbn)}`;
 
       window.open(url, '_blank', 'noopener');
 
       if (copied) {
-        showMessage(refs.bookMessage, `Busca de ISBN aberta em ${source === 'bn' ? 'BN (legado)' : 'CBL'} com o número já copiado para conferência.`, 'info');
+        showMessage(refs.bookMessage, `Busca de ISBN aberta em ${source === 'bn' ? 'Biblioteca Nacional' : 'WorldCat'} com o número já copiado para conferência.`, 'info');
       } else {
-        showMessage(refs.bookMessage, `Busca de ISBN aberta em ${source === 'bn' ? 'BN (legado)' : 'CBL'}.`, 'info');
+        showMessage(refs.bookMessage, `Busca de ISBN aberta em ${source === 'bn' ? 'Biblioteca Nacional' : 'WorldCat'}.`, 'info');
       }
     }
 
@@ -5020,7 +5020,7 @@
       syncAuthorDraftVisualState();
     });
     el('openIsbnBnBtn').addEventListener('click', () => openIsbnLookup('bn'));
-    el('openIsbnCblBtn').addEventListener('click', () => openIsbnLookup('cbl'));
+    el('openIsbnWorldcatBtn').addEventListener('click', () => openIsbnLookup('worldcat'));
     el('openIssnPortalBtn').addEventListener('click', openIssnLookup);
     el('addContributorBtn').addEventListener('click', () => addTypedContributor('outro'));
     el('addAuthorContributorBtn').addEventListener('click', () => addTypedContributor('autor'));
