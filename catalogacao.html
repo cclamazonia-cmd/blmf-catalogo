@@ -2529,13 +2529,13 @@
 
       const copied = await copyIsbnIfPossible(isbn);
       const url = source === 'bn'
-        ? `https://acervo.bn.gov.br/sophia_web/search.html?query=${encodeURIComponent(isbn)}`
+        ? 'https://acervo.bn.gov.br/sophia_web/busca/acervo/isbn/issn'
         : `https://servicos.cbl.org.br/isbn/pesquisa/?page=1&q=${encodeURIComponent(isbn)}&filtrar_por%5B0%5D=isbn&ord%5B0%5D=relevancia&dir%5B0%5D=asc`;
 
       window.open(url, '_blank', 'noopener');
 
       if (copied) {
-        showMessage(refs.bookMessage, `Busca de ISBN aberta em ${source === 'bn' ? 'BN' : 'CBL'} com o número já copiado para conferência.`, 'info');
+        showMessage(refs.bookMessage, `Busca de ISBN aberta em ${source === 'bn' ? 'BN' : 'CBL'} com o número já copiado para colar na busca.`, 'info');
       } else {
         showMessage(refs.bookMessage, `Busca de ISBN aberta em ${source === 'bn' ? 'BN' : 'CBL'}.`, 'info');
       }
