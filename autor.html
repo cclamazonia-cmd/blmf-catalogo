@@ -63,9 +63,9 @@
       box-shadow:var(--shadow)
     }
     .title{margin:0 0 6px;font-size:1.45rem}
-    .subtitle{margin:0 0 8px;color:var(--muted);font-style:italic}
+    .subtitle{display:none}
     .muted{color:var(--muted)}
-    .meta{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px}
+    .meta{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin-top:10px}
     @media (max-width:720px){.meta{grid-template-columns:1fr}}
     .pill{
       display:inline-flex;align-items:center;gap:8px;
@@ -112,15 +112,24 @@
       line-height:1.62;
       width:100%;
       max-width:none;
+      overflow-wrap:anywhere;
     }
+    .bio-section{margin-top:16px}
+    .bio-toggle{margin-top:10px}
+    .bio.is-collapsed{display:-webkit-box;-webkit-line-clamp:8;-webkit-box-orient:vertical;overflow:hidden}
+    .bio-toggle[hidden]{display:none !important}
+
     .section-title{
       margin:0 0 12px;
       font-size:1.15rem;
     }
     .books{
       display:grid;
-      grid-template-columns:repeat(auto-fit,minmax(240px,1fr));
+      grid-template-columns:repeat(auto-fit,minmax(300px,1fr));
       gap:12px;
+    }
+    @media (max-width:720px){
+      .books{grid-template-columns:1fr}
     }
     .book-card{
       display:flex;
@@ -129,10 +138,11 @@
       border:1px solid rgba(255,255,255,.08);
       background:rgba(255,255,255,.03);
       border-radius:16px;
-      padding:12px;
+      padding:14px;
       text-decoration:none;
       transition:transform .12s ease, border-color .12s ease, background .12s ease;
       min-height:140px;
+      min-width:0;
     }
     .book-card:hover{
       transform:translateY(-1px);
@@ -159,6 +169,18 @@
       border:1px dashed rgba(255,255,255,.16);
       border-radius:16px;
       padding:14px;
+    }
+    @media (max-width:720px){
+      .wrap{padding:16px}
+      .topbar{align-items:stretch}
+      .topbar > div:last-child{width:100%}
+      .topbar > div:last-child .btn,
+      .topbar > div:last-child button{flex:1 1 calc(50% - 10px); min-height:44px}
+      .title{font-size:1.28rem}
+      .pill{width:100%; justify-content:flex-start}
+      .photobox{min-height:260px}
+      .photoimg{max-width:200px; max-height:280px}
+      .card{padding:14px}
     }
   </style>
 </head>
@@ -187,8 +209,6 @@
 
         <div class="contentbox">
           <h1 class="title" id="nameLine">Carregando…</h1>
-          <div class="subtitle" id="sortLine" style="display:none"></div>
-
           <div class="meta" style="margin-top:12px">
             <div class="pill" id="yearsPill" style="display:none"></div>
             <div class="pill" id="countryPill" style="display:none"></div>
@@ -204,7 +224,11 @@
 
       <div class="hr"></div>
 
-      <div class="bio muted" id="bioLine">—</div>
+      <div class="bio-section" id="bioSection" style="display:none">
+        <h2 class="section-title">Nota biográfica</h2>
+        <div class="bio muted" id="bioLine">—</div>
+        <button class="btn bio-toggle" id="bioToggle" type="button" hidden>Mostrar mais</button>
+      </div>
 
       <div class="status" id="status"></div>
     </div>
@@ -331,6 +355,35 @@
       if (!b && d) return `/ ${d}`;
       if (!b && !d) return "/";
       return "";
+    }
+
+    function hasMeaningfulText(value) {
+      const txt = String(value ?? "").trim();
+      return !!txt && txt !== "—" && txt.toLowerCase() !== "null";
+    }
+
+    function setupBioToggle() {
+      const section = $("bioSection");
+      const bio = $("bioLine");
+      const btn = $("bioToggle");
+      if (!section || !bio || !btn) return;
+
+      const txt = String(bio.textContent || "").trim();
+      const isMobile = window.matchMedia('(max-width: 720px)').matches;
+      const shouldCollapse = isMobile && txt.length > 520;
+
+      bio.classList.remove('is-collapsed');
+      btn.hidden = true;
+      btn.textContent = 'Mostrar mais';
+
+      if (!shouldCollapse) return;
+
+      bio.classList.add('is-collapsed');
+      btn.hidden = false;
+      btn.onclick = () => {
+        const collapsed = bio.classList.toggle('is-collapsed');
+        btn.textContent = collapsed ? 'Mostrar mais' : 'Mostrar menos';
+      };
     }
 
     function uniqueStrings(values) {
@@ -624,9 +677,10 @@
 
         const meta2 = document.createElement("div");
         meta2.className = "book-meta";
-        meta2.textContent = [row.editora || "", row.role ? `função: ${row.role}` : ""].filter(Boolean).join(" · ") || "";
+        meta2.textContent = [row.editora || "", row.colecao ? `coleção: ${row.colecao}` : "", row.role ? `função: ${row.role}` : ""].filter(Boolean).join(" · ") || "";
 
-        a.append(title, subtitle, meta1, meta2);
+        a.append(title, subtitle, meta1);
+        if (meta2.textContent) a.append(meta2);
         list.appendChild(a);
       }
     }
@@ -689,10 +743,18 @@
       const books = sortBooks(await fetchLinkedBooks(author.id, author));
 
       $("nameLine").textContent = author.display_name || author.preferred_name || author.sort_name || "Sem nome";
-      setLine("sortLine", "");
-      $("bioLine").textContent = String(author.biography || author.notes || "—").trim() || "—";
 
-      setPill("yearsPill", "nascimento - falecimento", yearsLabel(author.birth_year, author.death_year));
+      const bioText = String(author.biography || author.notes || "").trim();
+      const bioSection = $("bioSection");
+      if (hasMeaningfulText(bioText)) {
+        bioSection.style.display = "";
+        $("bioLine").textContent = bioText;
+      } else {
+        bioSection.style.display = "none";
+        $("bioLine").textContent = "";
+      }
+
+      setPill("yearsPill", "anos", yearsLabel(author.birth_year, author.death_year), true);
       setPill("countryPill", "País", author.country || "");
       setPill("booksCountPill", "livros", String(author.books_count_resolved || books.length || author.books_count || 0));
       setPill("viafPill", "VIAF", author.viaf_id || "");
@@ -703,9 +765,12 @@
 
       setPhoto(author.photo_object_path || "");
       renderBooks(books || []);
+      setupBioToggle();
       setStatus("", "");
       document.title = `BLMF — ${author.display_name || author.preferred_name || author.sort_name || "Autor"}`;
     }
+
+    window.addEventListener("resize", () => setupBioToggle());
 
     await setupContaButton();
     await loadAuthor();
