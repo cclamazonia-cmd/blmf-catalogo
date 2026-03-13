@@ -1200,14 +1200,17 @@
               <label for="bookISBN">ISBN</label>
               <input id="bookISBN" type="text" placeholder="8527100053 ou 9788527409453" />
               <div class="row-actions">
-                <button id="openIsbnBnBtn" type="button" class="btn-inline small secondary">Abrir BN</button>
-                <button id="openIsbnCblBtn" type="button" class="btn-inline small secondary">Abrir CBL</button>
+                <button id="openIsbnCblBtn" type="button" class="btn-inline small primary">Buscar ISBN na CBL</button>
+                <button id="openIsbnBnBtn" type="button" class="btn-inline small secondary">BN (legado)</button>
               </div>
             </div>
 
             <div id="bookISSNField" class="field">
               <label for="bookISSN">ISSN</label>
               <input id="bookISSN" type="text" placeholder="0251-1479" />
+              <div class="row-actions">
+                <button id="openIssnPortalBtn" type="button" class="btn-inline small secondary">Buscar ISSN no Portal ISSN</button>
+              </div>
               <small>Para periódicos e outras publicações seriadas.</small>
             </div>
 
@@ -2049,6 +2052,7 @@
     function hidePublishedPopup(kind) {
       const btn = refs[`${kind}PublishedPopupBtn`];
       if (!btn) return;
+      btn.textContent = 'ficha publicada';
       btn.classList.add('is-hidden');
       btn.classList.remove('show');
       btn.setAttribute('aria-hidden', 'true');
@@ -2058,14 +2062,20 @@
       }
     }
 
-    function showPublishedPopup(kind) {
+    function showStatusPopup(kind, label = 'ficha publicada') {
       const btn = refs[`${kind}PublishedPopupBtn`];
       if (!btn) return;
+      btn.textContent = 'ficha publicada';
       if (publishPopupTimers[kind]) clearTimeout(publishPopupTimers[kind]);
+      btn.textContent = label;
       btn.classList.remove('is-hidden');
       btn.classList.add('show');
       btn.setAttribute('aria-hidden', 'false');
       publishPopupTimers[kind] = window.setTimeout(() => hidePublishedPopup(kind), 2600);
+    }
+
+    function showPublishedPopup(kind) {
+      showStatusPopup(kind, 'ficha publicada');
     }
 
     function setPublishLock(kind, locked) {
@@ -2525,10 +2535,34 @@
       window.open(url, '_blank', 'noopener');
 
       if (copied) {
-        showMessage(refs.bookMessage, `Busca de ISBN aberta em ${source === 'bn' ? 'BN' : 'CBL'} com o número já copiado para conferência.`, 'info');
+        showMessage(refs.bookMessage, `Busca de ISBN aberta em ${source === 'bn' ? 'BN (legado)' : 'CBL'} com o número já copiado para conferência.`, 'info');
       } else {
-        showMessage(refs.bookMessage, `Busca de ISBN aberta em ${source === 'bn' ? 'BN' : 'CBL'}.`, 'info');
+        showMessage(refs.bookMessage, `Busca de ISBN aberta em ${source === 'bn' ? 'BN (legado)' : 'CBL'}.`, 'info');
       }
+    }
+
+    function normalizeIssn(value) {
+      return String(value || '').replace(/[^0-9Xx]/g, '').toUpperCase();
+    }
+
+    function formatIssnForLookup(value) {
+      const normalized = normalizeIssn(value);
+      if (normalized.length === 8) return `${normalized.slice(0, 4)}-${normalized.slice(4)}`;
+      return normalized;
+    }
+
+    function openIssnLookup() {
+      const raw = el('bookISSN')?.value || '';
+      const issn = formatIssnForLookup(raw);
+
+      if (!issn) {
+        showMessage(refs.bookMessage, 'Informe um ISSN antes de abrir a busca.', 'error');
+        return;
+      }
+
+      const url = `https://portal.issn.org/resource/ISSN/${encodeURIComponent(issn)}`;
+      window.open(url, '_blank', 'noopener');
+      showMessage(refs.bookMessage, 'Busca de ISSN aberta no Portal ISSN.', 'info');
     }
 
     function contributorRoleOptions(selected = 'autor') {
@@ -3238,6 +3272,14 @@
 
       if (result.error) throw result.error;
       showMessage(messageTarget, successText, 'ok');
+      const popupKindMap = {
+        bookMessage: 'book',
+        authorMessage: 'author',
+        exemplarMessage: 'exemplar',
+        labelMessage: 'label',
+      };
+      const popupKind = Object.entries(refs).find(([_, node]) => node === messageTarget)?.[0];
+      if (popupKindMap[popupKind]) showStatusPopup(popupKindMap[popupKind], 'rascunho salvado');
       await Promise.all([loadQueue(), loadBatches(), loadCatalog()]);
       setTab(currentTab);
       updateStats();
@@ -4686,6 +4728,14 @@
         labelDraftBaseline = serializeLabelFormState();
         setLabelDraftVisualState('ready');
       }
+      const popupKindMap = {
+        bookMessage: 'book',
+        authorMessage: 'author',
+        exemplarMessage: 'exemplar',
+        labelMessage: 'label',
+      };
+      const popupKind = Object.entries(refs).find(([_, node]) => node === target)?.[0];
+      if (popupKindMap[popupKind]) showStatusPopup(popupKindMap[popupKind], 'rascunho pronto');
       showMessage(target, 'Rascunho marcado como pronto.', 'ok');
     }
 
@@ -4980,6 +5030,7 @@
     });
     el('openIsbnBnBtn').addEventListener('click', () => openIsbnLookup('bn'));
     el('openIsbnCblBtn').addEventListener('click', () => openIsbnLookup('cbl'));
+    el('openIssnPortalBtn').addEventListener('click', openIssnLookup);
     el('addContributorBtn').addEventListener('click', () => addTypedContributor('outro'));
     el('addAuthorContributorBtn').addEventListener('click', () => addTypedContributor('autor'));
     el('addCoauthorContributorBtn').addEventListener('click', () => addTypedContributor('coautor'));
