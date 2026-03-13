@@ -1212,7 +1212,7 @@
               <input id="bookISBN" type="text" placeholder="8527100053 ou 9788527409453" />
               <div class="row-actions">
                 <button id="openIsbnCblBtn" type="button" class="btn-inline small primary">Buscar ISBN na CBL</button>
-                <button id="openIsbnBnBtn" type="button" class="btn-inline small secondary">BN (legado)</button>
+                <button id="openIsbnBnBtn" type="button" class="btn-inline small secondary">BN</button>
               </div>
             </div>
 
@@ -2529,15 +2529,15 @@
 
       const copied = await copyIsbnIfPossible(isbn);
       const url = source === 'bn'
-        ? `http://www.isbn.bn.br/website/consulta/cadastro/isbn/${encodeURIComponent(isbn)}`
+        ? `https://acervo.bn.gov.br/sophia_web/search.html?query=${encodeURIComponent(isbn)}`
         : `https://servicos.cbl.org.br/isbn/pesquisa/?page=1&q=${encodeURIComponent(isbn)}&filtrar_por%5B0%5D=isbn&ord%5B0%5D=relevancia&dir%5B0%5D=asc`;
 
       window.open(url, '_blank', 'noopener');
 
       if (copied) {
-        showMessage(refs.bookMessage, `Busca de ISBN aberta em ${source === 'bn' ? 'BN (legado)' : 'CBL'} com o número já copiado para conferência.`, 'info');
+        showMessage(refs.bookMessage, `Busca de ISBN aberta em ${source === 'bn' ? 'BN' : 'CBL'} com o número já copiado para conferência.`, 'info');
       } else {
-        showMessage(refs.bookMessage, `Busca de ISBN aberta em ${source === 'bn' ? 'BN (legado)' : 'CBL'}.`, 'info');
+        showMessage(refs.bookMessage, `Busca de ISBN aberta em ${source === 'bn' ? 'BN' : 'CBL'}.`, 'info');
       }
     }
 
