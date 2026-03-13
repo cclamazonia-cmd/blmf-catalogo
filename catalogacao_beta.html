@@ -2100,8 +2100,21 @@
       return String(subjectValue || '').split(/\s*;\s*|\s*\|\s*|\s*•\s*/).map(item => normalizeInlineWhitespace(item)).filter(Boolean);
     }
 
+    function decodeHtmlEntities(value = '') {
+      const txt = document.createElement('textarea');
+      txt.innerHTML = String(value || '');
+      return txt.value;
+    }
+
     function detectLanguageCode(material = '') {
-      const clean = String(material || '');
+      const clean = decodeHtmlEntities(String(material || ''));
+      const normalized = clean.toLowerCase();
+
+      if (normalized.includes('portugu')) return 'pt';
+      if (normalized.includes('english') || normalized.includes('ingl')) return 'en';
+      if (normalized.includes('franç') || normalized.includes('franc')) return 'fr';
+      if (normalized.includes('espa')) return 'es';
+
       const match = BN_LANGUAGE_MAP.find(item => item.match.test(clean));
       return match ? match.value : '';
     }
