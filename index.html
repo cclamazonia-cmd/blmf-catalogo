@@ -1173,6 +1173,24 @@ async function handleContaClick() {
   }
   location.assign(state.isLibrarian ? PAINEL_URL : CONTA_URL);
 }
+
+let authRefreshInFlight = null;
+async function refreshAuthStateAndRender(forceReloadRows = false) {
+  if (authRefreshInFlight) return authRefreshInFlight;
+  authRefreshInFlight = (async () => {
+    authState = await getCurrentUserAndRole();
+    if (forceReloadRows || !Array.isArray(rows) || !rows.length) {
+      rows = await loadRowsFromSupabase();
+      prepareRows();
+    }
+    render();
+  })();
+  try {
+    await authRefreshInFlight;
+  } finally {
+    authRefreshInFlight = null;
+  }
+}
 search.addEventListener('input', debouncedRender);
 authorFilter.addEventListener('input', render);
 publisherFilter.addEventListener('input', render);
@@ -1287,11 +1305,18 @@ document.addEventListener('keydown', (e) => {
     debouncedRender();
   }
 });
+window.addEventListener('pageshow', () => {
+  refreshAuthStateAndRender(false);
+});
+window.addEventListener('focus', () => {
+  refreshAuthStateAndRender(false);
+});
+document.addEventListener('visibilitychange', () => {
+  if (!document.hidden) refreshAuthStateAndRender(false);
+});
+
 (async function init() {
-  authState = await getCurrentUserAndRole();
-  rows = await loadRowsFromSupabase();
-  prepareRows();
-  render();
+  await refreshAuthStateAndRender(true);
 })();
 </script>
 </body>
