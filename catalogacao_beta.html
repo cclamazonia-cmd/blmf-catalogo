@@ -2585,9 +2585,6 @@
         return;
       }
       const parts = buildCanonicalAuthorNameParts(preferredField.value || '');
-      if (parts.canonicalPreferred) {
-        preferredField.value = parts.canonicalPreferred;
-      }
       sortField.value = parts.canonicalSort || fallback || '';
     }
 
@@ -2700,7 +2697,7 @@
       btn.classList.remove('is-hidden');
       btn.classList.add('show');
       btn.setAttribute('aria-hidden', 'false');
-      publishPopupTimers[kind] = window.setTimeout(() => hidePublishedPopup(kind), 2600);
+      publishPopupTimers[kind] = window.setTimeout(() => hidePublishedPopup(kind), 6200);
     }
 
     function showPublishedPopup(kind) {
