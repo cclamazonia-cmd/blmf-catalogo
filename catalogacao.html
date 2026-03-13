@@ -1212,7 +1212,7 @@
               <input id="bookISBN" type="text" placeholder="8527100053 ou 9788527409453" />
               <div class="row-actions">
                 <button id="openIsbnBnBtn" type="button" class="btn-inline small primary">Biblioteca Nacional</button>
-                <button id="openIsbnWorldcatBtn" type="button" class="btn-inline small secondary">WorldCat</button>
+                <button id="openIsbnCblBtn" type="button" class="btn-inline small secondary">WorldCat</button>
               </div>
             </div>
 
@@ -2527,18 +2527,42 @@
         return;
       }
 
-      const copied = await copyIsbnIfPossible(isbn);
-      const url = source === 'bn'
-        ? `https://acervo.bn.gov.br/sophia_web/busca/acervo/isbn/?PalavraChave=${encodeURIComponent(isbn)}`
-        : `https://search.worldcat.org/search?q=${encodeURIComponent(isbn)}`;
-
-      window.open(url, '_blank', 'noopener');
-
-      if (copied) {
-        showMessage(refs.bookMessage, `Busca de ISBN aberta em ${source === 'bn' ? 'Biblioteca Nacional' : 'WorldCat'} com o número já copiado para conferência.`, 'info');
-      } else {
-        showMessage(refs.bookMessage, `Busca de ISBN aberta em ${source === 'bn' ? 'Biblioteca Nacional' : 'WorldCat'}.`, 'info');
+      if (source === 'bn') {
+        try {
+          showMessage(refs.bookMessage, 'Abrindo resultado da Biblioteca Nacional…', 'info');
+          const response = await fetch(`${SUPABASE_URL}/functions/v1/bn_isbn_lookup`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              apikey: SUPABASE_ANON_KEY,
+              Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
+            },
+            body: JSON.stringify({ isbn }),
+          });
+          const result = await response.json().catch(() => ({}));
+          if (!response.ok || !result?.url) {
+            throw new Error(result?.error || result?.message || 'A busca na Biblioteca Nacional falhou.');
+          }
+          window.open(result.url, '_blank', 'noopener');
+          showMessage(refs.bookMessage, 'Resultado da Biblioteca Nacional aberto em nova aba.', 'ok');
+          return;
+        } catch (error) {
+          const copied = await copyIsbnIfPossible(isbn);
+          window.open('https://acervo.bn.gov.br/sophia_web/busca/acervo/isbn/', '_blank', 'noopener');
+          showMessage(
+            refs.bookMessage,
+            copied
+              ? `Não consegui abrir automaticamente o resultado da Biblioteca Nacional. A página de busca foi aberta e o ISBN ${isbn} foi copiado para colar lá.`
+              : 'Não consegui abrir automaticamente o resultado da Biblioteca Nacional. A página de busca foi aberta para tentativa manual.',
+            'error'
+          );
+          return;
+        }
       }
+
+      const url = `https://search.worldcat.org/search?q=bn%3A${encodeURIComponent(isbn)}`;
+      window.open(url, '_blank', 'noopener');
+      showMessage(refs.bookMessage, 'Busca de ISBN aberta no WorldCat.', 'info');
     }
 
     function normalizeIssn(value) {
@@ -5020,7 +5044,7 @@
       syncAuthorDraftVisualState();
     });
     el('openIsbnBnBtn').addEventListener('click', () => openIsbnLookup('bn'));
-    el('openIsbnWorldcatBtn').addEventListener('click', () => openIsbnLookup('worldcat'));
+    el('openIsbnCblBtn').addEventListener('click', () => openIsbnLookup('cbl'));
     el('openIssnPortalBtn').addEventListener('click', openIssnLookup);
     el('addContributorBtn').addEventListener('click', () => addTypedContributor('outro'));
     el('addAuthorContributorBtn').addEventListener('click', () => addTypedContributor('autor'));
