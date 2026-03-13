@@ -2075,23 +2075,45 @@
     }
 
     function extractPublicationData(publication = '') {
-      const raw = normalizeInlineWhitespace(String(publication || ''));
+      const raw = normalizeInlineWhitespace(decodeHtmlEntities(String(publication || '')));
       const yearMatch = raw.match(/(1[0-9]{3}|20[0-9]{2}|2100)(?!.*(1[0-9]{3}|20[0-9]{2}|2100))/);
       const year = yearMatch ? yearMatch[1] : '';
-      const withoutYear = raw.replace(/,\s*(1[0-9]{3}|20[0-9]{2}|2100).*$/, '').trim();
+      const withoutYear = normalizeInlineWhitespace(
+        raw
+          .replace(/,?\s*(1[0-9]{3}|20[0-9]{2}|2100)\.?\s*$/, '')
+          .replace(/[\s.;:,]+$/, '')
+      );
+
+      const cleanSegment = (value = '') => normalizeInlineWhitespace(
+        String(value || '')
+          .replace(/\[[^\]]*\]/g, ' ')
+          .replace(/^\[|\]$/g, '')
+          .replace(/^[,;:\s]+|[,;:\s]+$/g, '')
+      );
+
       let place = '';
       const bracketMatch = withoutYear.match(/\[\s*([^\]]+?)\s*\]/);
       if (bracketMatch) {
-        place = normalizeInlineWhitespace(bracketMatch[1]);
-      } else {
-        const firstColonIndex = withoutYear.indexOf(':');
-        const beforeColon = firstColonIndex >= 0 ? withoutYear.slice(0, firstColonIndex) : withoutYear;
-        const placeParts = beforeColon.split(';').map(item => normalizeInlineWhitespace(item.replace(/^\[|\]$/g, ''))).filter(Boolean);
-        place = placeParts[0] || '';
+        place = cleanSegment(bracketMatch[1]);
       }
-      let publisher = '';
-      const colonParts = withoutYear.split(':').map(item => normalizeInlineWhitespace(item.replace(/^\[|\]$/g, ''))).filter(Boolean);
-      if (colonParts.length) publisher = colonParts[colonParts.length - 1];
+      if (!place) {
+        const beforeColon = withoutYear.split(':')[0] || '';
+        const placeCandidates = beforeColon
+          .split(';')
+          .map(cleanSegment)
+          .filter(Boolean)
+          .filter(segment => !/^[A-Z]{2,3}$/.test(segment));
+        place = placeCandidates[0] || '';
+      }
+
+      const publisherCandidates = withoutYear
+        .split(':')
+        .map(cleanSegment)
+        .filter(Boolean)
+        .filter(segment => segment !== place)
+        .filter(segment => !/^\[?[A-Z]{2,3}\]?$/.test(segment));
+      const publisher = publisherCandidates.length ? publisherCandidates[publisherCandidates.length - 1] : '';
+
       return { place, publisher, year, raw };
     }
 
