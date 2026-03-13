@@ -576,13 +576,24 @@
 
     .author-assist-panel {
       margin-top: 10px;
-      padding: 12px;
+      padding: 14px;
       border-radius: 16px;
-      border: 1px solid rgba(255,255,255,.10);
-      background: linear-gradient(180deg, rgba(179,0,24,.14), rgba(255,255,255,.02));
+      border: 1px solid rgba(225,29,47,.35);
+      background: linear-gradient(180deg, rgba(179,0,24,.22), rgba(255,255,255,.03));
+      box-shadow: 0 0 0 1px rgba(225,29,47,.08) inset;
       display: flex;
       flex-direction: column;
       gap: 12px;
+    }
+
+    .author-assist-callout {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      font-size: .88rem;
+      font-weight: 800;
+      color: #ffe3e7;
+      letter-spacing: .02em;
     }
 
     .author-assist-preview {
@@ -1493,6 +1504,23 @@
             </div>
 
             <div class="field" style="grid-column: span 2;">
+              <label for="authorAssistRawName">Assistência para variantes de nome</label>
+              <div class="author-assist-callout">Usa primeiro este bloco quando o nome tiver variante, partícula ou forma militante.</div>
+              <input id="authorAssistRawName" type="text" placeholder="Bakunin, Mikhail Aleksandrovich, 1814-1876 ou Rafael VIANA (DA SILVA)" />
+              <small>Use aqui o nome bruto vindo da BN, de um livro ou de outra fonte. O texto entre parênteses é tratado como complemento do sobrenome oficial.</small>
+              <div class="author-assist-panel">
+                <div class="autofill-actions">
+                  <button id="previewAuthorAssistBtn" type="button" class="btn-inline small secondary">Pré-visualizar sugestão</button>
+                  <button id="applyAuthorAssistBtn" type="button" class="btn-inline small primary">Preencher ficha de autor</button>
+                </div>
+                <div class="hint">Preencha aqui antes de mexer manualmente em “Nome SOBRENOME”. A sugestão nunca sobrescreve campos já preenchidos.</div>
+                <div id="authorAssistPreview" class="author-assist-preview">
+                  <div class="hint">Nenhuma sugestão calculada ainda.</div>
+                </div>
+              </div>
+            </div>
+
+            <div class="field" style="grid-column: span 2;">
               <label for="authorPreferredName">Nome SOBRENOME</label>
               <input id="authorPreferredName" type="text" placeholder="Osvaldo BAYER" required />
             </div>
@@ -1501,23 +1529,6 @@
               <label for="authorSortName">Nome para ordenação</label>
               <input id="authorSortName" class="author-sort-lock" type="text" placeholder="BAYER, Osvaldo" readonly aria-readonly="true" />
               <small>Preenchido automaticamente a partir do campo “Nome SOBRENOME”.</small>
-            </div>
-
-
-            <div class="field" style="grid-column: span 3;">
-              <label for="authorAssistRawName">Assistência para variantes de nome</label>
-              <input id="authorAssistRawName" type="text" placeholder="Bakunin, Mikhail Aleksandrovich, 1814-1876 ou Rafael VIANA (DA SILVA)" />
-              <small>Use aqui o nome bruto vindo da BN, de um livro ou de outra fonte. O texto entre parênteses é tratado como variante complementar do sobrenome oficial.</small>
-              <div class="author-assist-panel">
-                <div class="autofill-actions">
-                  <button id="previewAuthorAssistBtn" type="button" class="btn-inline small secondary">Pré-visualizar sugestão</button>
-                  <button id="applyAuthorAssistBtn" type="button" class="btn-inline small primary">Preencher ficha de autor</button>
-                </div>
-                <div class="hint">A sugestão nunca sobrescreve campos já preenchidos.</div>
-                <div id="authorAssistPreview" class="author-assist-preview">
-                  <div class="hint">Nenhuma sugestão calculada ainda.</div>
-                </div>
-              </div>
             </div>
 
             <div class="field">
@@ -2026,6 +2037,8 @@
       authorPublishedPopupBtn: el('authorPublishedPopupBtn'),
       exemplarPublishedPopupBtn: el('exemplarPublishedPopupBtn'),
       labelPublishedPopupBtn: el('labelPublishedPopupBtn'),
+      authorAssistRawName: el('authorAssistRawName'),
+      authorAssistPreview: el('authorAssistPreview'),
 
     };
 
@@ -2391,11 +2404,20 @@
       const parsed = previewAuthorAssist();
       if (!parsed) return;
       let changes = 0;
-      changes += fillIfEmpty(el('authorPreferredName'), parsed.preferredName) ? 1 : 0;
+      const preferredField = el('authorPreferredName');
+      const sortField = el('authorSortName');
+      const currentPreferred = String(preferredField?.value || '').trim();
+      const currentRaw = String(refs.authorAssistRawName?.value || '').trim();
+      if (!currentPreferred || currentPreferred === currentRaw) {
+        preferredField.value = parsed.preferredName || currentPreferred;
+        preferredField.dispatchEvent(new Event('input', { bubbles: true }));
+        preferredField.dispatchEvent(new Event('change', { bubbles: true }));
+        if (parsed.preferredName) changes += 1;
+      }
       changes += fillIfEmpty(el('authorBirthYear'), parsed.birthYear) ? 1 : 0;
       changes += fillIfEmpty(el('authorDeathYear'), parsed.deathYear) ? 1 : 0;
-      if (!String(el('authorSortName')?.value || '').trim() && parsed.sortName) {
-        el('authorSortName').value = parsed.sortName;
+      if ((!String(sortField?.value || '').trim() || String(sortField?.value || '').trim() === buildAuthorSortName(currentRaw)) && parsed.sortName) {
+        sortField.value = parsed.sortName;
         changes += 1;
       }
       if (parsed.variantNote && !String(el('authorNotes')?.value || '').trim()) {
@@ -5759,6 +5781,12 @@
       syncAuthorSortName();
       syncAuthorDraftVisualState();
     });
+    if (el('previewAuthorAssistBtn')) {
+      el('previewAuthorAssistBtn').addEventListener('click', previewAuthorAssist);
+    }
+    if (el('applyAuthorAssistBtn')) {
+      el('applyAuthorAssistBtn').addEventListener('click', applyAuthorAssist);
+    }
 
     el('openIsbnBnBtn').addEventListener('click', () => openIsbnLookup('bn'));
     el('openIsbnCblBtn').addEventListener('click', () => openIsbnLookup('cbl'));
