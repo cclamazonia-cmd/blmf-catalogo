@@ -110,7 +110,7 @@ a { color: inherit; }
   box-shadow: var(--shadow);
 }
 .select { color:#fff; font-weight:600; }
-.input::placeholder { color: #f0d6da; opacity: 1; }
+.input::placeholder { color: rgba(255,255,255,.42); opacity: 1; }
 .input:focus, .select:focus {
   border-color: rgba(225,29,47,.95);
   box-shadow: 0 0 0 3px rgba(225,29,47,.24), var(--shadow);
@@ -617,7 +617,12 @@ function diceCoefficient(a, b) {
 }
 function getStatusInfo(r) {
   if (r.loanable === false) return { key: 'local', label: 'Somente consulta local', cls: 'status-local' };
-  if (Number(r.available_count || 0) > 0) return { key: 'available', label: 'Disponível agora', cls: 'status-available' };
+  if (Number(r.available_count || 0) > 0) {
+    if (serviceState?.allow_reservations === false) {
+      return { key: 'available', label: 'Disponível no acervo', cls: 'status-available' };
+    }
+    return { key: 'available', label: 'Disponível agora', cls: 'status-available' };
+  }
   return { key: 'unavailable', label: 'Indisponível no momento', cls: 'status-unavailable' };
 }
 function parseQuery(raw) {
