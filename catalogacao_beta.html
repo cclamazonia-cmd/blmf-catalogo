@@ -1832,7 +1832,7 @@
 
         <div class="card" style="margin-top:16px;">
           <h4>Prévia da folha A4 3 × 9</h4>
-          <p class="hint" style="margin:0 0 12px;">Selecione um lote para visualizar numa folha A4 apenas os rótulos já validados. Cada exemplar validado gera 1 posição na folha: 1 exemplar = 1 etiqueta, 2 exemplares = 2 etiquetas.</p>
+          <p class="hint" style="margin:0 0 12px;">Selecione um lote — ou use “Sem lote” — para visualizar numa folha A4 apenas os rótulos já validados. Cada exemplar validado gera 1 posição na folha: 1 exemplar = 1 etiqueta, 2 exemplares = 2 etiquetas.</p>
           <div class="grid cols-2" style="margin-bottom:16px; align-items:end;">
             <div class="field">
               <label for="labelBatchPreviewId">Lote da prévia</label>
@@ -3416,9 +3416,11 @@
 
       if (refs.labelBatchPreviewId) {
         const previousValue = refs.labelBatchPreviewId.value;
-        refs.labelBatchPreviewId.innerHTML = '<option value="">Selecione um lote para a prévia</option>' + state.batches
-          .map(batch => `<option value="${batch.id}">${sanitize(batch.name)} (#${batch.id}) — ${sanitize(batch.status || 'open')}</option>`)
-          .join('');
+        refs.labelBatchPreviewId.innerHTML = '<option value="">Selecione um lote para a prévia</option>'
+          + '<option value="__no_batch__">Sem lote — rótulos validados fora de lote</option>'
+          + state.batches
+            .map(batch => `<option value="${batch.id}">${sanitize(batch.name)} (#${batch.id}) — ${sanitize(batch.status || 'open')}</option>`)
+            .join('');
         if (previousValue && Array.from(refs.labelBatchPreviewId.options).some(option => option.value === previousValue)) {
           refs.labelBatchPreviewId.value = previousValue;
         } else if (el('exemplarBatchId')?.value && Array.from(refs.labelBatchPreviewId.options).some(option => option.value === el('exemplarBatchId').value)) {
@@ -4394,6 +4396,12 @@
       return batch ? `${batch.name} (#${batch.id})` : `Lote #${batchId}`;
     }
 
+    function getLabelPreviewBatchLabel(batchId) {
+      if (!batchId || batchId === '__no_batch__') return 'Sem lote';
+      const batch = state.batches.find(item => String(item.id) === String(batchId));
+      return batch ? `${batch.name} (#${batch.id})` : `Lote #${batchId}`;
+    }
+
     function syncLabelSummaryFromExemplar() {
       if (refs.labelCurrentBatch) refs.labelCurrentBatch.textContent = getBatchLabel(el('exemplarBatchId').value || '');
       if (refs.labelCurrentBibRef) refs.labelCurrentBibRef.textContent = el('exemplarBibRef').value || '—';
@@ -5061,8 +5069,7 @@
       const cellW = (pageWidth - (marginX * 2)) / cols;
       const cellH = (pageHeight - marginTop - marginBottom) / rows;
       const pages = getLabelPages(labels);
-      const batch = state.batches.find(item => String(item.id) === String(batchId));
-      const batchLabel = batch ? `${batch.name} (#${batch.id})` : (batchId ? `Lote #${batchId}` : 'Lote');
+      const batchLabel = getLabelPreviewBatchLabel(batchId) || 'Lote';
 
       pages.forEach((page, pageIndex) => {
         if (pageIndex > 0) doc.addPage('a4', 'portrait');
@@ -6190,8 +6197,7 @@
     function renderLabelSheet(labels = [], batchId = '') {
       state.labelPreviewItems = Array.isArray(labels) ? [...labels] : [];
       state.labelPreviewBatchId = batchId || '';
-      const batch = state.batches.find(item => String(item.id) === String(batchId));
-      const batchLabel = batch ? `${batch.name} (#${batch.id})` : (batchId ? `Lote #${batchId}` : 'Sem lote');
+      const batchLabel = getLabelPreviewBatchLabel(batchId);
 
       if (!labels.length) {
         refs.labelSheetSummary.textContent = batchId ? `${batchLabel} — nenhum rótulo validado disponível para prévia.` : '';
@@ -6234,20 +6240,33 @@
       const batchId = refs.labelBatchPreviewId?.value || '';
       if (!batchId) {
         refs.labelSheetSummary.textContent = '';
-        refs.labelSheetWrap.innerHTML = '<div class="empty">Escolha um lote para ver a prévia dos rótulos validados em folha A4 3 × 9.</div>';
+        refs.labelSheetWrap.innerHTML = '<div class="empty">Escolha um lote ou selecione “Sem lote” para ver a prévia dos rótulos validados em folha A4 3 × 9.</div>';
         return;
       }
 
+      const semLote = batchId === '__no_batch__';
+      let exemplarQuery = supabase
+        .from('exemplar_drafts')
+        .select('id, batch_id, status, label_status, target_bib_ref, tombo, label_author_override, label_cdd_override, updated_at')
+        .order('updated_at', { ascending: true });
+      let bookQuery = supabase
+        .from('book_drafts')
+        .select('id, batch_id, status, bib_ref, autor, cdd, updated_at')
+        .order('updated_at', { ascending: true });
+
+      exemplarQuery = semLote ? exemplarQuery.is('batch_id', null) : exemplarQuery.eq('batch_id', Number(batchId));
+      bookQuery = semLote ? bookQuery.is('batch_id', null) : bookQuery.eq('batch_id', Number(batchId));
+
       const [{ data: exemplarDrafts, error: exemplarError }, { data: bookDrafts, error: bookError }] = await Promise.all([
-        supabase.from('exemplar_drafts').select('id, batch_id, status, label_status, target_bib_ref, tombo, label_author_override, label_cdd_override, updated_at').eq('batch_id', Number(batchId)).order('updated_at', { ascending: true }),
-        supabase.from('book_drafts').select('id, batch_id, status, bib_ref, autor, cdd, updated_at').eq('batch_id', Number(batchId)).order('updated_at', { ascending: true }),
+        exemplarQuery,
+        bookQuery,
       ]);
 
       if (exemplarError) throw exemplarError;
       if (bookError) throw bookError;
 
       const labels = buildLabelPreviewItems(exemplarDrafts || [], bookDrafts || []);
-      renderLabelSheet(labels, batchId);
+      renderLabelSheet(labels, semLote ? '' : batchId);
     }
 
     async function uploadFileToBucket(bucket, file, path) {
