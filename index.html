@@ -178,7 +178,8 @@ a { color: inherit; }
   padding:14px 16px;
   border:1px solid rgba(177,30,36,.28);
   border-radius:16px;
-  background: rgba(255,255,255,.88);
+  background: rgba(255,255,255,.94);
+  color:#161616;
   box-shadow: 0 8px 22px rgba(0,0,0,.06);
 }
 .service-banner[hidden]{ display:none !important; }
@@ -201,8 +202,15 @@ a { color: inherit; }
   border:1px solid rgba(177,30,36,.22);
 }
 .service-banner-text{
-  color: var(--ink);
+  color:#161616;
   font-size:.98rem;
+  line-height:1.4;
+}
+.reserve-note-closed{
+  display:inline-block;
+  max-width:92px;
+  white-space:normal;
+  line-height:1.15;
 }
 .service-banner-text strong{
   color: var(--brand);
@@ -1039,7 +1047,7 @@ function buildReservationMarkup(r) {
     return '<div class="reserve-slot"><span class="reserve-note">Referência indisponível</span></div>';
   }
   if (serviceState?.allow_reservations === false) {
-    return '<div class="reserve-slot"><span class="reserve-note">Reservas temporariamente fechadas</span></div>';
+    return '<div class="reserve-slot"><span class="reserve-note reserve-note-closed">Reservas temporariamente<br>fechadas</span></div>';
   }
   if (!authState.user) {
     return '<div class="reserve-slot"><span class="reserve-note">Entre para reservar</span></div>';
