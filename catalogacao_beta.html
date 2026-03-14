@@ -1676,6 +1676,27 @@
               <button id="clearExemplarBatchBtn" type="button" class="button ghost">Limpar fila de exemplares</button>
             </div>
           </div>
+          <div class="grid cols-4" style="margin:14px 0 12px; align-items:end;">
+            <div class="field" style="grid-column: span 2;">
+              <label for="exemplarBatchSearchInput">Filtrar linhas a validar</label>
+              <input id="exemplarBatchSearchInput" type="text" placeholder="Título, autor, referência, tombo ou localização" />
+            </div>
+            <div class="field">
+              <label for="exemplarPendingScope">Recorte</label>
+              <select id="exemplarPendingScope">
+                <option value="all_pending">Todas as linhas pendentes</option>
+                <option value="existing_draft">Somente rascunhos já iniciados</option>
+                <option value="new_only">Somente linhas novas</option>
+                <option value="extra_only">Somente linhas adicionais</option>
+                <option value="first_only">Somente primeira linha de cada livro</option>
+              </select>
+            </div>
+            <div class="actions" style="justify-content:flex-start;">
+              <button id="validateVisibleExemplarRowsBtn" type="button" class="button success">Validar linhas visíveis</button>
+              <button id="clearExemplarBatchFiltersBtn" type="button" class="button ghost">Limpar filtros</button>
+            </div>
+          </div>
+          <div id="exemplarBatchFilterSummary" class="hint" style="margin:0 0 12px;">Nenhuma fila carregada ainda.</div>
           <div id="exemplarBatchMessage" class="message"></div>
           <div id="exemplarBatchQueueWrap" class="label-sheet-wrap"></div>
         </div>
@@ -2042,6 +2063,11 @@
       exemplarBatchMessage: el('exemplarBatchMessage'),
       exemplarBatchQueueWrap: el('exemplarBatchQueueWrap'),
       exemplarLotImportId: el('exemplarLotImportId'),
+      exemplarBatchSearchInput: el('exemplarBatchSearchInput'),
+      exemplarPendingScope: el('exemplarPendingScope'),
+      validateVisibleExemplarRowsBtn: el('validateVisibleExemplarRowsBtn'),
+      clearExemplarBatchFiltersBtn: el('clearExemplarBatchFiltersBtn'),
+      exemplarBatchFilterSummary: el('exemplarBatchFilterSummary'),
       labelLotImportId: el('labelLotImportId'),
       labelBatchMessage: el('labelBatchMessage'),
       labelDraftQueueWrap: el('labelDraftQueueWrap'),
@@ -4685,20 +4711,25 @@
       updateStats();
     }
 
-    async function discardQueueDraft(type, id) {
-      const tableMap = { book: 'book_drafts', author: 'author_drafts', exemplar: 'exemplar_drafts' };
-      const table = tableMap[type];
-      if (!table) return;
-      const numericId = Number(id);
+    function markQueueDraftCancelledLocally(numericId) {
       const nowIso = new Date().toISOString();
-      const { error } = await supabase.from(table).update({ status: 'cancelled', updated_by: state.profile.id }).eq('id', numericId);
-      if (error) throw error;
       state.queueItems = state.queueItems.map(item => (
         Number(item.draft_id) === numericId
           ? { ...item, status: 'cancelled', updated_at: nowIso }
           : item
       ));
+    }
+
+    async function discardQueueDraft(type, id) {
+      const tableMap = { book: 'book_drafts', author: 'author_drafts', exemplar: 'exemplar_drafts' };
+      const table = tableMap[type];
+      if (!table) return;
+      const numericId = Number(id);
+      const { error } = await supabase.from(table).update({ status: 'cancelled', updated_by: state.profile.id }).eq('id', numericId);
+      if (error) throw error;
+      markQueueDraftCancelledLocally(numericId);
       renderQueue();
+      renderTrash();
       await Promise.all([loadQueue(), loadBatches(), loadCatalog()]);
       updateStats();
     }
@@ -5003,6 +5034,168 @@
       };
     }
 
+    function isImportedExemplarCopyConcluded(copy = {}) {
+      const status = String(copy?.status || '').toLowerCase();
+      return status === 'ready' || status === 'published';
+    }
+
+    function getImportedExemplarFilterValues() {
+      return {
+        search: String(refs.exemplarBatchSearchInput?.value || '').trim(),
+        normalizedSearch: normalizeForSearch(refs.exemplarBatchSearchInput?.value || ''),
+        scope: refs.exemplarPendingScope?.value || 'all_pending',
+      };
+    }
+
+    function importedExemplarRowMatchesFilters(row, filters) {
+      const scope = filters?.scope || 'all_pending';
+      if (scope === 'existing_draft' && !row.copy?.draftId) return false;
+      if (scope === 'new_only' && row.copy?.draftId) return false;
+      if (scope === 'extra_only' && !row.copy?.isExtraCopy) return false;
+      if (scope === 'first_only' && row.copy?.isExtraCopy) return false;
+
+      if (filters?.normalizedSearch) {
+        const haystack = normalizeForSearch([
+          row.bookItem?.title,
+          row.bookItem?.subtitle,
+          row.bookItem?.author,
+          row.bookItem?.bibRef,
+          row.copy?.tombo,
+          row.copy?.shelf,
+          row.copy?.notes,
+          row.copy?.title,
+          row.copy?.author,
+        ].filter(Boolean).join(' '));
+        if (!haystack.includes(filters.normalizedSearch)) return false;
+      }
+
+      return true;
+    }
+
+    function getVisibleImportedExemplarRows() {
+      const filters = getImportedExemplarFilterValues();
+      const groups = [];
+      const rows = [];
+      let totalPending = 0;
+      let totalConcluded = 0;
+
+      (state.batchExemplarItems || []).forEach((bookItem, bookIndex) => {
+        const pendingRows = [];
+        const copies = Array.isArray(bookItem?.copies) ? bookItem.copies : [];
+        copies.forEach((copy, copyIndex) => {
+          if (isImportedExemplarCopyConcluded(copy)) {
+            totalConcluded += 1;
+            return;
+          }
+          totalPending += 1;
+          pendingRows.push({ bookIndex, copyIndex, bookItem, copy });
+        });
+
+        const visibleRows = pendingRows.filter(row => importedExemplarRowMatchesFilters(row, filters));
+        if (!visibleRows.length) return;
+
+        groups.push({
+          ...bookItem,
+          bookIndex,
+          pendingCount: pendingRows.length,
+          concludedCount: copies.length - pendingRows.length,
+          visibleRows,
+        });
+        rows.push(...visibleRows);
+      });
+
+      return {
+        filters,
+        groups,
+        rows,
+        totalPending,
+        totalVisible: rows.length,
+        totalConcluded,
+      };
+    }
+
+    async function persistImportedExemplarCopy(copy, status = 'ready') {
+      const payload = {
+        id: copy.draftId || undefined,
+        published_exemplar_id: null,
+        batch_id: copy.batchId || null,
+        action: copy.draftId ? 'update' : 'create',
+        status,
+        target_bib_ref: copy.bibRef || '',
+        tombo: copy.tombo || '',
+        shelf_location: copy.shelf || null,
+        label_title_override: copy.title || null,
+        label_author_override: copy.author || null,
+        label_cdd_override: copy.cdd || null,
+        label_note: copy.note || null,
+        notes: copy.notes || null,
+        created_by: state.profile.id,
+        updated_by: state.profile.id,
+      };
+
+      if (!payload.target_bib_ref || !payload.tombo) {
+        throw new Error('Cada exemplar precisa ter referência e tombo antes da validação.');
+      }
+
+      let result;
+      if (payload.id) {
+        const draftId = Number(payload.id);
+        delete payload.id;
+        result = await supabase.from('exemplar_drafts').update(payload).eq('id', draftId).select().single();
+      } else {
+        result = await supabase.from('exemplar_drafts').insert(payload).select().single();
+      }
+      if (result.error) throw result.error;
+
+      const saved = result.data || {};
+      copy.draftId = saved.id || copy.draftId || null;
+      copy.batchId = saved.batch_id || copy.batchId || '';
+      copy.tombo = saved.tombo || copy.tombo || '';
+      copy.shelf = saved.shelf_location || copy.shelf || '';
+      copy.note = saved.label_note || copy.note || '';
+      copy.status = saved.status || status;
+      return saved;
+    }
+
+    async function refreshImportedExemplarQueues() {
+      await Promise.all([loadQueue(), loadBatches()]);
+      updateStats();
+      await loadExemplarBatchQueue();
+      await loadLabelDraftQueue().catch(() => {});
+    }
+
+    async function validateVisibleImportedExemplarRows() {
+      const snapshot = getVisibleImportedExemplarRows();
+      if (!snapshot.rows.length) {
+        throw new Error('Nenhuma linha pendente está visível com os filtros atuais.');
+      }
+
+      let successCount = 0;
+      const failures = [];
+      for (const row of snapshot.rows) {
+        try {
+          await persistImportedExemplarCopy(row.copy, 'ready');
+          successCount += 1;
+        } catch (error) {
+          failures.push(`Ref. ${row.copy?.bibRef || '—'} / ${row.copy?.tombo || '—'}: ${error.message}`);
+        }
+      }
+
+      if (refs.labelLotImportId) {
+        refs.labelLotImportId.value = refs.exemplarLotImportId?.value || snapshot.rows[0]?.copy?.batchId || '';
+      }
+
+      await refreshImportedExemplarQueues();
+
+      if (failures.length) {
+        const detail = failures.slice(0, 3).join(' | ');
+        showMessage(refs.exemplarBatchMessage, `${successCount} linha(s) validada(s). ${failures.length} falharam. ${detail}`, successCount ? 'info' : 'error');
+        return;
+      }
+
+      showMessage(refs.exemplarBatchMessage, `${successCount} linha(s) de exemplar validadas. Elas saíram da fila pendente e seguiram para a revisão do rótulo.`, 'ok');
+    }
+
     async function loadExemplarBatchQueue() {
       const sourceId = refs.exemplarLotImportId?.value || el('exemplarBatchId').value || '';
       if (!sourceId) {
@@ -5062,31 +5255,55 @@
       if (!refs.exemplarBatchQueueWrap) return;
       if (!state.batchExemplarItems.length) {
         refs.exemplarBatchQueueWrap.innerHTML = '<div class="empty">Escolha um lote de livros — ou todas as fichas ativas — para gerar as linhas de exemplar livro por livro.</div>';
+        if (refs.exemplarBatchFilterSummary) refs.exemplarBatchFilterSummary.textContent = 'Nenhuma fila carregada ainda.';
+        if (refs.validateVisibleExemplarRowsBtn) refs.validateVisibleExemplarRowsBtn.disabled = true;
         return;
       }
 
-      refs.exemplarBatchQueueWrap.innerHTML = state.batchExemplarItems.map((bookItem, bookIndex) => `
-        <div class="batch-exemplar-book" data-batch-book-index="${bookIndex}">
+      const snapshot = getVisibleImportedExemplarRows();
+      if (refs.exemplarBatchFilterSummary) {
+        if (!snapshot.totalPending) {
+          refs.exemplarBatchFilterSummary.textContent = `Nenhuma linha pendente restante. ${snapshot.totalConcluded} exemplar(es) já passaram desta etapa.`;
+        } else if (!snapshot.totalVisible) {
+          refs.exemplarBatchFilterSummary.textContent = `Há ${snapshot.totalPending} linha(s) pendente(s), mas nenhuma corresponde aos filtros atuais. ${snapshot.totalConcluded} já concluída(s).`;
+        } else {
+          refs.exemplarBatchFilterSummary.textContent = `${snapshot.totalVisible} linha(s) visível(is) para validar agora, dentro de ${snapshot.totalPending} pendente(s). ${snapshot.totalConcluded} já concluída(s) saíram desta fila.`;
+        }
+      }
+      if (refs.validateVisibleExemplarRowsBtn) refs.validateVisibleExemplarRowsBtn.disabled = !snapshot.totalVisible;
+
+      if (!snapshot.totalPending) {
+        refs.exemplarBatchQueueWrap.innerHTML = '<div class="empty">Todas as linhas de exemplar desta fila já foram validadas. A próxima etapa é revisar os rótulos na aba Rótulos.</div>';
+        return;
+      }
+
+      if (!snapshot.totalVisible) {
+        refs.exemplarBatchQueueWrap.innerHTML = '<div class="empty">Nenhuma linha pendente corresponde aos filtros atuais. Ajuste os filtros para continuar.</div>';
+        return;
+      }
+
+      refs.exemplarBatchQueueWrap.innerHTML = snapshot.groups.map(group => `
+        <div class="batch-exemplar-book" data-batch-book-index="${group.bookIndex}">
           <div class="batch-exemplar-book-head">
             <div>
-              <strong>${sanitize(bookItem.title || '—')}</strong>
-              <div class="hint" style="margin-top:4px;">${sanitize(bookItem.subtitle || bookItem.author || 'Sem subtítulo')}</div>
-              <div class="batch-exemplar-book-copy-note">${bookItem.requestedCopies} exemplar(es) previstos neste lote = ${bookItem.requestedCopies} linha(s) de exemplar a validar.</div>
+              <strong>${sanitize(group.title || '—')}</strong>
+              <div class="hint" style="margin-top:4px;">${sanitize(group.subtitle || group.author || 'Sem subtítulo')}</div>
+              <div class="batch-exemplar-book-copy-note">${group.pendingCount} linha(s) pendente(s) para este livro${group.concludedCount ? ` · ${group.concludedCount} já concluída(s)` : ''}.</div>
             </div>
             <div class="batch-exemplar-meta">
-              <span class="pill info">Ref. ${sanitize(bookItem.bibRef || '—')}</span>
-              ${getQueueStatusBadge(bookItem.bookStatus || 'draft')}
-              <span class="pill warn">Exemplares já cadastrados: ${sanitize(bookItem.publishedCount)}</span>
+              <span class="pill info">Ref. ${sanitize(group.bibRef || '—')}</span>
+              ${getQueueStatusBadge(group.bookStatus || 'draft')}
+              <span class="pill warn">Exemplares já cadastrados: ${sanitize(group.publishedCount)}</span>
             </div>
           </div>
 
           <div class="batch-exemplar-copy-list">
-            ${(bookItem.copies || []).map((copy, copyIndex) => `
+            ${group.visibleRows.map(({ copy, copyIndex, bookIndex }) => `
               <div class="batch-exemplar-copy-row ${copy.isExtraCopy ? 'copy-extra' : ''}" data-batch-book-index="${bookIndex}" data-batch-copy-index="${copyIndex}">
                 <div class="batch-exemplar-copy-head">
                   <span class="batch-exemplar-copy-index">Exemplar ${copy.slotIndex}${copy.isExtraCopy ? ' · linha adicional' : ''}</span>
                   <div class="batch-exemplar-meta">
-                    ${copy.status === 'published' ? '<span class="pill ok">Publicado</span>' : copy.status === 'ready' ? '<span class="pill ok">Exemplar criado · rótulo validado</span>' : copy.draftId ? '<span class="pill info">Exemplar já criado</span>' : '<span class="pill info">A validar</span>'}
+                    ${copy.draftId ? '<span class="pill info">Rascunho já iniciado</span>' : '<span class="pill info">Linha nova</span>'}
                     ${copy.draftId ? `<span class="pill info">Rascunho #${sanitize(copy.draftId)}</span>` : ''}
                   </div>
                 </div>
@@ -5165,30 +5382,10 @@
     }
 
     async function validateImportedExemplarCopy(copy) {
-      const payload = {
-        id: copy.draftId || undefined,
-        published_exemplar_id: null,
-        batch_id: copy.batchId || null,
-        action: copy.draftId ? 'update' : 'create',
-        status: 'draft',
-        target_bib_ref: copy.bibRef || '',
-        tombo: copy.tombo || '',
-        shelf_location: copy.shelf || null,
-        label_title_override: copy.title || null,
-        label_author_override: copy.author || null,
-        label_cdd_override: copy.cdd || null,
-        label_note: copy.note || null,
-        notes: copy.notes || null,
-        created_by: state.profile.id,
-        updated_by: state.profile.id,
-      };
-      if (!payload.target_bib_ref || !payload.tombo) {
-        throw new Error('Cada exemplar precisa ter referência e tombo antes da validação.');
-      }
-      await saveDraft('exemplar_drafts', payload, refs.exemplarBatchMessage, 'Exemplar validado. Agora ajuste e valide o rótulo na aba Rótulos.');
-      await loadExemplarBatchQueue();
-      if (refs.labelLotImportId) refs.labelLotImportId.value = copy.batchId || '';
-      await loadLabelDraftQueue().catch(() => {});
+      await persistImportedExemplarCopy(copy, 'ready');
+      if (refs.labelLotImportId) refs.labelLotImportId.value = refs.exemplarLotImportId?.value || copy.batchId || '';
+      await refreshImportedExemplarQueues();
+      showMessage(refs.exemplarBatchMessage, 'Exemplar validado. Ele saiu desta fila pendente e seguiu para a revisão do rótulo.', 'ok');
     }
 
     async function loadLabelDraftQueue() {
@@ -5962,9 +6159,10 @@
       const numericId = Number(id);
       const { error } = await supabase.from(table).update({ status: 'cancelled', updated_by: state.profile.id }).eq('id', numericId);
       if (error) throw error;
-      state.queueItems = state.queueItems.filter(item => Number(item.draft_id) !== numericId);
+      markQueueDraftCancelledLocally(numericId);
       renderQueue();
-      await Promise.all([loadQueue(), loadBatches()]);
+      renderTrash();
+      await Promise.all([loadQueue(), loadBatches(), loadCatalog()]);
       updateStats();
       resetFn();
       setTab(currentTab);
@@ -6404,6 +6602,28 @@
     if (refs.exemplarLotImportId) {
       refs.exemplarLotImportId.addEventListener('change', () => {
         clearMessage(refs.exemplarBatchMessage);
+      });
+    }
+    if (refs.exemplarBatchSearchInput) {
+      refs.exemplarBatchSearchInput.addEventListener('input', () => renderExemplarBatchQueue());
+    }
+    if (refs.exemplarPendingScope) {
+      refs.exemplarPendingScope.addEventListener('change', () => renderExemplarBatchQueue());
+    }
+    if (refs.clearExemplarBatchFiltersBtn) {
+      refs.clearExemplarBatchFiltersBtn.addEventListener('click', () => {
+        if (refs.exemplarBatchSearchInput) refs.exemplarBatchSearchInput.value = '';
+        if (refs.exemplarPendingScope) refs.exemplarPendingScope.value = 'all_pending';
+        renderExemplarBatchQueue();
+      });
+    }
+    if (refs.validateVisibleExemplarRowsBtn) {
+      refs.validateVisibleExemplarRowsBtn.addEventListener('click', async () => {
+        try {
+          await validateVisibleImportedExemplarRows();
+        } catch (error) {
+          showMessage(refs.exemplarBatchMessage, error.message, 'error');
+        }
       });
     }
     if (refs.labelLotImportId) {
