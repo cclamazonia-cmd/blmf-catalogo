@@ -2101,6 +2101,25 @@
       return String(value || '').replace(/\s+/g, ' ').trim();
     }
 
+    function normalizeBrazilianPublicationPlace(value = '') {
+      const raw = String(value || '').trim();
+      if (!raw) return '';
+      const match = raw.match(/^(.+)\s*-\s*([A-Za-z]{2})\s*(?:,\s*Brasil|-\s*Brasil)$/i);
+      if (!match) return raw;
+      const city = normalizeInlineWhitespace(match[1]);
+      const uf = String(match[2] || '').toUpperCase();
+      if (!city || !uf) return raw;
+      return `${city}, ${uf} - Brasil`;
+    }
+
+    function applyNormalizedBookPlaceValue() {
+      const node = el('bookPlace');
+      if (!node) return '';
+      const normalized = normalizeBrazilianPublicationPlace(node.value);
+      if (node.value !== normalized) node.value = normalized;
+      return normalized;
+    }
+
 
     const BN_LANGUAGE_MAP = [
       { match: /portugu[eê]s/i, value: 'pt' },
@@ -3861,6 +3880,7 @@
       renderBookResponsibilitySummary(contributors);
       const materialType = el('bookType').value;
       const collectionValue = el('bookCollection').value.trim();
+      const normalizedBookPlace = applyNormalizedBookPlaceValue();
       return {
         id: el('bookDraftId').value || undefined,
         published_book_id: el('bookPublishedId').value || null,
@@ -3872,7 +3892,7 @@
         subtitulo: el('bookSubtitle').value.trim() || null,
         autor: shortResponsibility || null,
         edicao: el('bookEdition').value.trim() || null,
-        local_publicacao: el('bookPlace').value.trim() || null,
+        local_publicacao: normalizedBookPlace || null,
         editora: el('bookPublisher').value.trim() || null,
         ano: el('bookYear').value.trim() || null,
         isbn: el('bookISBN').value.trim() || null,
@@ -4089,6 +4109,18 @@
       });
     });
 
+    el('bookPlace').addEventListener('blur', () => {
+      const previous = el('bookPlace').value;
+      const normalized = applyNormalizedBookPlaceValue();
+      if (normalized !== previous) syncBookDraftVisualState();
+    });
+
+    el('bookPlace').addEventListener('change', () => {
+      const previous = el('bookPlace').value;
+      const normalized = applyNormalizedBookPlaceValue();
+      if (normalized !== previous) syncBookDraftVisualState();
+    });
+
     Array.from(el('authorForm').querySelectorAll('input, textarea, select')).forEach(node => {
       node.addEventListener('input', syncAuthorDraftVisualState);
       node.addEventListener('change', syncAuthorDraftVisualState);
@@ -4278,7 +4310,7 @@
       el('bookEdition').value = enriched.edicao || '';
       el('bookPublisher').value = enriched.editora || '';
       el('bookCollection').value = getBookCollectionValue(enriched);
-      el('bookPlace').value = enriched.local_publicacao || '';
+      el('bookPlace').value = normalizeBrazilianPublicationPlace(enriched.local_publicacao || '');
       el('bookYear').value = enriched.ano || '';
       el('bookISBN').value = enriched.isbn || '';
       el('bookISSN').value = enriched.issn || '';
