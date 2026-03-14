@@ -172,6 +172,9 @@
 
           <div class="muted" id="desc">—</div>
 
+          <div class="pill" id="serviceModePill" style="display:none;margin-top:12px"></div>
+          <div class="muted" id="serviceMessageLine" style="display:none;margin-top:10px"></div>
+
           <div class="actions">
             <button class="btn primary" id="btnReservar" type="button">Reservar este livro</button>
             <button class="btn" id="btnAbrirPdf" type="button" style="display:none">Abrir PDF</button>
@@ -207,6 +210,22 @@
     });
 
     const $ = (id) => document.getElementById(id);
+
+    const DEFAULT_SERVICE_MESSAGES = {
+      em_organizacao: "A biblioteca está em organização. O atendimento ocorre conforme a capacidade operacional atual.",
+      atendimento_eventual: "A biblioteca funciona com atendimento eventual. Consulte os canais do CCLA para informações atualizadas.",
+      atendimento_semanal: "A biblioteca funciona com atendimento semanal em ritmo regular. Consulte os canais do CCLA para os horários e orientações vigentes.",
+      fechado_temporariamente: "A biblioteca está temporariamente fechada para atendimento presencial. Consulte os canais do CCLA para atualizações e orientações."
+    };
+
+    const SERVICE_MODE_LABELS = {
+      em_organizacao: "Em organização",
+      atendimento_eventual: "Atendimento eventual",
+      atendimento_semanal: "Atendimento semanal",
+      fechado_temporariamente: "Fechado temporariamente"
+    };
+
+    let publicServiceState = null;
 
     function setStatus(msg, cls) {
       const el = $("status");
@@ -278,6 +297,66 @@
     function getBibRefFromUrl() {
       const u = new URL(location.href);
       return (u.searchParams.get("ref") || u.searchParams.get("bib_ref") || "").trim();
+    }
+
+    function getServiceModeLabel(mode) {
+      return SERVICE_MODE_LABELS[String(mode || "").trim()] || "Funcionamento";
+    }
+
+    function getServiceMessage(state) {
+      const custom = String(state?.public_message || "").trim();
+      if (custom) return custom;
+      return DEFAULT_SERVICE_MESSAGES[String(state?.service_mode || "").trim()] || "";
+    }
+
+    function applyPublicServiceState() {
+      const state = publicServiceState;
+      const btnReservar = $("btnReservar");
+
+      if (state?.service_mode) {
+        setPill("serviceModePill", "funcionamento", getServiceModeLabel(state.service_mode));
+      } else {
+        $("serviceModePill").style.display = "none";
+      }
+
+      setLine("serviceMessageLine", getServiceMessage(state));
+
+      if (state?.allow_reservations === false) {
+        btnReservar.textContent = "Reservas temporariamente fechadas";
+        btnReservar.classList.add("disabled");
+        btnReservar.setAttribute("aria-disabled", "true");
+        btnReservar.title = "As reservas públicas estão temporariamente fechadas no momento.";
+        return;
+      }
+
+      btnReservar.textContent = "Reservar este livro";
+      btnReservar.classList.remove("disabled");
+      btnReservar.setAttribute("aria-disabled", "false");
+      btnReservar.title = "Reservar este livro";
+    }
+
+    async function loadPublicServiceState() {
+      const { data, error } = await supabase
+        .from("v_library_service_public")
+        .select("*")
+        .limit(1)
+        .maybeSingle();
+
+      if (error) {
+        console.warn("BLMF livro: falha ao carregar v_library_service_public", error);
+        publicServiceState = null;
+        applyPublicServiceState();
+        return;
+      }
+
+      publicServiceState = data ? {
+        service_mode: String(data.service_mode || "").trim(),
+        allow_reservations: data.allow_reservations === false ? false : true,
+        public_message: String(data.public_message || "").trim(),
+        updated_at: data.updated_at || null
+      } : null;
+
+      applyPublicServiceState();
     }
 
     function normalizeAuthorName(value) {
@@ -456,6 +535,12 @@
 
     async function reserve(bib_ref) {
       setStatus("", "");
+
+      if (publicServiceState?.allow_reservations === false) {
+        setStatus("As reservas públicas estão temporariamente fechadas no momento.", "warn");
+        return;
+      }
+
       const { data: { session } } = await supabase.auth.getSession();
 
       if (!session) {
@@ -692,6 +777,7 @@
     }
 
     await setupContaButton();
+    await loadPublicServiceState();
     await loadBook();
   </script>
 </body>
