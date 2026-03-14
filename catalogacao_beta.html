@@ -1444,6 +1444,12 @@
             </div>
 
             <div class="field" style="grid-column: span 3;">
+              <label for="bookSubjects">Assuntos</label>
+              <textarea id="bookSubjects" placeholder="Trabalho ; sindicalismo ; história social"></textarea>
+              <small>Preencha manualmente ou aplique abaixo as sugestões da BN. Nada é gravado automaticamente sem sua ação.</small>
+            </div>
+
+            <div class="field" style="grid-column: span 3;">
               <label for="bookMarcJson">Estrutura bibliográfica em JSON</label>
               <textarea id="bookMarcJson" placeholder='{"245":{"a":"Título"},"100":{"a":"Autor"}}'></textarea>
               <small>Opcional. Pode ser preenchido depois. O formulário principal continua em português claro.</small>
@@ -2145,6 +2151,7 @@
         bookDuplicateHint: el('bookDuplicateHint'),
         bookSubjectSuggestions: el('bookSubjectSuggestions'),
         copySubjectSuggestionsBtn: el('copySubjectSuggestionsBtn'),
+        applySubjectSuggestionsBtn: el('applySubjectSuggestionsBtn'),
         bookSuggestedCollection: el('bookSuggestedCollection'),
         applySuggestedCollectionBtn: el('applySuggestedCollectionBtn'),
         bookBnDebugWrap: el('bookBnDebugWrap'),
@@ -2424,6 +2431,34 @@
       } else if (Object.prototype.hasOwnProperty.call(next, 'colecao')) {
         delete next.colecao;
       }
+      return next;
+    }
+
+    function parseBookSubjectsValue(value = '') {
+      if (Array.isArray(value)) return value.map(item => normalizeInlineWhitespace(item)).filter(Boolean);
+      return String(value || '')
+        .split(/\s*;\s*|\s*\n+\s*|\s*\|\s*|\s*•\s*/)
+        .map(item => normalizeInlineWhitespace(item))
+        .filter(Boolean);
+    }
+
+    function formatBookSubjectsValue(value = []) {
+      return parseBookSubjectsValue(value).join(' ; ');
+    }
+
+    function getBookSubjectsValue(record = {}) {
+      return formatBookSubjectsValue(record.assuntos || record.subjects || record.marc_json?.assuntos || record.marc_json?.subjects || []);
+    }
+
+    function mergeBookSubjectsIntoMarcJson(rawValue, subjectsValue) {
+      const next = getMarcJsonObject(rawValue);
+      const subjects = parseBookSubjectsValue(subjectsValue);
+      if (subjects.length) {
+        next.assuntos = subjects;
+      } else if (Object.prototype.hasOwnProperty.call(next, 'assuntos')) {
+        delete next.assuntos;
+      }
+      if (Object.prototype.hasOwnProperty.call(next, 'subjects')) delete next.subjects;
       return next;
     }
 
@@ -3124,6 +3159,7 @@
         pages: el('bookPages').value.trim(),
         loanable: el('bookLoanable').value || 'true',
         notes: el('bookNotes').value.trim(),
+        subjects: el('bookSubjects').value.trim(),
         coverPath: el('bookCoverPath').value.trim(),
         marcJson: el('bookMarcJson').value.trim(),
         contributors: getBookContributorsSnapshot({ keepEmpty: true }),
@@ -3479,6 +3515,7 @@
       if (!subjects.length) {
         bnRefs.bookSubjectSuggestions.innerHTML = '<div class="hint">Nenhum assunto sugerido pela BN.</div>';
         if (bnRefs.copySubjectSuggestionsBtn) bnRefs.copySubjectSuggestionsBtn.disabled = true;
+        if (bnRefs.applySubjectSuggestionsBtn) bnRefs.applySubjectSuggestionsBtn.disabled = true;
         return;
       }
       bnRefs.bookSubjectSuggestions.innerHTML = subjects.map(subject => `
@@ -3488,6 +3525,7 @@
         </label>
       `).join('');
       if (bnRefs.copySubjectSuggestionsBtn) bnRefs.copySubjectSuggestionsBtn.disabled = false;
+      if (bnRefs.applySubjectSuggestionsBtn) bnRefs.applySubjectSuggestionsBtn.disabled = false;
     }
 
     function renderBnAutofillPanel() {
@@ -3507,6 +3545,7 @@
       bnRefs.toggleBnDebugBtn.disabled = !parsed;
       bnRefs.applySuggestedCDDBtn.disabled = !(parsed?.cdd?.cdd);
       if (bnRefs.applySuggestedCollectionBtn) bnRefs.applySuggestedCollectionBtn.disabled = !(parsed?.collection);
+      if (bnRefs.applySubjectSuggestionsBtn) bnRefs.applySubjectSuggestionsBtn.disabled = !(parsed?.subjects?.length);
       updateBnDebugContent();
     }
 
@@ -3562,6 +3601,10 @@
       if (bnRefs.copySubjectSuggestionsBtn && !bnRefs.copySubjectSuggestionsBtn.dataset.bound) {
         bnRefs.copySubjectSuggestionsBtn.addEventListener('click', copySelectedSubjectSuggestions);
         bnRefs.copySubjectSuggestionsBtn.dataset.bound = '1';
+      }
+      if (bnRefs.applySubjectSuggestionsBtn && !bnRefs.applySubjectSuggestionsBtn.dataset.bound) {
+        bnRefs.applySubjectSuggestionsBtn.addEventListener('click', applySelectedSubjectSuggestions);
+        bnRefs.applySubjectSuggestionsBtn.dataset.bound = '1';
       }
       if (bnRefs.applySuggestedCollectionBtn && !bnRefs.applySuggestedCollectionBtn.dataset.bound) {
         bnRefs.applySuggestedCollectionBtn.addEventListener('click', applySuggestedCollection);
@@ -3644,6 +3687,31 @@
         showMessage(refs.bookMessage, `Copie manualmente: ${text}`, 'info');
       }
     }
+
+    function applySelectedSubjectSuggestions() {
+      const checked = Array.from(document.querySelectorAll('[data-bn-subject]:checked')).map(node => node.value).filter(Boolean);
+      if (!checked.length) {
+        showMessage(refs.bookMessage, 'Nenhum assunto selecionado para aplicar.', 'error');
+        return;
+      }
+      const current = parseBookSubjectsValue(el('bookSubjects')?.value || '');
+      const currentMap = new Map(current.map(item => [normalizeForSearch(item), item]));
+      let added = 0;
+      checked.forEach(subject => {
+        const key = normalizeForSearch(subject);
+        if (!key || currentMap.has(key)) return;
+        currentMap.set(key, subject);
+        added += 1;
+      });
+      if (!added) {
+        showMessage(refs.bookMessage, 'Os assuntos selecionados já estão no campo Assuntos.', 'info');
+        return;
+      }
+      el('bookSubjects').value = Array.from(currentMap.values()).join(' ; ');
+      syncBookDraftVisualState();
+      showMessage(refs.bookMessage, added === 1 ? '1 assunto foi aplicado ao campo Assuntos.' : `${added} assuntos foram aplicados ao campo Assuntos.`, 'ok');
+    }
+
     async function copyIsbnIfPossible(isbn) {
       try {
         if (!navigator.clipboard?.writeText) return false;
@@ -3749,6 +3817,7 @@
               </div>
               <div class="row-actions" style="margin-top:8px;">
                 <button id="copySubjectSuggestionsBtn" type="button" class="btn-inline small secondary" disabled>Copiar sugestões</button>
+                <button id="applySubjectSuggestionsBtn" type="button" class="btn-inline small primary" disabled>Aplicar ao campo Assuntos</button>
               </div>
             </div>
             <div id="bookBnDebugWrap" class="autofill-box is-hidden">
@@ -4257,6 +4326,7 @@
       renderBookResponsibilitySummary(contributors);
       const materialType = el('bookType').value;
       const collectionValue = el('bookCollection').value.trim();
+      const subjectsValue = el('bookSubjects').value.trim();
       const normalizedBookPlace = applyNormalizedBookPlaceValue();
       return {
         id: el('bookDraftId').value || undefined,
@@ -4288,7 +4358,10 @@
         loanable: materialType === 'periodico' ? false : el('bookLoanable').value === 'true',
         colecao: collectionValue || null,
         cover_object_path: el('bookCoverPath').value.trim() || null,
-        marc_json: mergeBookCollectionIntoMarcJson(parseJsonSafe(el('bookMarcJson').value, {}), collectionValue),
+        marc_json: mergeBookSubjectsIntoMarcJson(
+          mergeBookCollectionIntoMarcJson(parseJsonSafe(el('bookMarcJson').value, {}), collectionValue),
+          subjectsValue
+        ),
         created_by: state.profile.id,
         updated_by: state.profile.id,
       };
@@ -4362,6 +4435,7 @@
       el('bookLoanable').value = 'true';
       el('bookMarcJson').value = '';
       el('bookCollection').value = '';
+      el('bookSubjects').value = '';
       el('bookCoverPath').value = '';
       el('bookCoverFile').value = '';
       refs.bookCoverFileName.textContent = 'Nenhum arquivo selecionado';
@@ -4603,28 +4677,35 @@
     async function loadQueue() {
       const { data, error } = await supabase.from('v_catalog_queue').select('*').order('updated_at', { ascending: false });
       if (error) throw error;
-
       let queueItems = data || [];
-      const exemplarDraftIds = [...new Set(
-        queueItems
-          .filter(item => String(item?.item_type || '') === 'exemplar' && Number(item?.draft_id || 0) > 0)
-          .map(item => Number(item.draft_id))
-      )];
 
-      // Reconcile exemplar label_status directly from exemplar_drafts in case v_catalog_queue lags or omits this field.
+      // v_catalog_queue não expõe label_status; para exemplares, reconciliamos o estado real
+      // diretamente com exemplar_drafts antes de renderizar a fila editorial.
+      const exemplarDraftIds = queueItems
+        .filter(item => String(item?.item_type || '') === 'exemplar' && Number.isFinite(Number(item?.draft_id)))
+        .map(item => Number(item.draft_id));
+
       if (exemplarDraftIds.length) {
-        const { data: exemplarDrafts, error: exemplarDraftsError } = await supabase
+        const { data: exemplarStates, error: exemplarStatesError } = await supabase
           .from('exemplar_drafts')
-          .select('id, status, label_status')
+          .select('id, batch_id, status, label_status, updated_at')
           .in('id', exemplarDraftIds);
-        if (exemplarDraftsError) throw exemplarDraftsError;
 
-        const exemplarDraftMap = new Map((exemplarDrafts || []).map(item => [Number(item.id), item]));
-        queueItems = queueItems.map(item => {
-          if (String(item?.item_type || '') !== 'exemplar') return item;
-          const liveDraft = exemplarDraftMap.get(Number(item?.draft_id || 0));
-          return liveDraft ? { ...item, status: liveDraft.status || item.status, label_status: liveDraft.label_status || item.label_status } : item;
-        });
+        if (!exemplarStatesError && Array.isArray(exemplarStates)) {
+          const exemplarStateMap = new Map(exemplarStates.map(row => [Number(row.id), row]));
+          queueItems = queueItems.map(item => {
+            if (String(item?.item_type || '') !== 'exemplar') return item;
+            const fresh = exemplarStateMap.get(Number(item?.draft_id));
+            if (!fresh) return item;
+            return {
+              ...item,
+              batch_id: fresh.batch_id ?? item.batch_id,
+              status: fresh.status || item.status,
+              label_status: fresh.label_status || item.label_status || 'pending',
+              updated_at: fresh.updated_at || item.updated_at,
+            };
+          });
+        }
       }
 
       state.queueItems = queueItems;
@@ -4750,6 +4831,7 @@
       el('bookPages').value = enriched.paginas || '';
       el('bookLoanable').value = String(enriched.loanable ?? true);
       el('bookNotes').value = enriched.notas || '';
+      el('bookSubjects').value = getBookSubjectsValue(enriched);
       el('bookCoverPath').value = enriched.cover_object_path || '';
       el('bookMarcJson').value = enriched.marc_json ? JSON.stringify(enriched.marc_json, null, 2) : '';
       syncBookTypeUI();
