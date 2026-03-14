@@ -1208,16 +1208,16 @@
     </div>
 
     <div class="tabs" id="tabs">
-      <button class="tab-btn active" data-tab="batchesPanel">Lotes</button>
-      <button class="tab-btn" data-tab="booksPanel">Fichas de livros</button>
+      <button class="tab-btn active" data-tab="booksPanel">Fichas de livros</button>
+      <button class="tab-btn" data-tab="authorsPanel">Fichas de autores</button>
       <button class="tab-btn" data-tab="exemplarsPanel">Exemplares</button>
       <button class="tab-btn" data-tab="labelsPanel">Rótulos</button>
-      <button class="tab-btn" data-tab="authorsPanel">Fichas de autores</button>
       <button class="tab-btn" data-tab="queuePanel">Fila editorial</button>
+      <button class="tab-btn" data-tab="batchesPanel">Lotes</button>
       <button class="tab-btn" data-tab="catalogPanel">Catálogo já publicado</button>
     </div>
 
-    <section id="booksPanel" class="panel">
+    <section id="booksPanel" class="panel active">
       <div class="panel-header">
         <div>
           <h3>Fichas de livros</h3>
@@ -1629,6 +1629,44 @@
       <div class="panel-body">
         <div id="exemplarMessage" class="message"></div>
 
+        <div class="card" style="margin-top:16px;">
+          <h4>Importação de livros para exemplares</h4>
+          <p class="hint" style="margin:0 0 12px;">Escolha um lote ou carregue todas as fichas de livros ativas. Cada exemplar previsto gera uma linha própria. Aqui você valida somente o exemplar material; a revisão e a validação do rótulo acontecem na aba Rótulos.</p>
+          <div class="grid cols-3" style="align-items:end;">
+            <div class="field">
+              <label for="exemplarLotImportId">Livros a carregar</label>
+              <select id="exemplarLotImportId"></select>
+            </div>
+            <div class="actions" style="grid-column: span 2; justify-content:flex-start;">
+              <button id="loadExemplarBatchBtn" type="button" class="button secondary">Carregar livros</button>
+              <button id="clearExemplarBatchBtn" type="button" class="button ghost">Limpar fila de exemplares</button>
+            </div>
+          </div>
+          <div class="grid cols-4" style="margin:14px 0 12px; align-items:end;">
+            <div class="field" style="grid-column: span 2;">
+              <label for="exemplarBatchSearchInput">Filtrar linhas a validar</label>
+              <input id="exemplarBatchSearchInput" type="text" placeholder="Título, autor, referência, tombo ou localização" />
+            </div>
+            <div class="field">
+              <label for="exemplarPendingScope">Recorte</label>
+              <select id="exemplarPendingScope">
+                <option value="all_pending">Todas as linhas pendentes</option>
+                <option value="existing_draft">Somente rascunhos já iniciados</option>
+                <option value="new_only">Somente linhas novas</option>
+                <option value="extra_only">Somente linhas adicionais</option>
+                <option value="first_only">Somente primeira linha de cada livro</option>
+              </select>
+            </div>
+            <div class="actions" style="justify-content:flex-start;">
+              <button id="validateVisibleExemplarRowsBtn" type="button" class="button success">Validar linhas visíveis</button>
+              <button id="clearExemplarBatchFiltersBtn" type="button" class="button ghost">Limpar filtros</button>
+            </div>
+          </div>
+          <div id="exemplarBatchFilterSummary" class="hint" style="margin:0 0 12px;">Nenhuma fila carregada ainda.</div>
+          <div id="exemplarBatchMessage" class="message"></div>
+          <div id="exemplarBatchQueueWrap" class="label-sheet-wrap"></div>
+        </div>
+
         <form id="exemplarForm" class="grid cols-3">
           <input type="hidden" id="exemplarDraftId" />
           <input type="hidden" id="exemplarPublishedId" />
@@ -1670,44 +1708,6 @@
             <button id="discardExemplarDraftBtn" type="button" class="button warning discard-edge danger-far">Descartar rascunho</button>
           </div>
         </form>
-
-        <div class="card" style="margin-top:16px;">
-          <h4>Importação de livros para exemplares</h4>
-          <p class="hint" style="margin:0 0 12px;">Escolha um lote ou carregue todas as fichas de livros ativas. Cada exemplar previsto gera uma linha própria. Aqui você valida somente o exemplar material; a revisão e a validação do rótulo acontecem na aba Rótulos.</p>
-          <div class="grid cols-3" style="align-items:end;">
-            <div class="field">
-              <label for="exemplarLotImportId">Livros a carregar</label>
-              <select id="exemplarLotImportId"></select>
-            </div>
-            <div class="actions" style="grid-column: span 2; justify-content:flex-start;">
-              <button id="loadExemplarBatchBtn" type="button" class="button secondary">Carregar livros</button>
-              <button id="clearExemplarBatchBtn" type="button" class="button ghost">Limpar fila de exemplares</button>
-            </div>
-          </div>
-          <div class="grid cols-4" style="margin:14px 0 12px; align-items:end;">
-            <div class="field" style="grid-column: span 2;">
-              <label for="exemplarBatchSearchInput">Filtrar linhas a validar</label>
-              <input id="exemplarBatchSearchInput" type="text" placeholder="Título, autor, referência, tombo ou localização" />
-            </div>
-            <div class="field">
-              <label for="exemplarPendingScope">Recorte</label>
-              <select id="exemplarPendingScope">
-                <option value="all_pending">Todas as linhas pendentes</option>
-                <option value="existing_draft">Somente rascunhos já iniciados</option>
-                <option value="new_only">Somente linhas novas</option>
-                <option value="extra_only">Somente linhas adicionais</option>
-                <option value="first_only">Somente primeira linha de cada livro</option>
-              </select>
-            </div>
-            <div class="actions" style="justify-content:flex-start;">
-              <button id="validateVisibleExemplarRowsBtn" type="button" class="button success">Validar linhas visíveis</button>
-              <button id="clearExemplarBatchFiltersBtn" type="button" class="button ghost">Limpar filtros</button>
-            </div>
-          </div>
-          <div id="exemplarBatchFilterSummary" class="hint" style="margin:0 0 12px;">Nenhuma fila carregada ainda.</div>
-          <div id="exemplarBatchMessage" class="message"></div>
-          <div id="exemplarBatchQueueWrap" class="label-sheet-wrap"></div>
-        </div>
       </div>
     </section>
 
@@ -1724,6 +1724,45 @@
       </div>
       <div class="panel-body">
         <div id="labelMessage" class="message"></div>
+
+        <div class="card" style="margin-top:16px;">
+          <h4>Importação de exemplares para rótulos</h4>
+          <p class="hint" style="margin:0 0 12px;">Escolha um lote ou carregue todos os rascunhos de exemplares ativos. Aqui você encontra cada exemplar já criado, abre no formulário e valida o rótulo quando ele estiver correto.</p>
+          <div class="grid cols-3" style="align-items:end;">
+            <div class="field">
+              <label for="labelLotImportId">Exemplares a carregar</label>
+              <select id="labelLotImportId"></select>
+            </div>
+            <div class="actions" style="grid-column: span 2; justify-content:flex-start;">
+              <button id="loadLabelBatchBtn" type="button" class="button secondary">Carregar exemplares</button>
+              <button id="clearLabelBatchBtn" type="button" class="button ghost">Limpar fila de rótulos</button>
+            </div>
+          </div>
+          <div class="grid cols-4" style="margin:14px 0 12px; align-items:end;">
+            <div class="field" style="grid-column: span 2;">
+              <label for="labelBatchSearchInput">Filtrar rótulos a validar</label>
+              <input id="labelBatchSearchInput" type="text" placeholder="Título, autor, referência, tombo, CDD ou nota" />
+            </div>
+            <div class="field">
+              <label for="labelPendingScope">Recorte</label>
+              <select id="labelPendingScope">
+                <option value="all_pending">Todos os rótulos pendentes</option>
+                <option value="basic_complete">Somente completos (autor + título + CDD)</option>
+                <option value="missing_cdd">Somente sem CDD</option>
+                <option value="missing_author">Somente sem autor</option>
+                <option value="missing_title">Somente sem título</option>
+                <option value="with_note">Somente com nota curta</option>
+              </select>
+            </div>
+            <div class="actions" style="justify-content:flex-start;">
+              <button id="validateVisibleLabelRowsBtn" type="button" class="button success">Validar rótulos visíveis</button>
+              <button id="clearLabelBatchFiltersBtn" type="button" class="button ghost">Limpar filtros</button>
+            </div>
+          </div>
+          <div id="labelBatchFilterSummary" class="hint" style="margin:0 0 12px;">Nenhuma fila de rótulos carregada ainda.</div>
+          <div id="labelBatchMessage" class="message"></div>
+          <div id="labelDraftQueueWrap" class="table-wrap"></div>
+        </div>
 
         <div class="card">
           <h4>Rótulo do exemplar selecionado</h4>
@@ -1795,45 +1834,6 @@
             <strong id="labelPrevTitle">Título</strong>
             <div id="labelPrevNote" class="hint" style="margin-top:6px;">Sem nota de rótulo.</div>
           </div>
-        </div>
-
-        <div class="card" style="margin-top:16px;">
-          <h4>Importação de exemplares para rótulos</h4>
-          <p class="hint" style="margin:0 0 12px;">Escolha um lote ou carregue todos os rascunhos de exemplares ativos. Aqui você encontra cada exemplar já criado, abre no formulário e valida o rótulo quando ele estiver correto.</p>
-          <div class="grid cols-3" style="align-items:end;">
-            <div class="field">
-              <label for="labelLotImportId">Exemplares a carregar</label>
-              <select id="labelLotImportId"></select>
-            </div>
-            <div class="actions" style="grid-column: span 2; justify-content:flex-start;">
-              <button id="loadLabelBatchBtn" type="button" class="button secondary">Carregar exemplares</button>
-              <button id="clearLabelBatchBtn" type="button" class="button ghost">Limpar fila de rótulos</button>
-            </div>
-          </div>
-          <div class="grid cols-4" style="margin:14px 0 12px; align-items:end;">
-            <div class="field" style="grid-column: span 2;">
-              <label for="labelBatchSearchInput">Filtrar rótulos a validar</label>
-              <input id="labelBatchSearchInput" type="text" placeholder="Título, autor, referência, tombo, CDD ou nota" />
-            </div>
-            <div class="field">
-              <label for="labelPendingScope">Recorte</label>
-              <select id="labelPendingScope">
-                <option value="all_pending">Todos os rótulos pendentes</option>
-                <option value="basic_complete">Somente completos (autor + título + CDD)</option>
-                <option value="missing_cdd">Somente sem CDD</option>
-                <option value="missing_author">Somente sem autor</option>
-                <option value="missing_title">Somente sem título</option>
-                <option value="with_note">Somente com nota curta</option>
-              </select>
-            </div>
-            <div class="actions" style="justify-content:flex-start;">
-              <button id="validateVisibleLabelRowsBtn" type="button" class="button success">Validar rótulos visíveis</button>
-              <button id="clearLabelBatchFiltersBtn" type="button" class="button ghost">Limpar filtros</button>
-            </div>
-          </div>
-          <div id="labelBatchFilterSummary" class="hint" style="margin:0 0 12px;">Nenhuma fila de rótulos carregada ainda.</div>
-          <div id="labelBatchMessage" class="message"></div>
-          <div id="labelDraftQueueWrap" class="table-wrap"></div>
         </div>
 
         <div class="card" style="margin-top:16px;">
@@ -1915,7 +1915,7 @@
       </div>
     </section>
 
-    <section id="batchesPanel" class="panel active">
+    <section id="batchesPanel" class="panel">
       <div class="panel-header">
         <div>
           <h3>Lotes de publicação</h3>
