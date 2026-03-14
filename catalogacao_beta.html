@@ -4690,9 +4690,14 @@
       const table = tableMap[type];
       if (!table) return;
       const numericId = Number(id);
+      const nowIso = new Date().toISOString();
       const { error } = await supabase.from(table).update({ status: 'cancelled', updated_by: state.profile.id }).eq('id', numericId);
       if (error) throw error;
-      state.queueItems = state.queueItems.filter(item => Number(item.draft_id) !== numericId);
+      state.queueItems = state.queueItems.map(item => (
+        Number(item.draft_id) === numericId
+          ? { ...item, status: 'cancelled', updated_at: nowIso }
+          : item
+      ));
       renderQueue();
       await Promise.all([loadQueue(), loadBatches(), loadCatalog()]);
       updateStats();
@@ -6360,9 +6365,14 @@
       refs.openLabelSheetPdfBtn.addEventListener('click', openLabelSheetPdfInNewTab);
     }
     if (refs.refreshTrashBtn) {
-      refs.refreshTrashBtn.addEventListener('click', () => {
+      refs.refreshTrashBtn.addEventListener('click', async () => {
         clearMessage(refs.trashMessage);
-        renderTrash();
+        try {
+          await loadQueue();
+          showMessage(refs.trashMessage, 'Lixeira atualizada.', 'ok');
+        } catch (error) {
+          showMessage(refs.trashMessage, error.message || 'Não foi possível atualizar a lixeira.', 'error');
+        }
       });
     }
     if (refs.emptyTrashBtn) {
