@@ -1005,10 +1005,72 @@ function getDefaultServiceMessage(mode) {
     case 'atendimento_semanal':
       return 'A biblioteca funciona com atendimento semanal em ritmo regular. Consulte os canais do CCLA para os horários e orientações vigentes.';
     case 'fechado_temporariamente':
-      return 'A biblioteca está temporariamente fechada para atendimento presencial. Consulte os canais do CCLA para atualizações.';
+      return 'A biblioteca está temporariamente fechada para atendimento presencial. Consulte os canais do CCLA para atualizações e orientações.';
     default:
       return 'Consulte os canais do CCLA para acompanhar o modo de funcionamento vigente.';
   }
+}
+function normalizeServiceStateRow(row) {
+  if (!row || typeof row !== 'object') return null;
+  const mode = String(
+    row.service_mode
+    ?? row.mode
+    ?? row.library_mode
+    ?? row.functioning_mode
+    ?? ''
+  ).trim();
+  if (!mode) return null;
+
+  let allowReservations = row.allow_reservations;
+  if (allowReservations === undefined) allowReservations = row.reservations_allowed;
+  if (allowReservations === undefined) allowReservations = row.reservations_open;
+  if (allowReservations === undefined) allowReservations = row.allow_public_reservations;
+  if (typeof allowReservations === 'string') {
+    const value = allowReservations.trim().toLowerCase();
+    if (['true', 't', '1', 'sim', 'yes', 'y'].includes(value)) allowReservations = true;
+    else if (['false', 'f', '0', 'nao', 'não', 'no', 'n'].includes(value)) allowReservations = false;
+  }
+
+  const publicMessage = row.public_message
+    ?? row.message
+    ?? row.custom_message
+    ?? row.banner_message
+    ?? '';
+
+  return {
+    service_mode: mode,
+    allow_reservations: allowReservations,
+    public_message: String(publicMessage || '').trim(),
+    updated_at: row.updated_at ?? null
+  };
+}
+async function fetchPublicServiceStateRow() {
+  const paths = [
+    'v_library_service_public?select=*',
+    `v_library_service_public?select=${encodeURIComponent('service_mode,allow_reservations,public_message')}`
+  ];
+
+  for (const path of paths) {
+    try {
+      const res = await fetch(`${SUPABASE_URL}/rest/v1/${path}`, {
+        headers: {
+          apikey: SUPABASE_ANON_KEY,
+          Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
+          Accept: 'application/json'
+        }
+      });
+      const text = await res.text();
+      if (!res.ok) {
+        console.warn('Falha ao carregar v_library_service_public:', res.status, text);
+        continue;
+      }
+      const arr = text ? JSON.parse(text) : [];
+      if (Array.isArray(arr) && arr[0]) return arr[0];
+    } catch (e) {
+      console.warn('Erro ao consultar v_library_service_public:', e);
+    }
+  }
+  return null;
 }
 function renderServiceBanner() {
   if (!serviceState) {
@@ -1025,8 +1087,8 @@ function renderServiceBanner() {
 }
 async function loadPublicServiceState() {
   try {
-    const arr = await fetchRestRows(`v_library_service_public?select=${encodeURIComponent('service_mode,allow_reservations,public_message,updated_at')}`, 'public');
-    serviceState = Array.isArray(arr) && arr[0] ? arr[0] : null;
+    const row = await fetchPublicServiceStateRow();
+    serviceState = normalizeServiceStateRow(row);
   } catch (e) {
     serviceState = null;
   }
