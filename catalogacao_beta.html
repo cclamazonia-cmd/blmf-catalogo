@@ -3665,8 +3665,25 @@
       const total = Number(data?.total || 0);
       if (!total || !Array.isArray(data?.results) || !data.results.length) {
         state.bnLookup = null;
-        content.innerHTML = `<strong>Biblioteca Nacional</strong><br><span class="hint">Nenhum resultado encontrado para o ISBN ${sanitize(isbn)}.</span>`;
+        content.innerHTML = `
+          <div class="section-block">
+            <div>
+              <strong>Biblioteca Nacional</strong>
+              <div class="hint" style="margin-top:4px;">ISBN não encontrado</div>
+            </div>
+            <div class="autofill-box">
+              <div class="autofill-value">Nenhum resultado encontrado para o ISBN ${sanitize(isbn)} na base da Biblioteca Nacional.</div>
+            </div>
+            <div class="row-actions">
+              <button type="button" id="openWorldcatFallbackBtn" class="btn-inline small secondary">Abrir no WorldCat</button>
+            </div>
+          </div>`;
         wrap.classList.remove('is-hidden');
+        const worldcatBtn = el('openWorldcatFallbackBtn');
+        if (worldcatBtn && !worldcatBtn.dataset.bound) {
+          worldcatBtn.addEventListener('click', () => openIsbnLookup('cbl'));
+          worldcatBtn.dataset.bound = '1';
+        }
         renderBnAutofillPanel();
         return;
       }
@@ -3736,6 +3753,58 @@
       renderBnAutofillPanel();
     }
 
+    function renderIsbnLookupFailure(message, isbn) {
+      const wrap = el('bookIsbnLookupResult');
+      const content = el('bookIsbnLookupResultContent');
+      if (!wrap || !content) return;
+      state.bnLookup = null;
+      content.innerHTML = `
+        <div class="section-block">
+          <div>
+            <strong>Biblioteca Nacional</strong>
+            <div class="hint" style="margin-top:4px;">Consulta indisponível</div>
+          </div>
+          <div class="autofill-box">
+            <div class="autofill-value">${sanitize(message || 'Não foi possível consultar a Biblioteca Nacional agora.')} ISBN consultado: ${sanitize(isbn)}.</div>
+          </div>
+          <div class="row-actions">
+            <button type="button" id="openBnManualBtn" class="btn-inline small secondary">Abrir busca manual na BN</button>
+            <button type="button" id="openWorldcatFallbackBtn" class="btn-inline small secondary">Abrir no WorldCat</button>
+          </div>
+        </div>`;
+      wrap.classList.remove('is-hidden');
+      const bnBtn = el('openBnManualBtn');
+      if (bnBtn && !bnBtn.dataset.bound) {
+        bnBtn.addEventListener('click', () => {
+          window.open('https://acervo.bn.gov.br/sophia_web/busca/acervo/isbn/', '_blank', 'noopener');
+        });
+        bnBtn.dataset.bound = '1';
+      }
+      const worldcatBtn = el('openWorldcatFallbackBtn');
+      if (worldcatBtn && !worldcatBtn.dataset.bound) {
+        worldcatBtn.addEventListener('click', () => openIsbnLookup('cbl'));
+        worldcatBtn.dataset.bound = '1';
+      }
+      renderBnAutofillPanel();
+    }
+
+    function looksLikeBnNotFound(response, data, errorMessage = '') {
+      const status = Number(response?.status || 0);
+      const haystack = normalizeForSearch([
+        data?.error,
+        data?.message,
+        errorMessage,
+        data?.summary,
+      ].filter(Boolean).join(' '));
+      if (status === 404) return true;
+      return haystack.includes('nenhum resultado')
+        || haystack.includes('isbn nao encontrado')
+        || haystack.includes('isbn não encontrado')
+        || haystack.includes('nao encontrado')
+        || haystack.includes('não encontrado')
+        || haystack.includes('not found');
+    }
+
     async function openIsbnLookup(source) {
       const raw = el('bookISBN')?.value || '';
       const isbn = normalizeISBN(raw);
@@ -3760,23 +3829,30 @@
           });
           const data = await response.json().catch(() => null);
           if (!response.ok || !data?.ok) {
-            throw new Error(data?.error || 'A busca na Biblioteca Nacional falhou.');
+            const message = data?.error || data?.message || 'A busca na Biblioteca Nacional falhou.';
+            if (looksLikeBnNotFound(response, data, message)) {
+              renderIsbnLookupResult({ ok: true, total: 0, results: [] }, isbn);
+              showMessage(refs.bookMessage, 'ISBN não encontrado na base da Biblioteca Nacional.', 'info');
+              return;
+            }
+            renderIsbnLookupFailure(message, isbn);
+            showMessage(refs.bookMessage, 'Não foi possível carregar o resultado integrado da Biblioteca Nacional.', 'error');
+            return;
           }
           renderIsbnLookupResult(data, isbn);
-          showMessage(refs.bookMessage, 'Resultado carregado a partir da Biblioteca Nacional.', 'ok');
+          showMessage(refs.bookMessage, Number(data?.total || 0) > 0
+            ? 'Resultado carregado a partir da Biblioteca Nacional.'
+            : 'ISBN não encontrado na base da Biblioteca Nacional.', Number(data?.total || 0) > 0 ? 'ok' : 'info');
           return;
         } catch (error) {
-          const copied = await copyIsbnIfPossible(isbn);
-          window.open(`https://acervo.bn.gov.br/sophia_web/busca/acervo/isbn/`, '_blank', 'noopener');
-          showMessage(refs.bookMessage, copied
-            ? 'Não consegui carregar o resultado integrado da Biblioteca Nacional. A página da BN foi aberta e o ISBN foi copiado para colagem manual.'
-            : 'Não consegui carregar o resultado integrado da Biblioteca Nacional. A página da BN foi aberta para busca manual.', 'error');
+          renderIsbnLookupFailure(error?.message || 'Falha de conexão com a Biblioteca Nacional.', isbn);
+          showMessage(refs.bookMessage, 'Não foi possível consultar a Biblioteca Nacional agora.', 'error');
           return;
         }
       }
 
       const copied = await copyIsbnIfPossible(isbn);
-      const url = `https://search.worldcat.org/search?q=bn%3A${encodeURIComponent(isbn)}`;
+      const url = `https://search.worldcat.org/search?q=${encodeURIComponent(isbn)}`;
       window.open(url, '_blank', 'noopener');
       showMessage(refs.bookMessage, copied
         ? 'Busca aberta no WorldCat com o ISBN já copiado para conferência.'
