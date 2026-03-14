@@ -3056,9 +3056,16 @@
       imgEl.alt = path;
     }
 
+    function isActiveQueueItem(item = {}) {
+      const status = String(item?.status || '');
+      if (status !== 'draft' && status !== 'ready') return false;
+      if (String(item?.item_type || '') === 'exemplar' && String(item?.label_status || 'pending') === 'ready') return false;
+      return true;
+    }
+
     function updateStats() {
       refs.statOpenBatches.textContent = state.batches.filter(b => b.status === 'open').length;
-      refs.statDrafts.textContent = state.queueItems.filter(item => item.status === 'draft' || item.status === 'ready').length;
+      refs.statDrafts.textContent = state.queueItems.filter(item => isActiveQueueItem(item)).length;
       refs.statBooks.textContent = state.books.length;
       refs.statAuthors.textContent = state.authors.length;
     }
@@ -5765,9 +5772,9 @@
       const statusFilter = el('queueStatusFilter').value;
       const search = el('queueSearch').value.trim().toLowerCase();
       const targetBatchId = el('queueBatchAssign').value;
-      let items = [...state.queueItems].filter(item => item.status === 'draft' || item.status === 'ready');
+      let items = [...state.queueItems].filter(item => isActiveQueueItem(item));
       if (state.showOnlyActiveDrafts) {
-        items = items.filter(item => item.status === 'draft' || item.status === 'ready');
+        items = items.filter(item => isActiveQueueItem(item));
       }
       if (typeFilter) items = items.filter(item => item.item_type === typeFilter);
       if (statusFilter) items = items.filter(item => item.status === statusFilter);
