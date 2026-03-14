@@ -4603,7 +4603,31 @@
     async function loadQueue() {
       const { data, error } = await supabase.from('v_catalog_queue').select('*').order('updated_at', { ascending: false });
       if (error) throw error;
-      state.queueItems = data || [];
+
+      let queueItems = data || [];
+      const exemplarDraftIds = [...new Set(
+        queueItems
+          .filter(item => String(item?.item_type || '') === 'exemplar' && Number(item?.draft_id || 0) > 0)
+          .map(item => Number(item.draft_id))
+      )];
+
+      // Reconcile exemplar label_status directly from exemplar_drafts in case v_catalog_queue lags or omits this field.
+      if (exemplarDraftIds.length) {
+        const { data: exemplarDrafts, error: exemplarDraftsError } = await supabase
+          .from('exemplar_drafts')
+          .select('id, status, label_status')
+          .in('id', exemplarDraftIds);
+        if (exemplarDraftsError) throw exemplarDraftsError;
+
+        const exemplarDraftMap = new Map((exemplarDrafts || []).map(item => [Number(item.id), item]));
+        queueItems = queueItems.map(item => {
+          if (String(item?.item_type || '') !== 'exemplar') return item;
+          const liveDraft = exemplarDraftMap.get(Number(item?.draft_id || 0));
+          return liveDraft ? { ...item, status: liveDraft.status || item.status, label_status: liveDraft.label_status || item.label_status } : item;
+        });
+      }
+
+      state.queueItems = queueItems;
       renderQueue();
     }
 
