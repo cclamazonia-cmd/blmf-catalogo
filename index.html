@@ -1001,13 +1001,13 @@ function getDefaultServiceMessage(mode) {
     case 'em_organizacao':
       return 'A biblioteca está em organização. O atendimento ocorre conforme a capacidade operacional atual.';
     case 'atendimento_eventual':
-      return 'O atendimento ocorre de forma eventual, conforme a capacidade operacional atual da biblioteca.';
+      return 'A biblioteca funciona com atendimento eventual. Consulte os canais do CCLA para informações atualizadas.';
     case 'atendimento_semanal':
-      return 'A biblioteca está em atendimento semanal, conforme divulgado por seus canais.';
+      return 'A biblioteca funciona com atendimento semanal em ritmo regular. Consulte os canais do CCLA para os horários e orientações vigentes.';
     case 'fechado_temporariamente':
-      return 'A biblioteca está temporariamente fechada para atendimento presencial.';
+      return 'A biblioteca está temporariamente fechada para atendimento presencial. Consulte os canais do CCLA para atualizações.';
     default:
-      return 'Consulte os canais da biblioteca para acompanhar o modo de funcionamento vigente.';
+      return 'Consulte os canais do CCLA para acompanhar o modo de funcionamento vigente.';
   }
 }
 function renderServiceBanner() {
