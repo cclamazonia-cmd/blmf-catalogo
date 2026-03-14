@@ -1722,6 +1722,28 @@
               <label for="labelNoteInput">Nota curta do rótulo</label>
               <input id="labelNoteInput" type="text" placeholder="Opcional" />
             </div>
+            <div style="grid-column: span 3;">
+              <div id="labelAssistBox" class="author-assist-panel">
+                <div class="autofill-actions">
+                  <button id="applyLabelSuggestionBtn" type="button" class="btn-inline small secondary">Aplicar sugestão</button>
+                </div>
+                <div class="hint">A sugestão usa os dados já presentes no formulário e, se necessário, busca apoio no livro ligado ao exemplar. Nada é alterado automaticamente.</div>
+                <div id="labelSuggestionPreview" class="author-assist-preview">
+                  <div class="author-assist-preview-line">
+                    <strong>Código sugerido</strong>
+                    <span id="labelSuggestCode">—</span>
+                  </div>
+                  <div class="author-assist-preview-line">
+                    <strong>Leitura de estante</strong>
+                    <span id="labelSuggestShelf">—</span>
+                  </div>
+                  <div class="author-assist-preview-line">
+                    <strong>Base usada</strong>
+                    <span id="labelSuggestReason">Preencha autor, título ou CDD para gerar uma sugestão.</span>
+                  </div>
+                </div>
+              </div>
+            </div>
             <div class="actions with-danger-far" style="grid-column: span 3;">
               <button id="saveLabelDraftBtn" type="submit" class="button primary">Salvar rótulo</button>
               <button id="labelReadyBtn" type="button" class="button secondary">Validar rótulo</button>
@@ -2048,6 +2070,12 @@
       bookQuickLabelTitle: el('bookQuickLabelTitle'),
       bookQuickLabelAuthor: el('bookQuickLabelAuthor'),
       bookQuickLabelShelf: el('bookQuickLabelShelf'),
+      labelAssistBox: el('labelAssistBox'),
+      labelSuggestionPreview: el('labelSuggestionPreview'),
+      labelSuggestCode: el('labelSuggestCode'),
+      labelSuggestShelf: el('labelSuggestShelf'),
+      labelSuggestReason: el('labelSuggestReason'),
+      applyLabelSuggestionBtn: el('applyLabelSuggestionBtn'),
 
     };
 
@@ -2769,6 +2797,190 @@
       const clean = normalizeForSearch(base).replace(/[^a-z0-9]/g, '').toUpperCase();
       if (!clean) return '---';
       return clean.slice(0, 3).padEnd(3, 'X');
+    }
+
+    // === Assistências avançadas de catalogação ===
+    function stripDiacritics(value = '') {
+      return String(value || '').normalize('NFD').replace(/[̀-ͯ]/g, '');
+    }
+
+    function compactSpaces(value = '') {
+      return String(value || '').replace(/\s+/g, ' ').trim();
+    }
+
+    function normalizeTextBasic(value = '') {
+      return compactSpaces(stripDiacritics(value)).toLowerCase();
+    }
+
+    function normalizeForMatch(value = '') {
+      return normalizeTextBasic(value).replace(/[^\p{L}\p{N}\s-]/gu, ' ').replace(/\s+/g, ' ').trim();
+    }
+
+    function extractSurnameKey(name = '') {
+      const clean = compactSpaces(String(name || ''));
+      if (!clean) return '';
+      if (clean.includes(',')) return compactSpaces(clean.split(',')[0]);
+
+      const particles = new Set(['da', 'de', 'del', 'della', 'di', 'do', 'dos', 'das', 'du', 'des', 'e', 'la', 'le', 'los', 'las', 'van', 'von', 'y']);
+      const tokens = clean.split(/\s+/).filter(Boolean);
+      for (let index = tokens.length - 1; index >= 0; index -= 1) {
+        const token = tokens[index];
+        if (!particles.has(normalizeTextBasic(token))) return token;
+      }
+      return tokens[tokens.length - 1] || '';
+    }
+
+    function pickSignificantTitleWord(title = '') {
+      const stopwords = new Set(['a', 'o', 'os', 'as', 'um', 'uma', 'uns', 'umas', 'the', 'le', 'la', 'les', 'el', 'los', 'las', 'de', 'do', 'da', 'dos', 'das', 'du', 'des', 'del', 'di', 'e', 'y', 'et', 'and', 'of', 'ou', 'or', 'por', 'para']);
+      const words = compactSpaces(String(title || '')).split(/\s+/).filter(Boolean);
+      const candidate = words.find(word => {
+        const normalized = normalizeTextBasic(word).replace(/[^a-z0-9]/g, '');
+        return normalized.length >= 3 && !stopwords.has(normalized);
+      }) || words.find(word => normalizeTextBasic(word).replace(/[^a-z0-9]/g, '').length >= 1) || '';
+      return String(candidate || '').replace(/[^\p{L}\p{N}]/gu, '');
+    }
+
+    function findImportedExemplarCopyContext() {
+      const bibRef = compactSpaces(el('exemplarBibRef')?.value || '');
+      const tombo = compactSpaces(el('exemplarTombo')?.value || '');
+      for (const bookItem of state.batchExemplarItems || []) {
+        const copies = Array.isArray(bookItem?.copies) ? bookItem.copies : [];
+        const match = copies.find(copy => {
+          const sameTombo = tombo && compactSpaces(copy?.tombo || '') === tombo;
+          const sameBibRef = bibRef && compactSpaces(copy?.bibRef || '') === bibRef;
+          return sameTombo || (sameBibRef && (!tombo || compactSpaces(copy?.tombo || '') === tombo));
+        });
+        if (match) return match;
+      }
+      return null;
+    }
+
+    function getCurrentLabelSourceData() {
+      const currentAuthor = compactSpaces(el('labelAuthorInput')?.value || '');
+      const currentTitle = compactSpaces(el('labelTitleInput')?.value || '');
+      const currentCDD = compactSpaces(el('labelCDDInput')?.value || '');
+      const bibRef = compactSpaces(el('exemplarBibRef')?.value || '');
+
+      let author = currentAuthor;
+      let title = currentTitle;
+      let cdd = currentCDD;
+      const reasons = [];
+
+      if (currentAuthor) reasons.push('autor já preenchido no formulário');
+      if (currentTitle) reasons.push('título já preenchido no formulário');
+      if (currentCDD) reasons.push('CDD já preenchida no formulário');
+
+      const importedCopy = findImportedExemplarCopyContext();
+      if (!author && importedCopy?.author) {
+        author = compactSpaces(importedCopy.author);
+        reasons.push('autor puxado do exemplar em revisão');
+      }
+      if (!title && importedCopy?.title) {
+        title = compactSpaces(importedCopy.title);
+        reasons.push('título puxado do exemplar em revisão');
+      }
+      if (!cdd && importedCopy?.cdd) {
+        cdd = compactSpaces(importedCopy.cdd);
+        reasons.push('CDD puxada do exemplar em revisão');
+      }
+
+      const publishedBook = getPublishedBookForBibRef(bibRef);
+      if (!author && publishedBook?.autor) {
+        author = compactSpaces(publishedBook.autor);
+        reasons.push('autor puxado do catálogo publicado');
+      }
+      if (!title && publishedBook?.titulo) {
+        title = compactSpaces(publishedBook.titulo);
+        reasons.push('título puxado do catálogo publicado');
+      }
+      if (!cdd && publishedBook?.cdd) {
+        cdd = compactSpaces(publishedBook.cdd);
+        reasons.push('CDD puxada do catálogo publicado');
+      }
+
+      return { author, title, cdd, reasons };
+    }
+
+    function buildShelfLabelSuggestion({ author = '', title = '', cdd = '' } = {}) {
+      const cleanCDD = compactSpaces(cdd);
+      const surnameKey = extractSurnameKey(author);
+      const titleKey = surnameKey ? '' : pickSignificantTitleWord(title);
+      const codeSeed = surnameKey || titleKey;
+      const authorCode = codeSeed ? getAuthorTrigram(codeSeed) : '---';
+
+      if (!cleanCDD && authorCode === '---') return null;
+
+      const shelfLineParts = [];
+      if (cleanCDD) shelfLineParts.push(cleanCDD);
+      if (authorCode !== '---') shelfLineParts.push(authorCode);
+
+      const reasonParts = [];
+      if (cleanCDD) reasonParts.push('CDD informada');
+      if (surnameKey) reasonParts.push('sobrenome principal do autor');
+      else if (titleKey) reasonParts.push('palavra significativa do título');
+
+      return {
+        authorCode,
+        shelfLine: shelfLineParts.join(' / '),
+        reason: reasonParts.join(' + ') || 'Dados mínimos disponíveis.',
+      };
+    }
+
+    function clearLabelSuggestion() {
+      if (refs.labelSuggestCode) refs.labelSuggestCode.textContent = '—';
+      if (refs.labelSuggestShelf) refs.labelSuggestShelf.textContent = '—';
+      if (refs.labelSuggestReason) refs.labelSuggestReason.textContent = 'Preencha autor, título ou CDD para gerar uma sugestão.';
+      if (refs.applyLabelSuggestionBtn) refs.applyLabelSuggestionBtn.disabled = true;
+    }
+
+    function renderLabelSuggestion() {
+      if (!refs.labelSuggestCode || !refs.labelSuggestShelf || !refs.labelSuggestReason) return;
+      const source = getCurrentLabelSourceData();
+      const suggestion = buildShelfLabelSuggestion(source);
+
+      if (!suggestion) {
+        clearLabelSuggestion();
+        return;
+      }
+
+      refs.labelSuggestCode.textContent = suggestion.authorCode || '—';
+      refs.labelSuggestShelf.textContent = suggestion.shelfLine || '—';
+      refs.labelSuggestReason.textContent = [
+        source.reasons?.length ? source.reasons.join(' · ') : '',
+        suggestion.reason || '',
+      ].filter(Boolean).join(' — ') || 'Sugestão pronta para uso.';
+      if (refs.applyLabelSuggestionBtn) refs.applyLabelSuggestionBtn.disabled = !(source.author || source.title || source.cdd);
+    }
+
+    function applyLabelSuggestion() {
+      const source = getCurrentLabelSourceData();
+      let changed = 0;
+
+      const authorNode = el('labelAuthorInput');
+      const titleNode = el('labelTitleInput');
+      const cddNode = el('labelCDDInput');
+
+      if (authorNode && !authorNode.value.trim() && source.author) {
+        authorNode.value = source.author;
+        changed += 1;
+      }
+      if (titleNode && !titleNode.value.trim() && source.title) {
+        titleNode.value = source.title;
+        changed += 1;
+      }
+      if (cddNode && !cddNode.value.trim() && source.cdd) {
+        cddNode.value = source.cdd;
+        changed += 1;
+      }
+
+      updateLabelPreview();
+      syncLabelDraftVisualState();
+
+      if (changed > 0) {
+        showMessage(refs.labelMessage, 'Sugestão aplicada sem sobrescrever campos já preenchidos.', 'ok');
+      } else {
+        showMessage(refs.labelMessage, 'Nenhum campo vazio pôde ser preenchido com a sugestão atual.', 'info');
+      }
     }
 
     function formatDate(value) {
@@ -4076,6 +4288,7 @@
       refs.labelPrevCDD.textContent = el('labelCDDInput')?.value || '—';
       refs.labelPrevTitle.textContent = el('labelTitleInput')?.value || 'Título';
       refs.labelPrevNote.textContent = el('labelNoteInput')?.value || 'Sem nota de rótulo.';
+      renderLabelSuggestion();
     }
 
     ['exemplarTombo','exemplarBibRef','exemplarShelf','exemplarBatchId'].forEach(id => {
@@ -4087,6 +4300,10 @@
       el(id).addEventListener('input', () => { updateLabelPreview(); syncLabelDraftVisualState(); });
       el(id).addEventListener('change', () => { updateLabelPreview(); syncLabelDraftVisualState(); });
     });
+
+    if (refs.applyLabelSuggestionBtn) {
+      refs.applyLabelSuggestionBtn.addEventListener('click', () => applyLabelSuggestion());
+    }
 
     el('bookCoverFile').addEventListener('change', () => {
       const file = el('bookCoverFile').files[0];
