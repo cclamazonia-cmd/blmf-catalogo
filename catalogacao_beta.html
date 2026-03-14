@@ -1802,6 +1802,28 @@
               <button id="clearLabelBatchBtn" type="button" class="button ghost">Limpar fila de rótulos</button>
             </div>
           </div>
+          <div class="grid cols-4" style="margin:14px 0 12px; align-items:end;">
+            <div class="field" style="grid-column: span 2;">
+              <label for="labelBatchSearchInput">Filtrar rótulos a validar</label>
+              <input id="labelBatchSearchInput" type="text" placeholder="Título, autor, referência, tombo, CDD ou nota" />
+            </div>
+            <div class="field">
+              <label for="labelPendingScope">Recorte</label>
+              <select id="labelPendingScope">
+                <option value="all_pending">Todos os rótulos pendentes</option>
+                <option value="basic_complete">Somente completos (autor + título + CDD)</option>
+                <option value="missing_cdd">Somente sem CDD</option>
+                <option value="missing_author">Somente sem autor</option>
+                <option value="missing_title">Somente sem título</option>
+                <option value="with_note">Somente com nota curta</option>
+              </select>
+            </div>
+            <div class="actions" style="justify-content:flex-start;">
+              <button id="validateVisibleLabelRowsBtn" type="button" class="button success">Validar rótulos visíveis</button>
+              <button id="clearLabelBatchFiltersBtn" type="button" class="button ghost">Limpar filtros</button>
+            </div>
+          </div>
+          <div id="labelBatchFilterSummary" class="hint" style="margin:0 0 12px;">Nenhuma fila de rótulos carregada ainda.</div>
           <div id="labelBatchMessage" class="message"></div>
           <div id="labelDraftQueueWrap" class="table-wrap"></div>
         </div>
@@ -2069,6 +2091,11 @@
       clearExemplarBatchFiltersBtn: el('clearExemplarBatchFiltersBtn'),
       exemplarBatchFilterSummary: el('exemplarBatchFilterSummary'),
       labelLotImportId: el('labelLotImportId'),
+      labelBatchSearchInput: el('labelBatchSearchInput'),
+      labelPendingScope: el('labelPendingScope'),
+      validateVisibleLabelRowsBtn: el('validateVisibleLabelRowsBtn'),
+      clearLabelBatchFiltersBtn: el('clearLabelBatchFiltersBtn'),
+      labelBatchFilterSummary: el('labelBatchFilterSummary'),
       labelBatchMessage: el('labelBatchMessage'),
       labelDraftQueueWrap: el('labelDraftQueueWrap'),
       refreshLabelSheetBtn: el('refreshLabelSheetBtn'),
@@ -5399,7 +5426,7 @@
       let query = supabase
         .from('exemplar_drafts')
         .select('id, batch_id, status, action, published_exemplar_id, target_bib_ref, tombo, shelf_location, label_title_override, label_author_override, label_cdd_override, label_note, notes, updated_at')
-        .neq('status', 'cancelled')
+        .eq('status', 'draft')
         .order('updated_at', { ascending: false });
 
       if (sourceId !== '__all__') {
@@ -5413,25 +5440,132 @@
         const published = getPublishedBookForBibRef(item.target_bib_ref || '');
         return {
           ...item,
-          displayTitle: item.label_title_override || published?.titulo || '—',
-          displayAuthor: item.label_author_override || published?.autor || '—',
-          displayCDD: item.label_cdd_override || published?.cdd || '—',
+          displayTitle: item.label_title_override || published?.titulo || '',
+          displayAuthor: item.label_author_override || published?.autor || '',
+          displayCDD: item.label_cdd_override || published?.cdd || '',
         };
       });
 
       renderLabelDraftQueue();
 
       if (!state.batchLabelItems.length) {
-        showMessage(refs.labelBatchMessage, sourceId === '__all__' ? 'Não há rascunhos de exemplares ativos para revisar em rótulos.' : 'Este lote não tem rascunhos de exemplares ativos para revisar em rótulos.', 'info');
+        showMessage(refs.labelBatchMessage, sourceId === '__all__' ? 'Não há rótulos pendentes para revisar neste momento.' : 'Este lote não tem rótulos pendentes para revisar.', 'info');
       } else {
-        showMessage(refs.labelBatchMessage, `${state.batchLabelItems.length} exemplar(es) carregado(s) para revisão de rótulos.`, 'ok');
+        showMessage(refs.labelBatchMessage, `${state.batchLabelItems.length} rótulo(s) pendente(s) carregado(s) para revisão.`, 'ok');
       }
+    }
+
+    function hasBasicLabelData(item = {}) {
+      return !!(
+        String(item.displayAuthor || '').trim() &&
+        String(item.displayTitle || '').trim() &&
+        String(item.displayCDD || '').trim()
+      );
+    }
+
+    function getLabelBatchSearchIndex(item = {}) {
+      return normalizeForSearch([
+        item.id,
+        item.batch_id,
+        item.tombo,
+        item.target_bib_ref,
+        item.displayAuthor,
+        item.displayTitle,
+        item.displayCDD,
+        item.label_note,
+        item.shelf_location,
+        item.notes,
+      ].filter(Boolean).join(' '));
+    }
+
+    function getFilteredLabelBatchItems() {
+      const search = normalizeForSearch(refs.labelBatchSearchInput?.value || '');
+      const scope = refs.labelPendingScope?.value || 'all_pending';
+      let items = [...(state.batchLabelItems || [])].filter(item => String(item.status || 'draft') === 'draft');
+
+      if (search) {
+        items = items.filter(item => getLabelBatchSearchIndex(item).includes(search));
+      }
+
+      if (scope === 'basic_complete') {
+        items = items.filter(item => hasBasicLabelData(item));
+      } else if (scope === 'missing_cdd') {
+        items = items.filter(item => !String(item.displayCDD || '').trim());
+      } else if (scope === 'missing_author') {
+        items = items.filter(item => !String(item.displayAuthor || '').trim());
+      } else if (scope === 'missing_title') {
+        items = items.filter(item => !String(item.displayTitle || '').trim());
+      } else if (scope === 'with_note') {
+        items = items.filter(item => !!String(item.label_note || '').trim());
+      }
+
+      return items;
+    }
+
+    function renderLabelBatchFilterSummary(items = []) {
+      if (!refs.labelBatchFilterSummary) return;
+      const totalPending = [...(state.batchLabelItems || [])].filter(item => String(item.status || 'draft') === 'draft').length;
+      const visible = items.length;
+      if (!state.batchLabelItems.length) {
+        refs.labelBatchFilterSummary.textContent = 'Nenhuma fila de rótulos carregada ainda.';
+        return;
+      }
+      refs.labelBatchFilterSummary.textContent = `${totalPending} rótulo(s) pendente(s) nesta fila; ${visible} visível(is) com os filtros atuais.`;
+    }
+
+    async function validateLabelDraftIds(ids = []) {
+      const numericIds = [...new Set((ids || []).map(value => Number(value)).filter(Number.isFinite))];
+      if (!numericIds.length) {
+        throw new Error('Nenhum rótulo selecionado para validar.');
+      }
+      const { error } = await supabase
+        .from('exemplar_drafts')
+        .update({ status: 'ready', updated_by: state.profile.id })
+        .in('id', numericIds);
+      if (error) throw error;
+
+      state.batchLabelItems = (state.batchLabelItems || []).map(item => (
+        numericIds.includes(Number(item.id))
+          ? { ...item, status: 'ready', updated_at: new Date().toISOString() }
+          : item
+      ));
+      renderLabelDraftQueue();
+      await Promise.all([loadLabelDraftQueue(), loadQueue(), loadBatches()]);
+      updateStats();
+
+      const previewBatchId = refs.labelLotImportId?.value || el('exemplarBatchId')?.value || '';
+      if (refs.labelBatchPreviewId && previewBatchId && previewBatchId !== '__all__') {
+        refs.labelBatchPreviewId.value = String(previewBatchId);
+      }
+      await loadLabelSheetPreview().catch(() => {});
+    }
+
+    async function validateVisibleLabelDraftRows() {
+      const visibleItems = getFilteredLabelBatchItems();
+      if (!visibleItems.length) {
+        throw new Error('Nenhum rótulo visível para validar com os filtros atuais.');
+      }
+      if (visibleItems.length > 25) {
+        const confirmed = window.confirm(`Validar ${visibleItems.length} rótulos visíveis de uma vez?`);
+        if (!confirmed) return 0;
+      }
+      await validateLabelDraftIds(visibleItems.map(item => item.id));
+      return visibleItems.length;
     }
 
     function renderLabelDraftQueue() {
       if (!refs.labelDraftQueueWrap) return;
       if (!state.batchLabelItems.length) {
         refs.labelDraftQueueWrap.innerHTML = '<div class="empty">Escolha um lote de exemplares — ou todos os rascunhos ativos — para abrir e validar os rótulos.</div>';
+        renderLabelBatchFilterSummary([]);
+        return;
+      }
+
+      const visibleItems = getFilteredLabelBatchItems();
+      renderLabelBatchFilterSummary(visibleItems);
+
+      if (!visibleItems.length) {
+        refs.labelDraftQueueWrap.innerHTML = '<div class="empty">Nenhum rótulo pendente corresponde aos filtros atuais.</div>';
         return;
       }
 
@@ -5440,25 +5574,25 @@
           <thead>
             <tr>
               <th>ID</th>
-              <th>Situação</th>
               <th>Tombo</th>
               <th>Referência</th>
               <th>Autor</th>
               <th>Título</th>
               <th>CDD</th>
+              <th>Nota curta</th>
               <th>Operações</th>
             </tr>
           </thead>
           <tbody>
-            ${state.batchLabelItems.map(item => `
+            ${visibleItems.map(item => `
               <tr>
                 <td>${sanitize(item.id)}</td>
-                <td>${getQueueStatusBadge(item.status || 'draft')}</td>
                 <td>${sanitize(item.tombo || '—')}</td>
                 <td>${sanitize(item.target_bib_ref || '—')}</td>
                 <td>${sanitize(item.displayAuthor || '—')}</td>
                 <td>${sanitize(item.displayTitle || '—')}</td>
                 <td>${sanitize(item.displayCDD || '—')}</td>
+                <td>${sanitize(item.label_note || '—')}</td>
                 <td>
                   <div class="row-actions">
                     <button class="btn-inline small secondary" data-action="load-label-draft" data-id="${item.id}">Carregar no formulário</button>
@@ -5487,18 +5621,8 @@
       refs.labelDraftQueueWrap.querySelectorAll('[data-action="validate-label-draft"]').forEach(btn => {
         btn.addEventListener('click', async () => {
           try {
-            const { data, error } = await supabase.from('exemplar_drafts').select('*').eq('id', Number(btn.dataset.id)).single();
-            if (error) throw error;
-            const payload = {
-              ...data,
-              status: 'ready',
-              updated_by: state.profile.id,
-            };
-            await saveDraft('exemplar_drafts', payload, refs.labelBatchMessage, 'Rótulo validado com sucesso.');
-            await Promise.all([loadLabelDraftQueue(), loadQueue(), loadBatches()]);
-            updateStats();
-            if (refs.labelBatchPreviewId && data.batch_id) refs.labelBatchPreviewId.value = data.batch_id;
-            await loadLabelSheetPreview().catch(() => {});
+            await validateLabelDraftIds([Number(btn.dataset.id)]);
+            showMessage(refs.labelBatchMessage, 'Rótulo validado com sucesso.', 'ok');
           } catch (error) {
             showMessage(refs.labelBatchMessage, error.message, 'error');
           }
@@ -6631,6 +6755,28 @@
         clearMessage(refs.labelBatchMessage);
       });
     }
+    ['labelBatchSearchInput', 'labelPendingScope'].forEach(id => {
+      if (!refs[id]) return;
+      refs[id].addEventListener('input', renderLabelDraftQueue);
+      refs[id].addEventListener('change', renderLabelDraftQueue);
+    });
+    if (refs.validateVisibleLabelRowsBtn) {
+      refs.validateVisibleLabelRowsBtn.addEventListener('click', async () => {
+        try {
+          const count = await validateVisibleLabelDraftRows();
+          if (count) showMessage(refs.labelBatchMessage, `${count} rótulo(s) visível(is) validado(s) com sucesso.`, 'ok');
+        } catch (error) {
+          showMessage(refs.labelBatchMessage, error.message, 'error');
+        }
+      });
+    }
+    if (refs.clearLabelBatchFiltersBtn) {
+      refs.clearLabelBatchFiltersBtn.addEventListener('click', () => {
+        if (refs.labelBatchSearchInput) refs.labelBatchSearchInput.value = '';
+        if (refs.labelPendingScope) refs.labelPendingScope.value = 'all_pending';
+        renderLabelDraftQueue();
+      });
+    }
     el('loadExemplarBatchBtn').addEventListener('click', async () => {
       try {
         await loadExemplarBatchQueue();
@@ -6652,6 +6798,8 @@
     });
     el('clearLabelBatchBtn').addEventListener('click', () => {
       state.batchLabelItems = [];
+      if (refs.labelBatchSearchInput) refs.labelBatchSearchInput.value = '';
+      if (refs.labelPendingScope) refs.labelPendingScope.value = 'all_pending';
       renderLabelDraftQueue();
       clearMessage(refs.labelBatchMessage);
     });
