@@ -1444,6 +1444,12 @@
             </div>
 
             <div class="field" style="grid-column: span 3;">
+              <label for="bookSubjects">Assuntos</label>
+              <textarea id="bookSubjects" placeholder="Trabalho ; sindicalismo ; história social"></textarea>
+              <small>Preencha manualmente ou aplique abaixo as sugestões da BN. Nada é gravado automaticamente sem sua ação.</small>
+            </div>
+
+            <div class="field" style="grid-column: span 3;">
               <label for="bookMarcJson">Estrutura bibliográfica em JSON</label>
               <textarea id="bookMarcJson" placeholder='{"245":{"a":"Título"},"100":{"a":"Autor"}}'></textarea>
               <small>Opcional. Pode ser preenchido depois. O formulário principal continua em português claro.</small>
@@ -2038,6 +2044,7 @@
         label: false,
       },
       bnLookup: null,
+      queueSelection: new Set(),
     };
 
     const el = (id) => document.getElementById(id);
@@ -2145,6 +2152,7 @@
         bookDuplicateHint: el('bookDuplicateHint'),
         bookSubjectSuggestions: el('bookSubjectSuggestions'),
         copySubjectSuggestionsBtn: el('copySubjectSuggestionsBtn'),
+        applySubjectSuggestionsBtn: el('applySubjectSuggestionsBtn'),
         bookSuggestedCollection: el('bookSuggestedCollection'),
         applySuggestedCollectionBtn: el('applySuggestedCollectionBtn'),
         bookBnDebugWrap: el('bookBnDebugWrap'),
@@ -2424,6 +2432,34 @@
       } else if (Object.prototype.hasOwnProperty.call(next, 'colecao')) {
         delete next.colecao;
       }
+      return next;
+    }
+
+    function parseBookSubjectsValue(value = '') {
+      if (Array.isArray(value)) return value.map(item => normalizeInlineWhitespace(item)).filter(Boolean);
+      return String(value || '')
+        .split(/\s*;\s*|\s*\n+\s*|\s*\|\s*|\s*•\s*/)
+        .map(item => normalizeInlineWhitespace(item))
+        .filter(Boolean);
+    }
+
+    function formatBookSubjectsValue(value = []) {
+      return parseBookSubjectsValue(value).join(' ; ');
+    }
+
+    function getBookSubjectsValue(record = {}) {
+      return formatBookSubjectsValue(record.assuntos || record.subjects || record.marc_json?.assuntos || record.marc_json?.subjects || []);
+    }
+
+    function mergeBookSubjectsIntoMarcJson(rawValue, subjectsValue) {
+      const next = getMarcJsonObject(rawValue);
+      const subjects = parseBookSubjectsValue(subjectsValue);
+      if (subjects.length) {
+        next.assuntos = subjects;
+      } else if (Object.prototype.hasOwnProperty.call(next, 'assuntos')) {
+        delete next.assuntos;
+      }
+      if (Object.prototype.hasOwnProperty.call(next, 'subjects')) delete next.subjects;
       return next;
     }
 
@@ -3056,9 +3092,24 @@
       imgEl.alt = path;
     }
 
+    function isActiveQueueItem(item = {}) {
+      const status = String(item?.status || '');
+      if (status !== 'draft' && status !== 'ready') return false;
+      if (String(item?.item_type || '') === 'exemplar' && String(item?.label_status || 'pending') === 'ready') return false;
+      return true;
+    }
+
+    function getQueueSelectionKey(type, id) {
+      return `${String(type || '')}:${Number(id)}`;
+    }
+
+    function clearQueueSelection() {
+      state.queueSelection.clear();
+    }
+
     function updateStats() {
       refs.statOpenBatches.textContent = state.batches.filter(b => b.status === 'open').length;
-      refs.statDrafts.textContent = state.queueItems.filter(item => item.status === 'draft' || item.status === 'ready').length;
+      refs.statDrafts.textContent = state.queueItems.filter(item => isActiveQueueItem(item)).length;
       refs.statBooks.textContent = state.books.length;
       refs.statAuthors.textContent = state.authors.length;
     }
@@ -3117,6 +3168,7 @@
         pages: el('bookPages').value.trim(),
         loanable: el('bookLoanable').value || 'true',
         notes: el('bookNotes').value.trim(),
+        subjects: el('bookSubjects').value.trim(),
         coverPath: el('bookCoverPath').value.trim(),
         marcJson: el('bookMarcJson').value.trim(),
         contributors: getBookContributorsSnapshot({ keepEmpty: true }),
@@ -3472,6 +3524,7 @@
       if (!subjects.length) {
         bnRefs.bookSubjectSuggestions.innerHTML = '<div class="hint">Nenhum assunto sugerido pela BN.</div>';
         if (bnRefs.copySubjectSuggestionsBtn) bnRefs.copySubjectSuggestionsBtn.disabled = true;
+        if (bnRefs.applySubjectSuggestionsBtn) bnRefs.applySubjectSuggestionsBtn.disabled = true;
         return;
       }
       bnRefs.bookSubjectSuggestions.innerHTML = subjects.map(subject => `
@@ -3481,6 +3534,7 @@
         </label>
       `).join('');
       if (bnRefs.copySubjectSuggestionsBtn) bnRefs.copySubjectSuggestionsBtn.disabled = false;
+      if (bnRefs.applySubjectSuggestionsBtn) bnRefs.applySubjectSuggestionsBtn.disabled = false;
     }
 
     function renderBnAutofillPanel() {
@@ -3500,6 +3554,7 @@
       bnRefs.toggleBnDebugBtn.disabled = !parsed;
       bnRefs.applySuggestedCDDBtn.disabled = !(parsed?.cdd?.cdd);
       if (bnRefs.applySuggestedCollectionBtn) bnRefs.applySuggestedCollectionBtn.disabled = !(parsed?.collection);
+      if (bnRefs.applySubjectSuggestionsBtn) bnRefs.applySubjectSuggestionsBtn.disabled = !(parsed?.subjects?.length);
       updateBnDebugContent();
     }
 
@@ -3555,6 +3610,10 @@
       if (bnRefs.copySubjectSuggestionsBtn && !bnRefs.copySubjectSuggestionsBtn.dataset.bound) {
         bnRefs.copySubjectSuggestionsBtn.addEventListener('click', copySelectedSubjectSuggestions);
         bnRefs.copySubjectSuggestionsBtn.dataset.bound = '1';
+      }
+      if (bnRefs.applySubjectSuggestionsBtn && !bnRefs.applySubjectSuggestionsBtn.dataset.bound) {
+        bnRefs.applySubjectSuggestionsBtn.addEventListener('click', applySelectedSubjectSuggestions);
+        bnRefs.applySubjectSuggestionsBtn.dataset.bound = '1';
       }
       if (bnRefs.applySuggestedCollectionBtn && !bnRefs.applySuggestedCollectionBtn.dataset.bound) {
         bnRefs.applySuggestedCollectionBtn.addEventListener('click', applySuggestedCollection);
@@ -3637,6 +3696,31 @@
         showMessage(refs.bookMessage, `Copie manualmente: ${text}`, 'info');
       }
     }
+
+    function applySelectedSubjectSuggestions() {
+      const checked = Array.from(document.querySelectorAll('[data-bn-subject]:checked')).map(node => node.value).filter(Boolean);
+      if (!checked.length) {
+        showMessage(refs.bookMessage, 'Nenhum assunto selecionado para aplicar.', 'error');
+        return;
+      }
+      const current = parseBookSubjectsValue(el('bookSubjects')?.value || '');
+      const currentMap = new Map(current.map(item => [normalizeForSearch(item), item]));
+      let added = 0;
+      checked.forEach(subject => {
+        const key = normalizeForSearch(subject);
+        if (!key || currentMap.has(key)) return;
+        currentMap.set(key, subject);
+        added += 1;
+      });
+      if (!added) {
+        showMessage(refs.bookMessage, 'Os assuntos selecionados já estão no campo Assuntos.', 'info');
+        return;
+      }
+      el('bookSubjects').value = Array.from(currentMap.values()).join(' ; ');
+      syncBookDraftVisualState();
+      showMessage(refs.bookMessage, added === 1 ? '1 assunto foi aplicado ao campo Assuntos.' : `${added} assuntos foram aplicados ao campo Assuntos.`, 'ok');
+    }
+
     async function copyIsbnIfPossible(isbn) {
       try {
         if (!navigator.clipboard?.writeText) return false;
@@ -3742,6 +3826,7 @@
               </div>
               <div class="row-actions" style="margin-top:8px;">
                 <button id="copySubjectSuggestionsBtn" type="button" class="btn-inline small secondary" disabled>Copiar sugestões</button>
+                <button id="applySubjectSuggestionsBtn" type="button" class="btn-inline small primary" disabled>Aplicar ao campo Assuntos</button>
               </div>
             </div>
             <div id="bookBnDebugWrap" class="autofill-box is-hidden">
@@ -4250,6 +4335,7 @@
       renderBookResponsibilitySummary(contributors);
       const materialType = el('bookType').value;
       const collectionValue = el('bookCollection').value.trim();
+      const subjectsValue = el('bookSubjects').value.trim();
       const normalizedBookPlace = applyNormalizedBookPlaceValue();
       return {
         id: el('bookDraftId').value || undefined,
@@ -4281,7 +4367,10 @@
         loanable: materialType === 'periodico' ? false : el('bookLoanable').value === 'true',
         colecao: collectionValue || null,
         cover_object_path: el('bookCoverPath').value.trim() || null,
-        marc_json: mergeBookCollectionIntoMarcJson(parseJsonSafe(el('bookMarcJson').value, {}), collectionValue),
+        marc_json: mergeBookSubjectsIntoMarcJson(
+          mergeBookCollectionIntoMarcJson(parseJsonSafe(el('bookMarcJson').value, {}), collectionValue),
+          subjectsValue
+        ),
         created_by: state.profile.id,
         updated_by: state.profile.id,
       };
@@ -4355,6 +4444,7 @@
       el('bookLoanable').value = 'true';
       el('bookMarcJson').value = '';
       el('bookCollection').value = '';
+      el('bookSubjects').value = '';
       el('bookCoverPath').value = '';
       el('bookCoverFile').value = '';
       refs.bookCoverFileName.textContent = 'Nenhum arquivo selecionado';
@@ -4596,7 +4686,39 @@
     async function loadQueue() {
       const { data, error } = await supabase.from('v_catalog_queue').select('*').order('updated_at', { ascending: false });
       if (error) throw error;
-      state.queueItems = data || [];
+      let queueItems = data || [];
+
+      // v_catalog_queue não expõe label_status; para exemplares, reconciliamos o estado real
+      // diretamente com exemplar_drafts antes de renderizar a fila editorial.
+      const exemplarDraftIds = queueItems
+        .filter(item => String(item?.item_type || '') === 'exemplar' && Number.isFinite(Number(item?.draft_id)))
+        .map(item => Number(item.draft_id));
+
+      if (exemplarDraftIds.length) {
+        const { data: exemplarStates, error: exemplarStatesError } = await supabase
+          .from('exemplar_drafts')
+          .select('id, batch_id, status, label_status, updated_at')
+          .in('id', exemplarDraftIds);
+
+        if (!exemplarStatesError && Array.isArray(exemplarStates)) {
+          const exemplarStateMap = new Map(exemplarStates.map(row => [Number(row.id), row]));
+          queueItems = queueItems.map(item => {
+            if (String(item?.item_type || '') !== 'exemplar') return item;
+            const fresh = exemplarStateMap.get(Number(item?.draft_id));
+            if (!fresh) return item;
+            return {
+              ...item,
+              batch_id: fresh.batch_id ?? item.batch_id,
+              status: fresh.status || item.status,
+              label_status: fresh.label_status || item.label_status || 'pending',
+              updated_at: fresh.updated_at || item.updated_at,
+            };
+          });
+        }
+      }
+
+      state.queueItems = queueItems;
+      clearQueueSelection();
       renderQueue();
     }
 
@@ -4719,6 +4841,7 @@
       el('bookPages').value = enriched.paginas || '';
       el('bookLoanable').value = String(enriched.loanable ?? true);
       el('bookNotes').value = enriched.notas || '';
+      el('bookSubjects').value = getBookSubjectsValue(enriched);
       el('bookCoverPath').value = enriched.cover_object_path || '';
       el('bookMarcJson').value = enriched.marc_json ? JSON.stringify(enriched.marc_json, null, 2) : '';
       syncBookTypeUI();
@@ -4889,6 +5012,41 @@
       updateStats();
     }
 
+    async function discardSelectedQueueDrafts() {
+      const tableMap = { book: 'book_drafts', author: 'author_drafts', exemplar: 'exemplar_drafts' };
+      const selectedEntries = [...state.queueSelection].map(key => {
+        const [type, rawId] = String(key || '').split(':');
+        return { type, id: Number(rawId) };
+      }).filter(entry => tableMap[entry.type] && Number.isFinite(entry.id));
+
+      if (!selectedEntries.length) return 0;
+
+      const confirmed = confirmDiscardAction('Os rascunhos selecionados serão enviados para a lixeira. Eles não serão apagados definitivamente e poderão ser restaurados depois. Deseja continuar?');
+      if (!confirmed) return 0;
+
+      const groupedIds = selectedEntries.reduce((acc, entry) => {
+        if (!acc[entry.type]) acc[entry.type] = [];
+        acc[entry.type].push(entry.id);
+        return acc;
+      }, {});
+
+      for (const [type, ids] of Object.entries(groupedIds)) {
+        const { error } = await supabase
+          .from(tableMap[type])
+          .update({ status: 'cancelled', updated_by: state.profile.id })
+          .in('id', ids);
+        if (error) throw error;
+      }
+
+      selectedEntries.forEach(entry => markQueueDraftCancelledLocally(entry.id));
+      clearQueueSelection();
+      renderQueue();
+      renderTrash();
+      await Promise.all([loadQueue(), loadBatches(), loadCatalog()]);
+      updateStats();
+      return selectedEntries.length;
+    }
+
     function confirmDiscardAction(message) {
       return window.confirm(message);
     }
@@ -4964,6 +5122,7 @@
         if (error) throw error;
       }
       await Promise.all([loadQueue(), loadBatches(), loadCatalog()]);
+      renderTrash();
       updateStats();
     }
 
@@ -5765,9 +5924,9 @@
       const statusFilter = el('queueStatusFilter').value;
       const search = el('queueSearch').value.trim().toLowerCase();
       const targetBatchId = el('queueBatchAssign').value;
-      let items = [...state.queueItems].filter(item => item.status === 'draft' || item.status === 'ready');
+      let items = [...state.queueItems].filter(item => isActiveQueueItem(item));
       if (state.showOnlyActiveDrafts) {
-        items = items.filter(item => item.status === 'draft' || item.status === 'ready');
+        items = items.filter(item => isActiveQueueItem(item));
       }
       if (typeFilter) items = items.filter(item => item.item_type === typeFilter);
       if (statusFilter) items = items.filter(item => item.status === statusFilter);
@@ -5780,10 +5939,23 @@
         return;
       }
 
+      const visibleKeys = items.map(item => getQueueSelectionKey(item.item_type, item.draft_id));
+      const selectedVisibleCount = visibleKeys.filter(key => state.queueSelection.has(key)).length;
+      const allVisibleSelected = visibleKeys.length > 0 && selectedVisibleCount === visibleKeys.length;
+      const hasAnySelection = state.queueSelection.size > 0;
+
       refs.queueTableWrap.innerHTML = `
+        <div class="inline" style="justify-content:space-between; gap:12px; margin-bottom:12px; flex-wrap:wrap;">
+          <div class="small">Selecionados: ${state.queueSelection.size}</div>
+          <div class="row-actions">
+            <button id="queueClearSelectionBtn" class="button secondary" type="button" ${hasAnySelection ? '' : 'disabled'}>Limpar seleção</button>
+            <button id="queueDiscardSelectedBtn" class="button warning" type="button" ${hasAnySelection ? '' : 'disabled'}>Descartar selecionados para a lixeira</button>
+          </div>
+        </div>
         <table>
           <thead>
             <tr>
+              <th style="width:52px; text-align:center;"><input id="queueSelectAllVisible" type="checkbox" ${allVisibleSelected ? 'checked' : ''} aria-label="Selecionar linhas visíveis" style="width:18px; height:18px; cursor:pointer; accent-color:#d15757;" /></th>
               <th>Tipo</th>
               <th>Situação</th>
               <th>Ação</th>
@@ -5796,8 +5968,11 @@
             </tr>
           </thead>
           <tbody>
-            ${items.map(item => `
+            ${items.map(item => {
+              const selectionKey = getQueueSelectionKey(item.item_type, item.draft_id);
+              return `
               <tr>
+                <td style="text-align:center;"><input class="queue-row-select" type="checkbox" data-type="${sanitize(item.item_type)}" data-id="${item.draft_id}" ${state.queueSelection.has(selectionKey) ? 'checked' : ''} aria-label="Selecionar rascunho" /></td>
                 <td>${sanitize(item.item_type)}</td>
                 <td>${getQueueStatusBadge(item.status)}</td>
                 <td>${sanitize(item.action)}</td>
@@ -5814,10 +5989,51 @@
                     ${item.status !== 'cancelled' ? `<button class="btn-inline small warning" data-action="discard-queue" data-type="${sanitize(item.item_type)}" data-id="${item.draft_id}">Descartar</button>` : ''}
                   </div>
                 </td>
-              </tr>
-            `).join('')}
+              </tr>`;
+            }).join('')}
           </tbody>
         </table>`;
+
+      const selectAllVisibleBox = refs.queueTableWrap.querySelector('#queueSelectAllVisible');
+      if (selectAllVisibleBox) {
+        selectAllVisibleBox.indeterminate = selectedVisibleCount > 0 && selectedVisibleCount < visibleKeys.length;
+        selectAllVisibleBox.addEventListener('change', () => {
+          if (selectAllVisibleBox.checked) visibleKeys.forEach(key => state.queueSelection.add(key));
+          else visibleKeys.forEach(key => state.queueSelection.delete(key));
+          renderQueue();
+        });
+      }
+
+      refs.queueTableWrap.querySelectorAll('.queue-row-select').forEach(box => {
+        box.addEventListener('change', () => {
+          const key = getQueueSelectionKey(box.dataset.type, box.dataset.id);
+          if (box.checked) state.queueSelection.add(key);
+          else state.queueSelection.delete(key);
+          renderQueue();
+        });
+      });
+
+      const clearSelectionBtn = refs.queueTableWrap.querySelector('#queueClearSelectionBtn');
+      if (clearSelectionBtn) {
+        clearSelectionBtn.addEventListener('click', () => {
+          clearQueueSelection();
+          renderQueue();
+        });
+      }
+
+      const discardSelectedBtn = refs.queueTableWrap.querySelector('#queueDiscardSelectedBtn');
+      if (discardSelectedBtn) {
+        discardSelectedBtn.addEventListener('click', async () => {
+          try {
+            const discardedCount = await discardSelectedQueueDrafts();
+            if (discardedCount) {
+              showMessage(refs.queueMessage, `${discardedCount} rascunhos foram enviados para a lixeira.`, 'ok');
+            }
+          } catch (error) {
+            showMessage(refs.queueMessage, error.message, 'error');
+          }
+        });
+      }
 
       refs.queueTableWrap.querySelectorAll('[data-action="edit-queue"]').forEach(btn => {
         btn.addEventListener('click', async () => {
@@ -6779,10 +6995,12 @@
     ['queueTypeFilter', 'queueStatusFilter', 'queueSearch'].forEach(id => {
       el(id).addEventListener('input', () => {
         state.showOnlyActiveDrafts = false;
+        clearQueueSelection();
         renderQueue();
       });
       el(id).addEventListener('change', () => {
         state.showOnlyActiveDrafts = false;
+        clearQueueSelection();
         renderQueue();
       });
     });
