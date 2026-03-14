@@ -5122,6 +5122,7 @@
         if (error) throw error;
       }
       await Promise.all([loadQueue(), loadBatches(), loadCatalog()]);
+      renderTrash();
       updateStats();
     }
 
