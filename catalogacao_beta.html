@@ -422,6 +422,26 @@
       color: #fff;
     }
 
+    .form-flow-break {
+      grid-column: 1 / -1;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      padding: 2px 2px 0;
+    }
+
+    .form-flow-break strong {
+      color: #fff;
+      font-size: .96rem;
+      letter-spacing: .01em;
+    }
+
+    .form-flow-break span {
+      color: var(--muted);
+      font-size: .84rem;
+      line-height: 1.4;
+    }
+
     .contrib-list {
       display: flex;
       flex-direction: column;
@@ -1540,6 +1560,11 @@
             <input type="hidden" id="authorPublishedId" />
             <input type="hidden" id="authorAction" value="create" />
 
+            <div class="form-flow-break">
+              <strong>Identidade do autor</strong>
+              <span>Comece pelo nome principal e pela forma de ordenação.</span>
+            </div>
+
             <div class="field" style="grid-column: span 2;">
               <label for="authorPreferredName">Nome SOBRENOME</label>
               <input id="authorPreferredName" type="text" placeholder="Osvaldo BAYER" required />
@@ -1551,6 +1576,11 @@
               <small>Preenchido automaticamente a partir do campo “Nome SOBRENOME”.</small>
             </div>
 
+
+            <div class="form-flow-break">
+              <strong>Assistência de nome</strong>
+              <span>Use este apoio quando o nome vier bruto da BN, de um livro ou de outra fonte.</span>
+            </div>
 
             <div class="field" style="grid-column: span 3;">
               <label for="authorAssistRawName">Assistência para variantes de nome</label>
@@ -1568,6 +1598,11 @@
               </div>
             </div>
 
+            <div class="form-flow-break">
+              <strong>Dados biográficos mínimos</strong>
+              <span>Preencha aqui as informações básicas de identificação histórica.</span>
+            </div>
+
             <div class="field">
               <label for="authorBirthYear">Ano de nascimento</label>
               <input id="authorBirthYear" type="number" />
@@ -1581,6 +1616,11 @@
             <div class="field">
               <label for="authorCountry">País</label>
               <input id="authorCountry" type="text" placeholder="Brasil" />
+            </div>
+
+            <div class="form-flow-break">
+              <strong>Fontes e identificadores</strong>
+              <span>Registre a origem da informação e os identificadores de autoridade quando existirem.</span>
             </div>
 
             <div class="field">
@@ -1620,6 +1660,11 @@
               <input id="authorWikidata" type="text" placeholder="Q12345" />
             </div>
 
+            <div class="form-flow-break">
+              <strong>Biografia e notas</strong>
+              <span>Deixe por fim o texto corrido, as observações e os complementos livres.</span>
+            </div>
+
             <div class="field" style="grid-column: span 3;">
               <label for="authorBiography">Biografia curta</label>
               <textarea id="authorBiography"></textarea>
@@ -1628,6 +1673,11 @@
             <div class="field" style="grid-column: span 3;">
               <label for="authorNotes">Notas</label>
               <textarea id="authorNotes"></textarea>
+            </div>
+
+            <div class="form-flow-break">
+              <strong>Organização editorial</strong>
+              <span>O lote fica no fim, perto das ações, para não interromper a montagem da ficha.</span>
             </div>
 
             <div class="field" style="grid-column: span 3;">
