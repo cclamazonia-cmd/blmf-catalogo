@@ -170,6 +170,43 @@ a { color: inherit; }
 #csvAdvancedLink {
   margin-left: auto;
 }
+
+.service-banner{
+  display:grid;
+  gap:8px;
+  margin:0 0 16px;
+  padding:14px 16px;
+  border:1px solid rgba(177,30,36,.28);
+  border-radius:16px;
+  background: rgba(255,255,255,.88);
+  box-shadow: 0 8px 22px rgba(0,0,0,.06);
+}
+.service-banner[hidden]{ display:none !important; }
+.service-banner-title{
+  display:flex;
+  flex-wrap:wrap;
+  gap:10px;
+  align-items:center;
+}
+.service-banner-mode{
+  display:inline-flex;
+  align-items:center;
+  gap:8px;
+  padding:6px 10px;
+  border-radius:999px;
+  font-size:.86rem;
+  font-weight:700;
+  background:#fff3f3;
+  color:#7b1f25;
+  border:1px solid rgba(177,30,36,.22);
+}
+.service-banner-text{
+  color: var(--ink);
+  font-size:.98rem;
+}
+.service-banner-text strong{
+  color: var(--brand);
+}
 .stats { display:flex; flex-wrap:wrap; gap:10px; margin:0 0 16px; }
 .pill {
   border:1px solid rgba(255,255,255,.08);
@@ -393,6 +430,13 @@ mark { background: rgba(225,29,47,.35); color:#fff; padding:0 2px; border-radius
     </div>
   </section>
 
+  <section id="serviceBanner" class="service-banner" hidden aria-live="polite">
+    <div class="service-banner-title">
+      <span id="serviceBannerMode" class="service-banner-mode">Funcionamento: —</span>
+    </div>
+    <div id="serviceBannerMessage" class="service-banner-text"></div>
+  </section>
+
   <section class="toolbar">
     <div class="filters-grid">
       <div class="field">
@@ -509,6 +553,7 @@ let lastQuery = { tokens: [], phrases: [] };
 let sortKey = 'relevance';
 let sortDir = 'asc';
 let authState = { user: null, isLibrarian: false, accessToken: null };
+let serviceState = null;
 
 const tbody = document.getElementById('tbody');
 const mobileResults = document.getElementById('mobileResults');
@@ -527,6 +572,9 @@ const contaBtn = document.getElementById('contaBtn');
 const clearBtn = document.getElementById('clearBtn');
 const pdfBtn = document.getElementById('pdfBtn');
 const csvAdvancedLink = document.getElementById('csvAdvancedLink');
+const serviceBanner = document.getElementById('serviceBanner');
+const serviceBannerMode = document.getElementById('serviceBannerMode');
+const serviceBannerMessage = document.getElementById('serviceBannerMessage');
 
 function normalize(s) {
   return (s || '').toString().normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim();
@@ -925,11 +973,59 @@ function paintHeaderSort() {
     }
   });
 }
+
+function translateServiceMode(mode) {
+  switch (String(mode || '').trim()) {
+    case 'em_organizacao': return 'Em organização';
+    case 'atendimento_eventual': return 'Atendimento eventual';
+    case 'atendimento_semanal': return 'Atendimento semanal';
+    case 'fechado_temporariamente': return 'Fechado temporariamente';
+    default: return 'Funcionamento da biblioteca';
+  }
+}
+function getDefaultServiceMessage(mode) {
+  switch (String(mode || '').trim()) {
+    case 'em_organizacao':
+      return 'A biblioteca está em organização. O atendimento ocorre conforme a capacidade operacional atual.';
+    case 'atendimento_eventual':
+      return 'O atendimento ocorre de forma eventual, conforme a capacidade operacional atual da biblioteca.';
+    case 'atendimento_semanal':
+      return 'A biblioteca está em atendimento semanal, conforme divulgado por seus canais.';
+    case 'fechado_temporariamente':
+      return 'A biblioteca está temporariamente fechada para atendimento presencial.';
+    default:
+      return 'Consulte os canais da biblioteca para acompanhar o modo de funcionamento vigente.';
+  }
+}
+function renderServiceBanner() {
+  if (!serviceState) {
+    serviceBanner.hidden = true;
+    return;
+  }
+  const modeLabel = translateServiceMode(serviceState.service_mode);
+  const msg = String(serviceState.public_message || '').trim() || getDefaultServiceMessage(serviceState.service_mode);
+  serviceBannerMode.textContent = `Funcionamento: ${modeLabel}`;
+  serviceBannerMessage.innerHTML = `${escapeHTML(msg)}${serviceState.allow_reservations === false ? ' <strong>Novas reservas temporariamente fechadas.</strong>' : ''}`;
+  serviceBanner.hidden = false;
+}
+async function loadPublicServiceState() {
+  try {
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/v_library_service_public?select=service_mode,allow_reservations,public_message,updated_at`, {
+      headers: {
+        apikey: SUPABASE_ANON_KEY,
+        Authorization: `Bearer ${authState?.accessToken || SUPABASE_ANON_KEY}`
+      }
+    });
+    if (!res.ok) throw new Error(`service-state-${res.status}`);
+    const arr = await res.json();
+    serviceState = Array.isArray(arr) && arr[0] ? arr[0] : null;
+  } catch (e) {
+    serviceState = null;
+  }
+  renderServiceBanner();
+}
 function buildReservationMarkup(r) {
   const status = r._status;
-  if (!authState.user) {
-    return '<div class="reserve-slot"><span class="reserve-note">Entre para reservar</span></div>';
-  }
   if (r._reserveDone) {
     return '<div class="reserve-slot"><span class="status-badge status-available">Reservado</span></div>';
   }
@@ -942,12 +1038,19 @@ function buildReservationMarkup(r) {
   if (!r.bib_ref) {
     return '<div class="reserve-slot"><span class="reserve-note">Referência indisponível</span></div>';
   }
+  if (serviceState?.allow_reservations === false) {
+    return '<div class="reserve-slot"><span class="reserve-note">Reservas temporariamente fechadas</span></div>';
+  }
+  if (!authState.user) {
+    return '<div class="reserve-slot"><span class="reserve-note">Entre para reservar</span></div>';
+  }
   return `<div class="reserve-slot"><button class="btn-inline reserve-btn" type="button" data-bib-ref="${encodeURIComponent(r.bib_ref)}">Reservar</button></div>`;
 }
 
 function mapReservaError(msg) {
   const s = normalize(msg || '');
   if (!s) return 'Não foi possível registrar a reserva agora.';
+  if (s.includes('temporariamente fechadas') || (s.includes('reserva') && s.includes('fechad'))) return 'As novas reservas estão temporariamente fechadas conforme o modo de funcionamento atual da biblioteca.';
   if (s.includes('duplicate') || s.includes('already') || s.includes('unique') || s.includes('ja existe')) return 'Este livro já está reservado na sua conta.';
   if (s.includes('permission denied') || s.includes('row-level security') || s.includes('42501')) return 'Sua sessão não tem permissão para reservar agora. Entre novamente e tente outra vez.';
   if (s.includes('jwt') || s.includes('token') || s.includes('auth') || s.includes('session')) return 'Sua sessão expirou. Entre novamente para reservar.';
@@ -956,6 +1059,9 @@ function mapReservaError(msg) {
 }
 
 async function createReservaFromCatalog(bibRef) {
+  if (serviceState?.allow_reservations === false && !authState.isLibrarian) {
+    return { ok: false, message: 'As novas reservas estão temporariamente fechadas conforme o modo de funcionamento atual da biblioteca.' };
+  }
   if (!authState.user || !authState.accessToken) {
     location.assign(buildCadastroUrl(location.href));
     return { ok: false, message: 'Entre na sua conta para reservar.' };
@@ -1306,6 +1412,7 @@ document.addEventListener('keydown', (e) => {
 });
 (async function init() {
   authState = await getCurrentUserAndRole();
+  await loadPublicServiceState();
   rows = await loadRowsFromSupabase();
   prepareRows();
   render();
