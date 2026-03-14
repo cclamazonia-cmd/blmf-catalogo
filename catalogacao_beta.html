@@ -295,6 +295,22 @@
       margin: 0 0 18px;
     }
 
+    .tabs .tab-btn-separator {
+      margin-left: 20px;
+      position: relative;
+    }
+
+    .tabs .tab-btn-separator::before {
+      content: "";
+      position: absolute;
+      left: -14px;
+      top: 10px;
+      bottom: 10px;
+      width: 1px;
+      background: rgba(255,255,255,.16);
+      pointer-events: none;
+    }
+
     .grid {
       display: grid;
       gap: 14px;
@@ -1050,6 +1066,12 @@
       .wrap { padding: 14px; }
       .table-wrap { max-height: none; }
       table { min-width: 820px; }
+      .tabs .tab-btn-separator {
+        margin-left: 0;
+      }
+      .tabs .tab-btn-separator::before {
+        display: none;
+      }
     }
 
     .tabs .tab-btn {
@@ -1212,7 +1234,7 @@
       <button class="tab-btn" data-tab="authorsPanel">Fichas de autores</button>
       <button class="tab-btn" data-tab="exemplarsPanel">Exemplares</button>
       <button class="tab-btn" data-tab="labelsPanel">Rótulos</button>
-      <button class="tab-btn" data-tab="queuePanel">Fila editorial</button>
+      <button class="tab-btn tab-btn-separator" data-tab="queuePanel">Fila editorial</button>
       <button class="tab-btn" data-tab="batchesPanel">Lotes</button>
       <button class="tab-btn" data-tab="catalogPanel">Catálogo já publicado</button>
     </div>
