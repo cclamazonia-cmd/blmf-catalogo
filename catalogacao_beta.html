@@ -1282,12 +1282,6 @@
             <input type="hidden" id="bookAction" value="create" />
 
             <div class="field">
-              <label for="bookBatchId">Lote</label>
-              <select id="bookBatchId"></select>
-              <small>Você pode deixar sem lote e organizar depois na fila editorial.</small>
-            </div>
-
-            <div class="field">
               <label for="bookBibRef">Referência</label>
               <input id="bookBibRef" type="text" placeholder="0000123" />
               <small>Para ficha nova, pode deixar em branco que o sistema gera depois.</small>
@@ -1477,6 +1471,12 @@
               <small>Opcional. Pode ser preenchido depois. O formulário principal continua em português claro.</small>
             </div>
 
+            <div class="field" style="grid-column: span 3;">
+              <label for="bookBatchId">Lote</label>
+              <select id="bookBatchId"></select>
+              <small>Você pode deixar sem lote e organizar depois na fila editorial.</small>
+            </div>
+
             <div class="actions" style="grid-column: span 3;">
               <button id="saveBookDraftBtn" type="submit" class="button primary">Salvar rascunho</button>
               <button id="bookReadyBtn" type="button" class="button secondary">Marcar como pronto</button>
@@ -1530,11 +1530,6 @@
             <input type="hidden" id="authorDraftId" />
             <input type="hidden" id="authorPublishedId" />
             <input type="hidden" id="authorAction" value="create" />
-
-            <div class="field">
-              <label for="authorBatchId">Lote</label>
-              <select id="authorBatchId"></select>
-            </div>
 
             <div class="field" style="grid-column: span 2;">
               <label for="authorPreferredName">Nome SOBRENOME</label>
@@ -1624,6 +1619,11 @@
             <div class="field" style="grid-column: span 3;">
               <label for="authorNotes">Notas</label>
               <textarea id="authorNotes"></textarea>
+            </div>
+
+            <div class="field" style="grid-column: span 3;">
+              <label for="authorBatchId">Lote</label>
+              <select id="authorBatchId"></select>
             </div>
 
             <div class="actions" style="grid-column: span 3;">
