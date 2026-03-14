@@ -1005,14 +1005,16 @@ function getDefaultServiceMessage(mode) {
     case 'atendimento_semanal':
       return 'A biblioteca funciona com atendimento semanal em ritmo regular. Consulte os canais do CCLA para os horários e orientações vigentes.';
     case 'fechado_temporariamente':
-      return 'A biblioteca está temporariamente fechada para atendimento presencial. Consulte os canais do CCLA para atualizações e orientações.';
+      return 'A biblioteca está temporariamente fechada para atendimento presencial. Consulte os canais do CCLA para atualizações.';
     default:
       return 'Consulte os canais do CCLA para acompanhar o modo de funcionamento vigente.';
   }
 }
 function renderServiceBanner() {
   if (!serviceState) {
-    serviceBanner.hidden = true;
+    serviceBannerMode.textContent = 'Funcionamento: Informação temporariamente indisponível';
+    serviceBannerMessage.textContent = 'Consulte os canais do CCLA para informações e orientações atualizadas sobre o atendimento da biblioteca.';
+    serviceBanner.hidden = false;
     return;
   }
   const modeLabel = translateServiceMode(serviceState.service_mode);
