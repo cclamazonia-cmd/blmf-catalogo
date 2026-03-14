@@ -2044,6 +2044,7 @@
         label: false,
       },
       bnLookup: null,
+      queueSelection: new Set(),
     };
 
     const el = (id) => document.getElementById(id);
@@ -3096,6 +3097,14 @@
       if (status !== 'draft' && status !== 'ready') return false;
       if (String(item?.item_type || '') === 'exemplar' && String(item?.label_status || 'pending') === 'ready') return false;
       return true;
+    }
+
+    function getQueueSelectionKey(type, id) {
+      return `${String(type || '')}:${Number(id)}`;
+    }
+
+    function clearQueueSelection() {
+      state.queueSelection.clear();
     }
 
     function updateStats() {
@@ -4709,6 +4718,7 @@
       }
 
       state.queueItems = queueItems;
+      clearQueueSelection();
       renderQueue();
     }
 
@@ -5000,6 +5010,41 @@
       renderTrash();
       await Promise.all([loadQueue(), loadBatches(), loadCatalog()]);
       updateStats();
+    }
+
+    async function discardSelectedQueueDrafts() {
+      const tableMap = { book: 'book_drafts', author: 'author_drafts', exemplar: 'exemplar_drafts' };
+      const selectedEntries = [...state.queueSelection].map(key => {
+        const [type, rawId] = String(key || '').split(':');
+        return { type, id: Number(rawId) };
+      }).filter(entry => tableMap[entry.type] && Number.isFinite(entry.id));
+
+      if (!selectedEntries.length) return 0;
+
+      const confirmed = confirmDiscardAction('Os rascunhos selecionados serão enviados para a lixeira. Eles não serão apagados definitivamente e poderão ser restaurados depois. Deseja continuar?');
+      if (!confirmed) return 0;
+
+      const groupedIds = selectedEntries.reduce((acc, entry) => {
+        if (!acc[entry.type]) acc[entry.type] = [];
+        acc[entry.type].push(entry.id);
+        return acc;
+      }, {});
+
+      for (const [type, ids] of Object.entries(groupedIds)) {
+        const { error } = await supabase
+          .from(tableMap[type])
+          .update({ status: 'cancelled', updated_by: state.profile.id })
+          .in('id', ids);
+        if (error) throw error;
+      }
+
+      selectedEntries.forEach(entry => markQueueDraftCancelledLocally(entry.id));
+      clearQueueSelection();
+      renderQueue();
+      renderTrash();
+      await Promise.all([loadQueue(), loadBatches(), loadCatalog()]);
+      updateStats();
+      return selectedEntries.length;
     }
 
     function confirmDiscardAction(message) {
@@ -5893,10 +5938,23 @@
         return;
       }
 
+      const visibleKeys = items.map(item => getQueueSelectionKey(item.item_type, item.draft_id));
+      const selectedVisibleCount = visibleKeys.filter(key => state.queueSelection.has(key)).length;
+      const allVisibleSelected = visibleKeys.length > 0 && selectedVisibleCount === visibleKeys.length;
+      const hasAnySelection = state.queueSelection.size > 0;
+
       refs.queueTableWrap.innerHTML = `
+        <div class="inline" style="justify-content:space-between; gap:12px; margin-bottom:12px; flex-wrap:wrap;">
+          <div class="small">Selecionados: ${state.queueSelection.size}</div>
+          <div class="row-actions">
+            <button id="queueClearSelectionBtn" class="button secondary" type="button" ${hasAnySelection ? '' : 'disabled'}>Limpar seleção</button>
+            <button id="queueDiscardSelectedBtn" class="button warning" type="button" ${hasAnySelection ? '' : 'disabled'}>Descartar selecionados para a lixeira</button>
+          </div>
+        </div>
         <table>
           <thead>
             <tr>
+              <th style="width:38px; text-align:center;"><input id="queueSelectAllVisible" type="checkbox" ${allVisibleSelected ? 'checked' : ''} aria-label="Selecionar linhas visíveis" /></th>
               <th>Tipo</th>
               <th>Situação</th>
               <th>Ação</th>
@@ -5909,8 +5967,11 @@
             </tr>
           </thead>
           <tbody>
-            ${items.map(item => `
+            ${items.map(item => {
+              const selectionKey = getQueueSelectionKey(item.item_type, item.draft_id);
+              return `
               <tr>
+                <td style="text-align:center;"><input class="queue-row-select" type="checkbox" data-type="${sanitize(item.item_type)}" data-id="${item.draft_id}" ${state.queueSelection.has(selectionKey) ? 'checked' : ''} aria-label="Selecionar rascunho" /></td>
                 <td>${sanitize(item.item_type)}</td>
                 <td>${getQueueStatusBadge(item.status)}</td>
                 <td>${sanitize(item.action)}</td>
@@ -5927,10 +5988,51 @@
                     ${item.status !== 'cancelled' ? `<button class="btn-inline small warning" data-action="discard-queue" data-type="${sanitize(item.item_type)}" data-id="${item.draft_id}">Descartar</button>` : ''}
                   </div>
                 </td>
-              </tr>
-            `).join('')}
+              </tr>`;
+            }).join('')}
           </tbody>
         </table>`;
+
+      const selectAllVisibleBox = refs.queueTableWrap.querySelector('#queueSelectAllVisible');
+      if (selectAllVisibleBox) {
+        selectAllVisibleBox.indeterminate = selectedVisibleCount > 0 && selectedVisibleCount < visibleKeys.length;
+        selectAllVisibleBox.addEventListener('change', () => {
+          if (selectAllVisibleBox.checked) visibleKeys.forEach(key => state.queueSelection.add(key));
+          else visibleKeys.forEach(key => state.queueSelection.delete(key));
+          renderQueue();
+        });
+      }
+
+      refs.queueTableWrap.querySelectorAll('.queue-row-select').forEach(box => {
+        box.addEventListener('change', () => {
+          const key = getQueueSelectionKey(box.dataset.type, box.dataset.id);
+          if (box.checked) state.queueSelection.add(key);
+          else state.queueSelection.delete(key);
+          renderQueue();
+        });
+      });
+
+      const clearSelectionBtn = refs.queueTableWrap.querySelector('#queueClearSelectionBtn');
+      if (clearSelectionBtn) {
+        clearSelectionBtn.addEventListener('click', () => {
+          clearQueueSelection();
+          renderQueue();
+        });
+      }
+
+      const discardSelectedBtn = refs.queueTableWrap.querySelector('#queueDiscardSelectedBtn');
+      if (discardSelectedBtn) {
+        discardSelectedBtn.addEventListener('click', async () => {
+          try {
+            const discardedCount = await discardSelectedQueueDrafts();
+            if (discardedCount) {
+              showMessage(refs.queueMessage, `${discardedCount} rascunhos foram enviados para a lixeira.`, 'ok');
+            }
+          } catch (error) {
+            showMessage(refs.queueMessage, error.message, 'error');
+          }
+        });
+      }
 
       refs.queueTableWrap.querySelectorAll('[data-action="edit-queue"]').forEach(btn => {
         btn.addEventListener('click', async () => {
@@ -6892,10 +6994,12 @@
     ['queueTypeFilter', 'queueStatusFilter', 'queueSearch'].forEach(id => {
       el(id).addEventListener('input', () => {
         state.showOnlyActiveDrafts = false;
+        clearQueueSelection();
         renderQueue();
       });
       el(id).addEventListener('change', () => {
         state.showOnlyActiveDrafts = false;
+        clearQueueSelection();
         renderQueue();
       });
     });
