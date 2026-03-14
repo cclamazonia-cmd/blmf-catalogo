@@ -1627,6 +1627,8 @@
           <input type="hidden" id="exemplarDraftId" />
           <input type="hidden" id="exemplarPublishedId" />
           <input type="hidden" id="exemplarAction" value="create" />
+          <input type="hidden" id="exemplarCurrentStatus" value="draft" />
+          <input type="hidden" id="exemplarLabelStatus" value="pending" />
 
           <div class="field">
             <label for="exemplarBatchId">Lote</label>
@@ -3229,11 +3231,25 @@
     }
 
     const CATALOGACAO_TAB_STORAGE_KEY = 'catalogacaoActiveTab';
+    const CATALOGACAO_TAB_HASH_PREFIX = '#tab=';
 
     function getAvailableCatalogacaoTabs() {
       return Array.from(document.querySelectorAll('.tab-btn'))
         .map(btn => btn.dataset.tab)
         .filter(Boolean);
+    }
+
+    function getCatalogacaoTabFromHash() {
+      try {
+        const rawHash = String(window.location.hash || '').trim();
+        if (!rawHash) return '';
+        const normalized = rawHash.startsWith(CATALOGACAO_TAB_HASH_PREFIX)
+          ? rawHash.slice(CATALOGACAO_TAB_HASH_PREFIX.length)
+          : rawHash.replace(/^#/, '');
+        return getAvailableCatalogacaoTabs().includes(normalized) ? normalized : '';
+      } catch {
+        return '';
+      }
     }
 
     function getStoredCatalogacaoTab() {
@@ -3245,11 +3261,21 @@
       }
     }
 
+    function syncCatalogacaoTabLocation(tabId) {
+      try {
+        if (!tabId) return;
+        const nextHash = `${CATALOGACAO_TAB_HASH_PREFIX}${tabId}`;
+        if (window.location.hash !== nextHash) {
+          window.history.replaceState(null, '', nextHash);
+        }
+      } catch {}
+    }
+
     function setTab(tabId) {
       const availableTabs = getAvailableCatalogacaoTabs();
       const resolvedTab = availableTabs.includes(tabId)
         ? tabId
-        : (getStoredCatalogacaoTab() || document.querySelector('.panel.active')?.id || availableTabs[0] || 'batchesPanel');
+        : (getCatalogacaoTabFromHash() || getStoredCatalogacaoTab() || document.querySelector('.panel.active')?.id || availableTabs[0] || 'batchesPanel');
       document.querySelectorAll('.tab-btn').forEach(btn => {
         btn.classList.toggle('active', btn.dataset.tab === resolvedTab);
       });
@@ -3259,12 +3285,13 @@
       try {
         window.localStorage?.setItem(CATALOGACAO_TAB_STORAGE_KEY, resolvedTab);
       } catch {}
+      syncCatalogacaoTabLocation(resolvedTab);
     }
 
     let catalogacaoRefreshPromise = null;
 
     function getActiveCatalogacaoTab() {
-      return document.querySelector('.panel.active')?.id || getStoredCatalogacaoTab() || getAvailableCatalogacaoTabs()[0] || 'batchesPanel';
+      return document.querySelector('.panel.active')?.id || getCatalogacaoTabFromHash() || getStoredCatalogacaoTab() || getAvailableCatalogacaoTabs()[0] || 'batchesPanel';
     }
 
     async function refreshCatalogacaoForActiveTab() {
@@ -4210,13 +4237,24 @@
       };
     }
 
-    function getExemplarDraftPayload(statusOverride = 'draft') {
+    function getCurrentExemplarStatus() {
+      return el('exemplarCurrentStatus')?.value || 'draft';
+    }
+
+    function getCurrentLabelStatus() {
+      return el('exemplarLabelStatus')?.value || 'pending';
+    }
+
+    function getExemplarDraftPayload(statusOverride = '', labelStatusOverride = '') {
+      const resolvedStatus = statusOverride || getCurrentExemplarStatus() || 'draft';
+      const resolvedLabelStatus = labelStatusOverride || getCurrentLabelStatus() || 'pending';
       return {
         id: el('exemplarDraftId').value || undefined,
         published_exemplar_id: el('exemplarPublishedId').value || null,
         batch_id: el('exemplarBatchId').value || null,
         action: el('exemplarAction').value || 'create',
-        status: statusOverride,
+        status: resolvedStatus,
+        label_status: resolvedLabelStatus,
         target_bib_ref: el('exemplarBibRef').value.trim(),
         tombo: el('exemplarTombo').value.trim(),
         shelf_location: el('exemplarShelf').value.trim() || null,
@@ -4325,6 +4363,8 @@
       el('exemplarDraftId').value = '';
       el('exemplarPublishedId').value = '';
       el('exemplarAction').value = 'create';
+      el('exemplarCurrentStatus').value = 'draft';
+      el('exemplarLabelStatus').value = 'pending';
       hidePublishedPopup('exemplar');
       exemplarDraftStableState = 'new';
       exemplarDraftBaseline = serializeExemplarFormState();
@@ -4644,7 +4684,9 @@
       el('labelCDDInput').value = record.label_cdd_override || '';
       el('labelNoteInput').value = record.label_note || '';
       updateLabelPreview();
-      const nextLabelState = record.status === 'ready' ? 'ready' : (record.status === 'published' ? 'published' : (record.id ? 'saved' : 'new'));
+      const nextLabelState = record.status === 'published'
+        ? 'published'
+        : (String(record.label_status || 'pending') === 'ready' ? 'ready' : (record.id ? 'saved' : 'new'));
       if (nextLabelState === 'published') showPublishedPopup('label'); else hidePublishedPopup('label');
       labelDraftStableState = nextLabelState;
       labelDraftBaseline = serializeLabelFormState();
@@ -4658,6 +4700,8 @@
       el('exemplarDraftId').value = record.id || '';
       el('exemplarPublishedId').value = record.published_exemplar_id || '';
       el('exemplarAction').value = record.action || 'create';
+      el('exemplarCurrentStatus').value = record.status || 'draft';
+      el('exemplarLabelStatus').value = record.label_status || 'pending';
       el('exemplarBatchId').value = record.batch_id || '';
       el('exemplarBibRef').value = record.target_bib_ref || '';
       el('exemplarTombo').value = record.tombo || '';
@@ -5148,6 +5192,7 @@
         batch_id: copy.batchId || null,
         action: copy.draftId ? 'update' : 'create',
         status,
+        label_status: 'pending',
         target_bib_ref: copy.bibRef || '',
         tombo: copy.tombo || '',
         shelf_location: copy.shelf || null,
@@ -5181,6 +5226,7 @@
       copy.shelf = saved.shelf_location || copy.shelf || '';
       copy.note = saved.label_note || copy.note || '';
       copy.status = saved.status || status;
+      copy.labelStatus = saved.label_status || copy.labelStatus || 'pending';
       return saved;
     }
 
@@ -5425,8 +5471,9 @@
 
       let query = supabase
         .from('exemplar_drafts')
-        .select('id, batch_id, status, action, published_exemplar_id, target_bib_ref, tombo, shelf_location, label_title_override, label_author_override, label_cdd_override, label_note, notes, updated_at')
-        .eq('status', 'draft')
+        .select('id, batch_id, status, label_status, action, published_exemplar_id, target_bib_ref, tombo, shelf_location, label_title_override, label_author_override, label_cdd_override, label_note, notes, updated_at')
+        .in('status', ['ready', 'published'])
+        .eq('label_status', 'pending')
         .order('updated_at', { ascending: false });
 
       if (sourceId !== '__all__') {
@@ -5481,7 +5528,7 @@
     function getFilteredLabelBatchItems() {
       const search = normalizeForSearch(refs.labelBatchSearchInput?.value || '');
       const scope = refs.labelPendingScope?.value || 'all_pending';
-      let items = [...(state.batchLabelItems || [])].filter(item => String(item.status || 'draft') === 'draft');
+      let items = [...(state.batchLabelItems || [])].filter(item => ['ready', 'published'].includes(String(item.status || 'draft')) && String(item.label_status || 'pending') === 'pending');
 
       if (search) {
         items = items.filter(item => getLabelBatchSearchIndex(item).includes(search));
@@ -5504,7 +5551,7 @@
 
     function renderLabelBatchFilterSummary(items = []) {
       if (!refs.labelBatchFilterSummary) return;
-      const totalPending = [...(state.batchLabelItems || [])].filter(item => String(item.status || 'draft') === 'draft').length;
+      const totalPending = [...(state.batchLabelItems || [])].filter(item => ['ready', 'published'].includes(String(item.status || 'draft')) && String(item.label_status || 'pending') === 'pending').length;
       const visible = items.length;
       if (!state.batchLabelItems.length) {
         refs.labelBatchFilterSummary.textContent = 'Nenhuma fila de rótulos carregada ainda.';
@@ -5520,13 +5567,13 @@
       }
       const { error } = await supabase
         .from('exemplar_drafts')
-        .update({ status: 'ready', updated_by: state.profile.id })
+        .update({ label_status: 'ready', updated_by: state.profile.id })
         .in('id', numericIds);
       if (error) throw error;
 
       state.batchLabelItems = (state.batchLabelItems || []).map(item => (
         numericIds.includes(Number(item.id))
-          ? { ...item, status: 'ready', updated_at: new Date().toISOString() }
+          ? { ...item, label_status: 'ready', updated_at: new Date().toISOString() }
           : item
       ));
       renderLabelDraftQueue();
@@ -6046,7 +6093,7 @@
       });
 
       return exemplarDrafts
-        .filter(item => item && (item.status === 'ready' || item.status === 'published'))
+        .filter(item => item && (item.status === 'ready' || item.status === 'published') && String(item.label_status || 'pending') === 'ready')
         .map(item => {
           const bibRef = String(item.target_bib_ref || '').trim();
           const bookDraft = bookDraftMap.get(bibRef);
@@ -6116,7 +6163,7 @@
       }
 
       const [{ data: exemplarDrafts, error: exemplarError }, { data: bookDrafts, error: bookError }] = await Promise.all([
-        supabase.from('exemplar_drafts').select('id, batch_id, status, target_bib_ref, tombo, label_author_override, label_cdd_override, updated_at').eq('batch_id', Number(batchId)).order('updated_at', { ascending: true }),
+        supabase.from('exemplar_drafts').select('id, batch_id, status, label_status, target_bib_ref, tombo, label_author_override, label_cdd_override, updated_at').eq('batch_id', Number(batchId)).order('updated_at', { ascending: true }),
         supabase.from('book_drafts').select('id, batch_id, status, bib_ref, autor, cdd, updated_at').eq('batch_id', Number(batchId)).order('updated_at', { ascending: true }),
       ]);
 
@@ -6230,7 +6277,7 @@
       event.preventDefault();
       try {
         if (!el('exemplarBibRef').value.trim() || !el('exemplarTombo').value.trim()) throw new Error('Carregue primeiro um exemplar para editar o rótulo.');
-        const payload = await reuseExistingDraftIdIfNeeded('exemplar_drafts', getExemplarDraftPayload('draft'), 'published_exemplar_id');
+        const payload = await reuseExistingDraftIdIfNeeded('exemplar_drafts', getExemplarDraftPayload('', 'pending'), 'published_exemplar_id');
         const saved = await saveDraft('exemplar_drafts', payload, refs.labelMessage, 'Rótulo salvo com sucesso.');
         fillExemplarForm(saved, { switchTab: false, syncLabel: false });
         fillLabelForm(saved, { switchTab: false });
@@ -6244,7 +6291,10 @@
     async function markDraftReady(table, id, target) {
       if (!id) throw new Error('Salve o rascunho antes de marcá-lo como pronto.');
       const currentTab = getActiveCatalogacaoTab();
-      const { error } = await supabase.from(table).update({ status: 'ready', updated_by: state.profile.id }).eq('id', Number(id));
+      const updatePayload = table === 'exemplar_drafts'
+        ? { status: 'ready', label_status: 'pending', updated_by: state.profile.id }
+        : { status: 'ready', updated_by: state.profile.id };
+      const { error } = await supabase.from(table).update(updatePayload).eq('id', Number(id));
       if (error) throw error;
       await Promise.all([loadQueue(), loadBatches()]);
       updateStats();
@@ -6258,6 +6308,8 @@
         setAuthorDraftVisualState('ready');
       } else if (table === 'exemplar_drafts') {
         exemplarDraftStableState = 'ready';
+        el('exemplarCurrentStatus').value = 'ready';
+        el('exemplarLabelStatus').value = 'pending';
         exemplarDraftBaseline = serializeExemplarFormState();
         setExemplarDraftVisualState('ready');
         labelDraftStableState = 'ready';
@@ -6311,7 +6363,7 @@
       try {
         const draftId = el('exemplarDraftId').value;
         if (!draftId) throw new Error('Carregue primeiro um exemplar para validar o rótulo.');
-        const payload = getExemplarDraftPayload('ready');
+        const payload = getExemplarDraftPayload('', 'ready');
         const saved = await saveDraft('exemplar_drafts', payload, refs.labelMessage, 'Rótulo validado com sucesso.');
         fillExemplarForm(saved, { switchTab: false, syncLabel: false });
         fillLabelForm(saved, { switchTab: false });
@@ -6506,7 +6558,7 @@
         const draftId = el('exemplarDraftId').value;
         if (!draftId) throw new Error('Carregue primeiro um exemplar para publicar o rótulo.');
         setPublishLock('label', true);
-        const payload = getExemplarDraftPayload('ready');
+        const payload = getExemplarDraftPayload('', 'ready');
         await saveDraft('exemplar_drafts', payload, refs.labelMessage, 'Rótulo salvo antes da publicação.');
         const { error } = await supabase.rpc('publish_exemplar_draft', { p_draft_id: Number(draftId) });
         if (error) throw error;
@@ -6825,7 +6877,12 @@
       updateLoginButton();
     });
 
-    setTab(getActiveCatalogacaoTab());
+    window.addEventListener('hashchange', () => {
+      const hashTab = getCatalogacaoTabFromHash();
+      if (hashTab) setTab(hashTab);
+    });
+
+    setTab(getCatalogacaoTabFromHash() || getStoredCatalogacaoTab() || getActiveCatalogacaoTab());
     resetBookForm();
     resetAuthorForm();
     resetExemplarForm();
