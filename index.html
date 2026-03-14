@@ -1010,30 +1010,13 @@ function getDefaultServiceMessage(mode) {
       return 'Consulte os canais do CCLA para acompanhar o modo de funcionamento vigente.';
   }
 }
-function isCanonicalServiceDefaultMessage(msg) {
-  const t = String(msg || '').trim();
-  if (!t) return false;
-  return [
-    'A biblioteca está em organização. O atendimento ocorre conforme a capacidade operacional atual.',
-    'A biblioteca funciona com atendimento eventual. Consulte os canais do CCLA para informações atualizadas.',
-    'A biblioteca funciona com atendimento semanal em ritmo regular. Consulte os canais do CCLA para os horários e orientações vigentes.',
-    'A biblioteca está temporariamente fechada para atendimento presencial. Consulte os canais do CCLA para atualizações e orientações.',
-    'O atendimento ocorre de forma eventual, conforme a disponibilidade da equipe.',
-    'A biblioteca está em atendimento semanal.',
-    'A biblioteca está temporariamente fechada para atendimento presencial.',
-    'A biblioteca está temporariamente fechada para atendimento presencial. Consulte os canais do CCLA para atualizações.'
-  ].includes(t);
-}
 function renderServiceBanner() {
   if (!serviceState) {
     serviceBanner.hidden = true;
     return;
   }
   const modeLabel = translateServiceMode(serviceState.service_mode);
-  const rawCustomMessage = String(serviceState.public_message || '').trim();
-  const msg = rawCustomMessage && !isCanonicalServiceDefaultMessage(rawCustomMessage)
-    ? rawCustomMessage
-    : getDefaultServiceMessage(serviceState.service_mode);
+  const msg = String(serviceState.public_message || '').trim() || getDefaultServiceMessage(serviceState.service_mode);
   serviceBannerMode.textContent = `Funcionamento: ${modeLabel}`;
   serviceBannerMessage.innerHTML = `${escapeHTML(msg)}${serviceState.allow_reservations === false ? ' <strong>Novas reservas temporariamente fechadas.</strong>' : ''}`;
   serviceBanner.hidden = false;
