@@ -114,6 +114,85 @@ a { color: inherit; }
   flex-direction:column;
   gap:12px;
 }
+.toolbar-meta {
+  display:flex;
+  flex-wrap:wrap;
+  align-items:center;
+  justify-content:space-between;
+  gap:12px;
+}
+.active-filters {
+  display:flex;
+  flex-wrap:wrap;
+  gap:8px;
+  align-items:center;
+  min-height:20px;
+  flex:1 1 560px;
+}
+.active-filters[hidden] {
+  display:none !important;
+}
+.filter-chip {
+  display:inline-flex;
+  align-items:center;
+  gap:8px;
+  padding:8px 10px;
+  border-radius:999px;
+  border:1px solid rgba(255,255,255,.14);
+  background: rgba(18,18,18,.92);
+  color:#fff;
+  font-size:.84rem;
+  line-height:1.2;
+  box-shadow: var(--shadow);
+}
+.filter-chip strong {
+  color:#ffb3bb;
+  font-weight:700;
+}
+.filter-chip-remove {
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  width:22px;
+  height:22px;
+  border:none;
+  border-radius:999px;
+  background: rgba(225,29,47,.18);
+  color:#fff;
+  cursor:pointer;
+  font-size:.9rem;
+  line-height:1;
+}
+.filter-chip-remove:hover {
+  background: rgba(225,29,47,.32);
+}
+.view-controls {
+  display:flex;
+  flex-wrap:wrap;
+  gap:10px;
+  align-items:center;
+  justify-content:flex-end;
+}
+.mini-action {
+  width:auto;
+  min-height:42px;
+  padding:10px 14px;
+  border-radius:14px;
+  border:1px solid rgba(255,255,255,.14);
+  background: rgba(18,18,18,.92);
+  color:#fff;
+  font-size:.9rem;
+  font-weight:700;
+  cursor:pointer;
+  box-shadow: var(--shadow);
+}
+.mini-action:hover {
+  border-color: rgba(225,29,47,.65);
+}
+.mini-action.is-active {
+  background: linear-gradient(135deg, rgba(225,29,47,.92), rgba(179,0,24,.92));
+  border-color: rgba(255,255,255,.22);
+}
 .filters-grid {
   display:grid;
   grid-template-columns: minmax(340px,1.45fr) minmax(250px,1.05fr) minmax(250px,1.05fr) minmax(230px,.9fr);
@@ -262,6 +341,9 @@ a { color: inherit; }
   padding:8px 12px;
   font-size:.9rem;
 }
+.pill-strong {
+  color:#fff;
+}
 .sheet {
   border:1px solid rgba(255,255,255,.08);
   border-radius:22px;
@@ -281,7 +363,16 @@ a { color: inherit; }
 .sheet-head .title { font-weight:700; }
 .small { font-size:.86rem; color: var(--muted); }
 .table-wrap { overflow:auto; max-height:72vh; }
-table { width:100%; border-collapse:separate; border-spacing:0; min-width:1710px; table-layout:fixed; }
+table {
+  --col-ref-w: 136px;
+  --col-autor-w: 270px;
+  --col-titulo-w: 430px;
+  width:100%;
+  border-collapse:separate;
+  border-spacing:0;
+  min-width:1860px;
+  table-layout:fixed;
+}
 thead th {
   position:sticky;
   top:0;
@@ -309,15 +400,15 @@ tbody td {
 }
 tbody tr:nth-child(odd) td { background: rgba(255,255,255,.01); }
 tbody tr:hover td { background: rgba(179,0,24,.08); }
-.col-ref { width: 8.5%; white-space: nowrap; font-variant-numeric: tabular-nums; }
-.col-autor { width: 16%; }
-.col-titulo { width: 26%; }
-.col-ano { width: 7%; white-space: nowrap; }
-.col-editora { width: 15.5%; }
-.col-cdd { width: 8%; }
-.col-status { width: 12%; }
-.col-reserva { width: 10.5%; white-space: nowrap; }
-.col-acoes { width: 9%; white-space: nowrap; }
+.col-ref { width: var(--col-ref-w); white-space: nowrap; font-variant-numeric: tabular-nums; }
+.col-autor { width: var(--col-autor-w); }
+.col-titulo { width: var(--col-titulo-w); }
+.col-ano { width: 92px; white-space: nowrap; }
+.col-editora { width: 250px; }
+.col-cdd { width: 120px; }
+.col-status { width: 185px; }
+.col-reserva { width: 175px; white-space: nowrap; }
+.col-acoes { width: 175px; white-space: nowrap; }
 .reserve-slot { display:flex; flex-direction:column; gap:6px; align-items:flex-start; }
 .reserve-note { font-size:.77rem; color: var(--muted); line-height:1.25; }
 .ref-main { white-space:nowrap; }
@@ -365,6 +456,99 @@ tbody tr:hover td { background: rgba(179,0,24,.08); }
 }
 .author-chip-static{
   cursor:default;
+}
+@media (min-width: 1180px) {
+  thead th.col-ref,
+  tbody td.col-ref,
+  thead th.col-autor,
+  tbody td.col-autor,
+  thead th.col-titulo,
+  tbody td.col-titulo {
+    position: sticky;
+  }
+  thead th.col-ref,
+  tbody td.col-ref {
+    left: 0;
+  }
+  thead th.col-autor,
+  tbody td.col-autor {
+    left: var(--col-ref-w);
+  }
+  thead th.col-titulo,
+  tbody td.col-titulo {
+    left: calc(var(--col-ref-w) + var(--col-autor-w));
+    box-shadow: 14px 0 18px rgba(0,0,0,.22);
+  }
+  tbody td.col-ref,
+  tbody td.col-autor,
+  tbody td.col-titulo {
+    z-index: 1;
+    background: rgba(16,16,16,.98);
+  }
+  tbody tr:nth-child(odd) td.col-ref,
+  tbody tr:nth-child(odd) td.col-autor,
+  tbody tr:nth-child(odd) td.col-titulo {
+    background: rgba(22,22,22,.99);
+  }
+  tbody tr:hover td.col-ref,
+  tbody tr:hover td.col-autor,
+  tbody tr:hover td.col-titulo {
+    background: rgba(82,12,20,.98);
+  }
+  thead th.col-ref,
+  thead th.col-autor,
+  thead th.col-titulo {
+    z-index: 4;
+  }
+}
+body.compact-view .field {
+  padding:8px 10px 10px;
+  gap:6px;
+}
+body.compact-view .field-label {
+  font-size:.84rem;
+}
+body.compact-view .input,
+body.compact-view .select,
+body.compact-view .button,
+body.compact-view .mini-action {
+  min-height:40px;
+  padding:10px 12px;
+  font-size:.9rem;
+}
+body.compact-view tbody td,
+body.compact-view thead th {
+  padding:9px 12px;
+}
+body.compact-view .status-badge,
+body.compact-view .tag-link,
+body.compact-view .btn-inline {
+  font-size:.76rem;
+}
+body.compact-view .mobile-card {
+  padding:12px;
+  gap:10px;
+}
+body.compact-view .mobile-card-title {
+  font-size:.95rem;
+}
+.mobile-card-topline {
+  display:flex;
+  flex-wrap:wrap;
+  align-items:center;
+  justify-content:space-between;
+  gap:8px;
+}
+.mobile-card-ref {
+  display:inline-flex;
+  align-items:center;
+  gap:6px;
+  font-size:.82rem;
+  color: var(--muted);
+}
+.mobile-card-ref strong {
+  color:#fff;
+  font-weight:700;
 }
 mark { background: rgba(225,29,47,.35); color:#fff; padding:0 2px; border-radius:4px; }
 .empty { padding:22px; color: var(--muted); }
@@ -442,7 +626,15 @@ mark { background: rgba(225,29,47,.35); color:#fff; padding:0 2px; border-radius
   .toolbar-actions { justify-content:flex-start; }
   .hero-actions { justify-content:flex-start; }
   .hero-actions .button,
-  .hero-actions .action-link { width:100%; }
+  .hero-actions .action-link,
+  .mini-action { width:100%; }
+  .toolbar-meta {
+    flex-direction:column;
+    align-items:stretch;
+  }
+  .view-controls {
+    justify-content:stretch;
+  }
   #csvAdvancedLink { margin-left: 0; }
 }
 @media (max-width: 760px) {
@@ -463,6 +655,10 @@ mark { background: rgba(225,29,47,.35); color:#fff; padding:0 2px; border-radius
   }
   .mobile-card-head {
     flex-direction:column;
+    align-items:flex-start;
+  }
+  .mobile-card-topline {
+    width:100%;
     align-items:flex-start;
   }
 }
@@ -539,13 +735,21 @@ mark { background: rgba(225,29,47,.35); color:#fff; padding:0 2px; border-radius
         </select>
       </div>
     </div>
+    <div class="toolbar-meta">
+      <div id="activeFilters" class="active-filters" hidden aria-live="polite"></div>
+      <div class="view-controls">
+        <button id="copySearchBtn" class="mini-action" type="button">Copiar busca atual</button>
+        <button id="compactToggleBtn" class="mini-action" type="button" aria-pressed="false">Modo compacto</button>
+      </div>
+    </div>
   </section>
 
   <div class="stats">
     <div class="pill" id="totalPill">Total: 0</div>
     <div class="pill" id="visiblePill">Exibidos: 0</div>
     <div class="pill" id="statusPill">Disponíveis agora: 0</div>
-    <div class="pill">Colunas: ref · autor · título · ano · editora · CDD · disponibilidade</div>
+    <div class="pill pill-strong" id="contextPill">Sem filtros ativos</div>
+    <div class="pill" id="sortPill">Ordenação: relevância</div>
   </div>
 
   <section class="sheet">
@@ -625,6 +829,11 @@ const csvAdvancedLink = document.getElementById('csvAdvancedLink');
 const serviceBanner = document.getElementById('serviceBanner');
 const serviceBannerMode = document.getElementById('serviceBannerMode');
 const serviceBannerMessage = document.getElementById('serviceBannerMessage');
+const activeFilters = document.getElementById('activeFilters');
+const copySearchBtn = document.getElementById('copySearchBtn');
+const compactToggleBtn = document.getElementById('compactToggleBtn');
+const contextPill = document.getElementById('contextPill');
+const sortPill = document.getElementById('sortPill');
 
 function normalize(s) {
   return (s || '').toString().normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim();
@@ -687,6 +896,177 @@ function parseQuery(raw) {
   out.tokens = [...new Set(out.tokens)];
   out.phrases = [...new Set(out.phrases)];
   return out;
+}
+
+function getAvailabilityLabel(value) {
+  switch (value) {
+    case 'available': return 'Disponível agora';
+    case 'local': return 'Consulta local';
+    case 'unavailable': return 'Indisponível';
+    default: return 'Todas';
+  }
+}
+function getSortLabel(key = sortKey, dir = sortDir) {
+  const labels = {
+    relevance: 'relevância',
+    bib_ref: 'referência',
+    autor: 'autor(a)',
+    titulo: 'título',
+    ano: 'ano',
+    editora: 'editora',
+    cdd: 'CDD',
+    status: 'disponibilidade'
+  };
+  const base = labels[key] || 'relevância';
+  if (key === 'relevance') return `Ordenação: ${base}`;
+  return `Ordenação: ${base} ${dir === 'desc' ? '↓' : '↑'}`;
+}
+function getFilterState() {
+  return {
+    q: (search.value || '').trim(),
+    author: (authorFilter.value || '').trim(),
+    publisher: (publisherFilter.value || '').trim(),
+    year: (yearFilter.value || '').trim(),
+    cdd: (cddFilter.value || '').trim(),
+    availability: availabilityFilter.value || 'all',
+    sort: sortKey,
+    dir: sortDir,
+    compact: document.body.classList.contains('compact-view')
+  };
+}
+function buildActiveFilterItems() {
+  const state = getFilterState();
+  const items = [];
+  if (state.q) items.push({ key: 'q', label: 'Buscar', value: state.q });
+  if (state.author) items.push({ key: 'author', label: 'Autor(a)', value: state.author });
+  if (state.publisher) items.push({ key: 'publisher', label: 'Editora', value: state.publisher });
+  if (state.year) items.push({ key: 'year', label: 'Ano', value: state.year });
+  if (state.cdd) items.push({ key: 'cdd', label: 'CDD', value: state.cdd });
+  if (state.availability !== 'all') items.push({ key: 'availability', label: 'Disponibilidade', value: getAvailabilityLabel(state.availability) });
+  if (state.sort !== 'relevance') items.push({ key: 'sort', label: 'Ordenação', value: getSortLabel(state.sort, state.dir).replace(/^Ordenação:\s*/, '') });
+  return items;
+}
+function renderActiveFilters() {
+  const items = buildActiveFilterItems();
+  activeFilters.innerHTML = '';
+  activeFilters.hidden = items.length === 0;
+  for (const item of items) {
+    const chip = document.createElement('div');
+    chip.className = 'filter-chip';
+    chip.innerHTML = `<strong>${escapeHTML(item.label)}:</strong> <span>${escapeHTML(item.value)}</span> <button class="filter-chip-remove" type="button" data-filter-key="${escapeHTML(item.key)}" aria-label="Remover filtro ${escapeHTML(item.label)}">×</button>`;
+    activeFilters.appendChild(chip);
+  }
+}
+function buildContextSummary(filtered) {
+  const items = buildActiveFilterItems().filter(item => item.key !== 'sort');
+  if (!items.length) {
+    return filtered.length === rows.length
+      ? 'Sem filtros ativos'
+      : `Visão atual: ${filtered.length} item(ns)`;
+  }
+  return items.map(item => `${item.label}: ${item.value}`).join(' · ');
+}
+function syncStateToUrl() {
+  const state = getFilterState();
+  const url = new URL(location.href);
+  const defaults = {
+    availability: 'all',
+    sort: 'relevance',
+    dir: 'asc'
+  };
+  const mapping = {
+    q: state.q,
+    author: state.author,
+    publisher: state.publisher,
+    year: state.year,
+    cdd: state.cdd,
+    availability: state.availability,
+    sort: state.sort,
+    dir: state.dir
+  };
+  Object.entries(mapping).forEach(([key, value]) => {
+    const defaultValue = defaults[key] ?? '';
+    if (value && value !== defaultValue) url.searchParams.set(key, value);
+    else url.searchParams.delete(key);
+  });
+  if (state.compact) url.searchParams.set('compact', '1');
+  else url.searchParams.delete('compact');
+  history.replaceState(null, '', url.toString());
+}
+function restoreStateFromUrl() {
+  const url = new URL(location.href);
+  search.value = url.searchParams.get('q') || '';
+  authorFilter.value = url.searchParams.get('author') || '';
+  publisherFilter.value = url.searchParams.get('publisher') || '';
+  yearFilter.value = url.searchParams.get('year') || '';
+  cddFilter.value = url.searchParams.get('cdd') || '';
+  const availabilityFromUrl = url.searchParams.get('availability') || 'all';
+  availabilityFilter.value = ['all','available','local','unavailable'].includes(availabilityFromUrl) ? availabilityFromUrl : 'all';
+  const sortFromUrl = url.searchParams.get('sort') || 'relevance';
+  sortKey = ['relevance','bib_ref','autor','titulo','ano','editora','cdd','status'].includes(sortFromUrl) ? sortFromUrl : 'relevance';
+  sortDir = url.searchParams.get('dir') || 'asc';
+  sortSelect.value = sortKey;
+  if (!['asc','desc'].includes(sortDir)) sortDir = 'asc';
+  const compactFromUrl = url.searchParams.get('compact');
+  const compactStored = (() => {
+    try { return localStorage.getItem('blmf_catalog_compact') === '1'; } catch (e) { return false; }
+  })();
+  setCompactMode(compactFromUrl === '1' || (compactFromUrl === null && compactStored), false);
+}
+async function copyText(textToCopy) {
+  try {
+    await navigator.clipboard.writeText(textToCopy);
+    return true;
+  } catch (err) {
+    const ta = document.createElement('textarea');
+    ta.value = textToCopy;
+    ta.style.position = 'fixed';
+    ta.style.left = '-9999px';
+    document.body.appendChild(ta);
+    ta.select();
+    let ok = false;
+    try { ok = document.execCommand('copy'); } catch (e2) {}
+    ta.remove();
+    return ok;
+  }
+}
+async function copyCurrentSearch() {
+  syncStateToUrl();
+  const ok = await copyText(location.href);
+  const prev = copySearchBtn.textContent;
+  copySearchBtn.textContent = ok ? 'Link copiado!' : 'Falha ao copiar';
+  copySearchBtn.disabled = true;
+  setTimeout(() => {
+    copySearchBtn.textContent = prev;
+    copySearchBtn.disabled = false;
+  }, 1200);
+}
+function setCompactMode(enabled, persist = true) {
+  document.body.classList.toggle('compact-view', !!enabled);
+  compactToggleBtn.classList.toggle('is-active', !!enabled);
+  compactToggleBtn.setAttribute('aria-pressed', enabled ? 'true' : 'false');
+  compactToggleBtn.textContent = enabled ? 'Modo compacto: ligado' : 'Modo compacto';
+  if (persist) {
+    try { localStorage.setItem('blmf_catalog_compact', enabled ? '1' : '0'); } catch (e) {}
+  }
+}
+function toggleCompactMode() {
+  setCompactMode(!document.body.classList.contains('compact-view'));
+  render();
+}
+function clearSingleFilter(key) {
+  if (key === 'q') search.value = '';
+  else if (key === 'author') authorFilter.value = '';
+  else if (key === 'publisher') publisherFilter.value = '';
+  else if (key === 'year') yearFilter.value = '';
+  else if (key === 'cdd') cddFilter.value = '';
+  else if (key === 'availability') availabilityFilter.value = 'all';
+  else if (key === 'sort') {
+    sortKey = 'relevance';
+    sortDir = 'asc';
+    sortSelect.value = 'relevance';
+  }
+  render();
 }
 function scoreRow(r, q) {
   for (const ph of q.phrases) {
@@ -1015,6 +1395,8 @@ function updateStats(filtered) {
   visiblePill.textContent = `Exibidos: ${filtered.length}`;
   const availableNow = filtered.filter(r => r._status.key === 'available').length;
   statusPill.textContent = `Disponíveis agora: ${availableNow}`;
+  contextPill.textContent = buildContextSummary(filtered);
+  sortPill.textContent = getSortLabel();
 }
 function paintHeaderSort() {
   document.querySelectorAll('thead th[data-key]').forEach(th => {
@@ -1245,16 +1627,15 @@ function buildRowMarkup(r) {
           <div>
             <h3 class="mobile-card-title">${tituloCell}</h3>
           </div>
-          <span class="status-badge ${status.cls}">${status.label}</span>
+          <div class="mobile-card-topline">
+            <span class="mobile-card-ref"><span>Ref.</span> <strong>${refHtml}</strong></span>
+            <span class="status-badge ${status.cls}">${status.label}</span>
+          </div>
         </div>
         <div class="mobile-card-grid">
           <div class="mobile-meta">
             <span class="mobile-meta-label">Autor</span>
             <div class="mobile-meta-value">${autorHtml}</div>
-          </div>
-          <div class="mobile-meta">
-            <span class="mobile-meta-label">Referência</span>
-            <div class="mobile-meta-value"><span class="ref-main">${refHtml}</span></div>
           </div>
           <div class="mobile-meta">
             <span class="mobile-meta-label">Ano</span>
@@ -1282,7 +1663,9 @@ function render() {
   tbody.innerHTML = '';
   mobileResults.innerHTML = '';
   updateStats(filtered);
+  renderActiveFilters();
   paintHeaderSort();
+  syncStateToUrl();
   empty.hidden = filtered.length !== 0;
 
   for (const r of filtered) {
@@ -1424,6 +1807,13 @@ clearBtn.addEventListener('click', clearFilters);
 pdfBtn.addEventListener('click', exportPDF);
 csvAdvancedLink.addEventListener('click', (e) => { e.preventDefault(); exportCSV(); });
 contaBtn.addEventListener('click', handleContaClick);
+copySearchBtn.addEventListener('click', copyCurrentSearch);
+compactToggleBtn.addEventListener('click', toggleCompactMode);
+activeFilters.addEventListener('click', (e) => {
+  const btn = e.target.closest('.filter-chip-remove');
+  if (!btn) return;
+  clearSingleFilter(btn.dataset.filterKey || '');
+});
 document.querySelectorAll('thead th[data-key]').forEach(th => {
   th.addEventListener('click', () => {
     const key = th.dataset.key;
@@ -1442,18 +1832,7 @@ async function handleResultActions(e) {
   const copyBtn = e.target.closest('.copyRefBtn');
   if (copyBtn) {
     const txt = decodeURIComponent(copyBtn.dataset.ref || '');
-    try {
-      await navigator.clipboard.writeText(txt);
-    } catch (err) {
-      const ta = document.createElement('textarea');
-      ta.value = txt;
-      ta.style.position = 'fixed';
-      ta.style.left = '-9999px';
-      document.body.appendChild(ta);
-      ta.select();
-      try { document.execCommand('copy'); } catch (e2) {}
-      ta.remove();
-    }
+    await copyText(txt);
     const prev = copyBtn.textContent;
     copyBtn.textContent = 'Copiado!';
     copyBtn.disabled = true;
@@ -1523,6 +1902,7 @@ document.addEventListener('keydown', (e) => {
   }
 });
 (async function init() {
+  restoreStateFromUrl();
   authState = await getCurrentUserAndRole();
   await loadPublicServiceState();
   rows = await loadRowsFromSupabase();
