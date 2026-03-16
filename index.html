@@ -838,6 +838,25 @@ const sortPill = document.getElementById('sortPill');
 function normalize(s) {
   return (s || '').toString().normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim();
 }
+function orthographySkeleton(s) {
+  return normalize(s)
+    .replace(/[’'`´-]+/g, '')
+    .replace(/ou/g, 'u')
+    .replace(/kh/g, 'h')
+    .replace(/ch/g, 'h')
+    .replace(/ck/g, 'k')
+    .replace(/qu/g, 'k')
+    .replace(/w/g, 'v')
+    .replace(/y/g, 'i')
+    .replace(/ine\b/g, 'in')
+    .replace(/sky\b/g, 'ski')
+    .replace(/skii\b/g, 'ski')
+    .replace(/skij\b/g, 'ski')
+    .replace(/ii\b/g, 'i')
+    .replace(/jj\b/g, 'j')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
 function escapeHTML(s) {
   return (s ?? '').toString().replace(/[&<>"']/g, (m) => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;' }[m]));
 }
@@ -1070,21 +1089,33 @@ function clearSingleFilter(key) {
 }
 function scoreRow(r, q) {
   for (const ph of q.phrases) {
-    if (!r._all.includes(ph)) return { ok: false, score: 0 };
+    const phVariant = orthographySkeleton(ph);
+    if (!r._all.includes(ph) && (!phVariant || !r._variantAll.includes(phVariant))) return { ok: false, score: 0 };
   }
   let score = 0;
   for (const t of q.tokens) {
     if (!t) continue;
+    const tVariant = orthographySkeleton(t);
     if (r._all.includes(t)) {
       score += 10;
       continue;
     }
+    if (tVariant && r._variantAll.includes(tVariant)) {
+      score += 8;
+      continue;
+    }
     let best = 0;
     const first = t[0];
-    for (const w of r._words) {
-      if (!w || w[0] !== first) continue;
-      if (Math.abs(w.length - t.length) > 3) continue;
-      const d = diceCoefficient(t, w);
+    const firstVariant = tVariant[0];
+    for (let i = 0; i < r._words.length; i++) {
+      const w = r._words[i];
+      const wVariant = r._variantWords[i] || orthographySkeleton(w);
+      if (!w || (w[0] !== first && wVariant[0] !== firstVariant)) continue;
+      if (Math.abs(w.length - t.length) > 3 && Math.abs(wVariant.length - tVariant.length) > 3) continue;
+      const d = Math.max(
+        diceCoefficient(t, w),
+        diceCoefficient(tVariant, wVariant)
+      );
       if (d > best) best = d;
       if (best >= 0.92) break;
     }
@@ -1095,8 +1126,10 @@ function scoreRow(r, q) {
     return { ok: false, score: 0 };
   }
   if (q.tokens[0]) {
-    if (r._n.titulo.startsWith(q.tokens[0])) score += 2;
-    if (r._n.autor.startsWith(q.tokens[0])) score += 2;
+    const firstToken = q.tokens[0];
+    const firstTokenVariant = orthographySkeleton(firstToken);
+    if (r._n.titulo.startsWith(firstToken) || r._variantTitulo.startsWith(firstTokenVariant)) score += 2;
+    if (r._n.autor.startsWith(firstToken) || r._variantAutor.startsWith(firstTokenVariant)) score += 2;
   }
   return { ok: true, score };
 }
@@ -1295,6 +1328,18 @@ function prepareRows() {
     r._n = data;
     r._all = [data.bib_ref, data.autor, data.titulo, data.ano, data.editora, data.cdd, data.status].filter(Boolean).join(' ');
     r._words = r._all ? r._all.split(/\s+/).filter(Boolean) : [];
+    r._variantAutor = orthographySkeleton(data.autor);
+    r._variantTitulo = orthographySkeleton(data.titulo);
+    r._variantAll = [
+      orthographySkeleton(data.bib_ref),
+      r._variantAutor,
+      r._variantTitulo,
+      orthographySkeleton(data.ano),
+      orthographySkeleton(data.editora),
+      orthographySkeleton(data.cdd),
+      orthographySkeleton(data.status)
+    ].filter(Boolean).join(' ');
+    r._variantWords = r._variantAll ? r._variantAll.split(/\s+/).filter(Boolean) : [];
   }
 }
 async function loadRowsFromSupabase() {
