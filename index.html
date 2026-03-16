@@ -795,6 +795,29 @@ const CONTA_URL = `${GH_BASE}/blmf-conta/conta.html`;
 const CADASTRO_URL = `${GH_BASE}/blmf-conta/cadastro.html`;
 const PAINEL_URL = `${GH_BASE}/blmf-conta/painel.html`;
 const SUPABASE_PROJECT_REF = "asptfmokzykwzlshsncw";
+const RAW_SEARCH_VARIANTS = {
+  "Bakunin": ["Bakounine", "Bakounin", "Bakunine"],
+  "Mikhail Bakunin": ["Mikhail Bakounine", "Mikhail Bakounin", "Miguel Bakunin"],
+
+  "Kropotkin": ["Kropotkine"],
+  "Piotr Kropotkin": ["Piotr Kropotkine", "Pierre Kropotkine", "Petr Kropotkin", "Peter Kropotkin"],
+
+  "Proudhon": ["Prudhon"],
+  "Pierre-Joseph Proudhon": ["Pierre Joseph Prudhon", "P. J. Proudhon", "PJ Proudhon"],
+
+  "Emma Goldman": ["Emma Goldmann"],
+
+  "Guillén": ["Guillen"],
+  "Abraham Guillén": ["Abraham Guillen"],
+
+  "Rancière": ["Ranciere"],
+  "Jacques Rancière": ["Jacques Ranciere"],
+
+  "Sébastien Faure": ["Sebastien Faure"],
+
+  "Élisée Reclus": ["Elisee Reclus", "Elisée Reclus"]
+};
+
 
 function buildCadastroUrl(nextUrl = location.href) {
   const u = new URL(CADASTRO_URL);
@@ -837,6 +860,36 @@ const sortPill = document.getElementById('sortPill');
 
 function normalize(s) {
   return (s || '').toString().normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim();
+}
+function buildSearchVariantMap(rawDict) {
+  const map = new Map();
+  for (const [canonical, variants] of Object.entries(rawDict || {})) {
+    const forms = [...new Set([canonical, ...(Array.isArray(variants) ? variants : [])].map(normalize).filter(Boolean))];
+    for (const form of forms) {
+      if (!map.has(form)) map.set(form, new Set());
+      const bucket = map.get(form);
+      for (const linked of forms) bucket.add(linked);
+    }
+  }
+  return map;
+}
+const SEARCH_VARIANT_MAP = buildSearchVariantMap(RAW_SEARCH_VARIANTS);
+const SEARCH_TERM_FORMS_CACHE = new Map();
+function getExpandedTermForms(term) {
+  const base = normalize(term);
+  if (!base) return { normalized: [], skeletons: [] };
+  if (SEARCH_TERM_FORMS_CACHE.has(base)) return SEARCH_TERM_FORMS_CACHE.get(base);
+  const normalizedForms = new Set([base]);
+  const linked = SEARCH_VARIANT_MAP.get(base);
+  if (linked) {
+    for (const form of linked) normalizedForms.add(form);
+  }
+  const result = {
+    normalized: [...normalizedForms],
+    skeletons: [...new Set([...normalizedForms].map(orthographySkeleton).filter(Boolean))]
+  };
+  SEARCH_TERM_FORMS_CACHE.set(base, result);
+  return result;
 }
 function orthographySkeleton(s) {
   return normalize(s)
@@ -1089,34 +1142,40 @@ function clearSingleFilter(key) {
 }
 function scoreRow(r, q) {
   for (const ph of q.phrases) {
-    const phVariant = orthographySkeleton(ph);
-    if (!r._all.includes(ph) && (!phVariant || !r._variantAll.includes(phVariant))) return { ok: false, score: 0 };
+    const phraseForms = getExpandedTermForms(ph);
+    const phraseMatches = phraseForms.normalized.some(form => r._all.includes(form))
+      || phraseForms.skeletons.some(form => form && r._variantAll.includes(form));
+    if (!phraseMatches) return { ok: false, score: 0 };
   }
   let score = 0;
   for (const t of q.tokens) {
     if (!t) continue;
-    const tVariant = orthographySkeleton(t);
-    if (r._all.includes(t)) {
+    const tokenForms = getExpandedTermForms(t);
+    if (tokenForms.normalized.some(form => r._all.includes(form))) {
       score += 10;
       continue;
     }
-    if (tVariant && r._variantAll.includes(tVariant)) {
+    if (tokenForms.skeletons.some(form => form && r._variantAll.includes(form))) {
       score += 8;
       continue;
     }
     let best = 0;
-    const first = t[0];
-    const firstVariant = tVariant[0];
-    for (let i = 0; i < r._words.length; i++) {
-      const w = r._words[i];
-      const wVariant = r._variantWords[i] || orthographySkeleton(w);
-      if (!w || (w[0] !== first && wVariant[0] !== firstVariant)) continue;
-      if (Math.abs(w.length - t.length) > 3 && Math.abs(wVariant.length - tVariant.length) > 3) continue;
-      const d = Math.max(
-        diceCoefficient(t, w),
-        diceCoefficient(tVariant, wVariant)
-      );
-      if (d > best) best = d;
+    for (const form of tokenForms.normalized) {
+      const formVariant = orthographySkeleton(form);
+      const first = form[0];
+      const firstVariant = formVariant[0];
+      for (let i = 0; i < r._words.length; i++) {
+        const w = r._words[i];
+        const wVariant = r._variantWords[i] || orthographySkeleton(w);
+        if (!w || (w[0] !== first && wVariant[0] !== firstVariant)) continue;
+        if (Math.abs(w.length - form.length) > 3 && Math.abs(wVariant.length - formVariant.length) > 3) continue;
+        const d = Math.max(
+          diceCoefficient(form, w),
+          diceCoefficient(formVariant, wVariant)
+        );
+        if (d > best) best = d;
+        if (best >= 0.92) break;
+      }
       if (best >= 0.92) break;
     }
     if (best >= 0.78) {
@@ -1126,10 +1185,15 @@ function scoreRow(r, q) {
     return { ok: false, score: 0 };
   }
   if (q.tokens[0]) {
-    const firstToken = q.tokens[0];
-    const firstTokenVariant = orthographySkeleton(firstToken);
-    if (r._n.titulo.startsWith(firstToken) || r._variantTitulo.startsWith(firstTokenVariant)) score += 2;
-    if (r._n.autor.startsWith(firstToken) || r._variantAutor.startsWith(firstTokenVariant)) score += 2;
+    const firstTokenForms = getExpandedTermForms(q.tokens[0]);
+    if (
+      firstTokenForms.normalized.some(form => r._n.titulo.startsWith(form))
+      || firstTokenForms.skeletons.some(form => form && r._variantTitulo.startsWith(form))
+    ) score += 2;
+    if (
+      firstTokenForms.normalized.some(form => r._n.autor.startsWith(form))
+      || firstTokenForms.skeletons.some(form => form && r._variantAutor.startsWith(form))
+    ) score += 2;
   }
   return { ok: true, score };
 }
