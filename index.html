@@ -49,33 +49,25 @@ html, body {
   background-repeat: no-repeat;
 }
 a { color: inherit; }
-.wrap { max-width: 1680px; width: 100%; margin: 0 auto; padding: 24px; }
+.wrap { max-width: none; width: 100%; margin: 0; padding: 24px; }
 .hero {
   background: linear-gradient(135deg, rgba(179,0,24,.95), rgba(90,0,12,.96));
   border: 1px solid rgba(255,255,255,.08);
   border-radius: 22px;
-  padding: 22px;
+  padding: 28px;
   box-shadow: var(--shadow);
   margin-bottom: 22px;
 }
 .topbar {
   display:flex;
-  align-items:center;
+  align-items:flex-start;
   justify-content:space-between;
-  gap:12px;
+  gap:20px;
   flex-wrap:wrap;
 }
 .hero h1 { margin:0 0 8px; font-size: clamp(1.8rem, 3vw, 3rem); line-height:1.05; }
 .hero p { margin:0; color: rgba(255,255,255,.95); font-size:1rem; }
-.topbar-logo {
-  height: 64px;
-  width: auto;
-  max-width: 170px;
-  object-fit: contain;
-  display: block;
-  flex-shrink: 0;
-  filter: drop-shadow(0 8px 18px rgba(0,0,0,.35));
-}
+.topbar-logo { width: 150px; height:auto; flex:0 0 auto; }
 .hero-actions {
   margin-top: 18px;
   display:flex;
@@ -86,36 +78,43 @@ a { color: inherit; }
 .hero-actions .button,
 .hero-actions .action-link {
   min-height:48px;
-  padding:10px 12px;
+  padding:12px 16px;
   font-size:.95rem;
   width:auto;
   border-radius:14px;
-  border:1px solid rgba(255,255,255,.10);
-  background:rgba(18,18,18,.92);
-  color:var(--text);
-  font-weight:900;
-  box-shadow: var(--shadow);
+  background:#050505;
+  border:1px solid rgba(255,255,255,.92);
+  color:#ff3347;
+  font-weight:800;
+  box-shadow: 0 12px 28px rgba(0,0,0,.28);
+}
+.hero-actions .button.secondary,
+.hero-actions .button,
+.hero-actions .action-link {
+  background:#050505;
+  border:1px solid rgba(255,255,255,.92);
+  color:#ff3347;
+}
+.hero-actions .button:hover,
+.hero-actions .button.secondary:hover,
+.hero-actions .action-link:hover {
+  background: rgba(255,255,255,.08);
+  border-color:#fff;
+  color:#ff5b6c;
+}
+.hero-actions .action-link {
   display:inline-flex;
   align-items:center;
   justify-content:center;
   text-decoration:none;
 }
-.hero-actions .button:not(.secondary) {
-  border:none;
-  background:linear-gradient(135deg, var(--red-2), var(--red));
-  color:#fff;
-}
-.hero-actions .button.secondary,
-.hero-actions .action-link {
-  border:1px solid rgba(255,255,255,.10);
-  background:rgba(18,18,18,.92);
-  color:var(--text);
-}
-.hero-actions .button:hover,
-.hero-actions .button.secondary:hover,
-.hero-actions .action-link:hover {
-  border-color:rgba(255,255,255,.22);
-  color:var(--text);
+.hero-separator {
+  width:1px;
+  height:28px;
+  background:rgba(255,255,255,.18);
+  margin:0 2px 0 4px;
+  align-self:center;
+  flex:0 0 auto;
 }
 .toolbar {
   margin-bottom:18px;
@@ -574,7 +573,7 @@ mark { background: rgba(225,29,47,.35); color:#fff; padding:0 2px; border-radius
   }
   .toolbar-actions { justify-content:flex-start; }
   .hero-actions { justify-content:flex-start; }
-  .topbar-logo { height: 56px; max-width: 148px; }
+  .topbar-logo { width: 118px; }
 }
 
 .mobile-results { display:none; }
@@ -634,6 +633,7 @@ mark { background: rgba(225,29,47,.35); color:#fff; padding:0 2px; border-radius
   .filters-grid { grid-template-columns: 1fr; }
   .toolbar-actions { justify-content:flex-start; }
   .hero-actions { justify-content:flex-start; }
+  .hero-separator { display:none; }
   .hero-actions .button,
   .hero-actions .action-link,
   .mini-action { width:100%; }
@@ -688,6 +688,8 @@ mark { background: rgba(225,29,47,.35); color:#fff; padding:0 2px; border-radius
       <button id="pdfBtn" class="button" type="button">Exportar PDF</button>
       <button id="contaBtn" class="button secondary" type="button">Painel / minha conta</button>
       <a id="blogBtn" class="button secondary" href="https://cclamazonia.noblogs.org">Voltar ao blogue</a>
+      <span class="hero-separator" aria-hidden="true"></span>
+      <a id="manualBtn" class="button secondary" href="https://cclamazonia-cmd.github.io/blmf-catalogo/Manual_do_AnarBib.pdf" target="_blank" rel="noopener noreferrer">Manual do AnarBib</a>
       <a id="csvAdvancedLink" class="action-link" href="#" role="button">CSV (avançado)</a>
     </div>
   </section>
