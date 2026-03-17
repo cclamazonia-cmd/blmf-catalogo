@@ -12,33 +12,34 @@
   <style>
     :root{
       --panel:rgba(18,18,18,.96);
-      --text:#f2f2f2; --muted:rgba(255,255,255,.72);
-      --red:#b30018; --red2:#e11d2f;
+      --text:#f2f2f2;
+      --muted:rgba(255,255,255,.74);
+      --red:#b30018;
+      --red2:#e11d2f;
       --line:rgba(255,255,255,.10);
-      --redGlass:rgba(179,0,24,.26);
-      --redGlassStrong:rgba(179,0,24,.40);
-      --redLine:rgba(225,29,47,.56);
-      --shadow: 0 10px 30px rgba(0,0,0,.35);
-      --ok:#4ade80; --warn:#fbbf24; --bad:#fb7185;
+      --shadow:0 10px 30px rgba(0,0,0,.35);
+      --ok:#4ade80;
+      --warn:#fbbf24;
+      --bad:#fb7185;
     }
     *{box-sizing:border-box}
-    html,body{margin:0;padding:0;color:var(--text);font-family:Inter, Segoe UI, Arial, sans-serif;}
+    html,body{margin:0;padding:0;color:var(--text);font-family:Inter,Segoe UI,Arial,sans-serif}
     body{
       background-image:
-        linear-gradient(rgba(0,0,0,0.78), rgba(0,0,0,0.78)),
+        linear-gradient(rgba(0,0,0,.78), rgba(0,0,0,.78)),
         url('https://cclamazonia.noblogs.org/files/2024/11/Arte-CCLA-paredao.jpg');
       background-size:cover;
       background-position:center;
       background-attachment:fixed;
       background-repeat:no-repeat;
     }
-    a, a:visited{color:inherit}
-    .wrap{max-width:1180px;margin:0 auto;padding:24px}
+    a,a:visited{color:inherit;text-decoration:none}
+    .wrap{max-width:1680px;margin:0 auto;padding:24px}
     .topbar{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:14px}
     .brand{display:flex;align-items:center;gap:12px}
     .logo{
       height:64px;width:auto;max-width:170px;object-fit:contain;display:block;flex-shrink:0;
-      filter:drop-shadow(0 8px 18px rgba(0,0,0,.35))
+      filter:drop-shadow(0 8px 18px rgba(0,0,0,.35));
     }
     .btn{
       border:1px solid var(--line);
@@ -47,7 +48,7 @@
       border-radius:14px;
       padding:10px 12px;
       cursor:pointer;
-      box-shadow: var(--shadow);
+      box-shadow:var(--shadow);
       font-weight:900;
       font-size:.95rem;
       text-decoration:none;
@@ -56,41 +57,50 @@
       justify-content:center;
     }
     .btn.primary{border:none;background:linear-gradient(135deg,var(--red2),var(--red))}
-    .btn:hover{border-color:rgba(225,29,47,.44);background:rgba(179,0,24,.12)}
-    .btn.disabled, .btn[aria-disabled="true"]{opacity:.55;cursor:not-allowed;pointer-events:none}
+    .btn:hover{border-color:rgba(255,255,255,.22)}
+    .btn:disabled,.btn.disabled,.btn[aria-disabled="true"]{opacity:.58;cursor:default;pointer-events:none}
+    .hero{
+      border:1px solid rgba(255,255,255,.08);
+      background:linear-gradient(135deg, rgba(179,0,24,.95), rgba(90,0,12,.96));
+      border-radius:22px;
+      padding:18px;
+      box-shadow:var(--shadow);
+      margin-bottom:16px;
+    }
+    .hero h1{margin:0 0 6px;font-size:1.5rem}
+    .hero p{margin:0;color:rgba(255,255,255,.92)}
+    .chips{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
+    .chip{
+      display:inline-flex;
+      align-items:center;
+      gap:8px;
+      border:1px solid rgba(255,255,255,.10);
+      background:rgba(18,18,18,.65);
+      padding:7px 10px;
+      border-radius:999px;
+      font-size:.9rem;
+      color:rgba(255,255,255,.86);
+      flex-wrap:wrap;
+      overflow-wrap:anywhere;
+    }
+    .grid{display:grid;grid-template-columns:1fr;gap:14px}
     .card{
-      border:1px solid rgba(225,29,47,.34);
-      background:linear-gradient(180deg, rgba(179,0,24,.18), rgba(18,18,18,.96) 26%);
+      border:1px solid rgba(255,255,255,.08);
+      background:var(--panel);
       border-radius:22px;
       padding:16px;
-      box-shadow:var(--shadow)
+      box-shadow:var(--shadow);
     }
-    .title{margin:0 0 6px;font-size:1.45rem;color:#fff4f5;text-shadow:0 0 22px rgba(225,29,47,.26)}
-    .subtitle{margin:0 0 8px;color:var(--muted);font-style:italic}
-    .muted{color:var(--muted)}
-    .meta{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px}
-    @media (max-width:720px){.meta{grid-template-columns:1fr}}
-    .pill{
-      display:inline-flex;align-items:center;gap:8px;
-      border:1px solid rgba(225,29,47,.40);
-      background:linear-gradient(135deg, rgba(179,0,24,.26), rgba(18,18,18,.72));
-      padding:7px 10px;border-radius:999px;
-      font-size:.9rem;color:var(--muted);
-      flex-wrap:wrap;overflow-wrap:anywhere;
-    }
-    .status{margin-top:10px;font-size:.92rem}
-    .status.ok{color:var(--ok)} .status.warn{color:var(--warn)} .status.bad{color:var(--bad)}
-    .hr{height:1px;background:linear-gradient(90deg, rgba(225,29,47,.0), rgba(225,29,47,.60), rgba(225,29,47,.0));margin:14px 0}
     .detail{
       display:grid;
-      grid-template-columns: 280px minmax(0,1fr);
+      grid-template-columns:280px minmax(0,1fr);
       gap:22px;
       align-items:start;
     }
-    @media (max-width:900px){.detail{grid-template-columns:1fr}}
+    @media (max-width:980px){.detail{grid-template-columns:1fr}}
     .photobox{
-      border:1px solid rgba(225,29,47,.34);
-      background:linear-gradient(180deg, rgba(179,0,24,.20), rgba(255,255,255,.03));
+      border:1px solid rgba(255,255,255,.10);
+      background:rgba(255,255,255,.03);
       border-radius:18px;
       padding:14px;
       display:flex;
@@ -110,17 +120,17 @@
       box-shadow:var(--shadow);
     }
     .contentbox{min-width:0}
+    .section-title{margin:0 0 12px;font-size:1.15rem;color:#fff}
+    .mini{font-size:.86rem;color:var(--muted)}
+    .subtle{opacity:.92}
+    .status{margin-top:10px;font-size:.92rem;min-height:1.2em}
+    .status.ok{color:var(--ok)} .status.warn{color:var(--warn)} .status.bad{color:var(--bad)}
+    .sep{height:1px;background:rgba(255,255,255,.08);margin:14px 0}
     .bio{
       white-space:pre-wrap;
       line-height:1.62;
       width:100%;
       max-width:none;
-    }
-    .section-title{
-      margin:0 0 12px;
-      font-size:1.15rem;
-      color:#ffe3e7;
-      text-shadow:0 0 20px rgba(225,29,47,.24);
     }
     .books{
       display:grid;
@@ -131,8 +141,8 @@
       display:flex;
       flex-direction:column;
       gap:8px;
-      border:1px solid rgba(225,29,47,.34);
-      background:linear-gradient(180deg, rgba(179,0,24,.18), rgba(255,255,255,.03));
+      border:1px solid rgba(255,255,255,.10);
+      background:rgba(255,255,255,.03);
       border-radius:16px;
       padding:12px;
       text-decoration:none;
@@ -141,13 +151,10 @@
     }
     .book-card:hover{
       transform:translateY(-1px);
-      border-color:rgba(225,29,47,.56);
-      background:linear-gradient(180deg, rgba(179,0,24,.26), rgba(255,255,255,.05));
+      border-color:rgba(255,255,255,.22);
+      background:rgba(179,0,24,.12);
     }
-    .book-title{
-      font-weight:800;
-      line-height:1.25;
-    }
+    .book-title{font-weight:800;line-height:1.25}
     .book-subtitle{
       color:var(--muted);
       font-style:italic;
@@ -161,9 +168,10 @@
     }
     .empty-note{
       color:var(--muted);
-      border:1px dashed rgba(225,29,47,.48);
+      border:1px dashed rgba(255,255,255,.18);
       border-radius:16px;
       padding:14px;
+      background:rgba(255,255,255,.02);
     }
   </style>
 </head>
@@ -179,45 +187,46 @@
       <div style="display:flex;gap:10px;flex-wrap:wrap">
         <a class="btn" href="https://cclamazonia.noblogs.org/" rel="noopener">Voltar ao blogue</a>
         <a class="btn" id="btnCatalogo" href="#" rel="noopener">Voltar ao catálogo</a>
-        <button class="btn" id="btnConta" type="button" aria-disabled="true" title="Disponível apenas quando logado(a/e).">Minha conta</button>
+        <button class="btn" id="btnConta" type="button" aria-disabled="true" title="Disponível apenas quando logado(a/e).">Painel / minha conta</button>
         <a class="btn primary" id="btnEntrar" href="#" rel="noopener">Entrar</a>
       </div>
     </div>
 
-    <div class="card">
-      <div class="detail">
-        <div class="photobox empty" id="photoBox">
-          <img class="photoimg" id="photoImg" alt="Foto do autor" />
-        </div>
+    <div class="hero">
+      <h1 id="nameLine">Carregando…</h1>
+      <p id="heroIntro">Carregando dados do autor…</p>
+      <div class="chips">
+        <div class="chip" id="yearsPill" style="display:none"></div>
+        <div class="chip" id="countryPill" style="display:none"></div>
+        <div class="chip" id="booksCountPill" style="display:none"></div>
+        <div class="chip" id="viafPill" style="display:none"></div>
+        <div class="chip" id="isniPill" style="display:none"></div>
+        <div class="chip" id="wikidataPill" style="display:none"></div>
+        <div class="chip" id="sourcePill" style="display:none"></div>
+      </div>
+    </div>
 
-        <div class="contentbox">
-          <h1 class="title" id="nameLine">Carregando…</h1>
-          <div class="subtitle" id="sortLine" style="display:none"></div>
-
-          <div class="meta" style="margin-top:12px">
-            <div class="pill" id="yearsPill" style="display:none"></div>
-            <div class="pill" id="countryPill" style="display:none"></div>
-            <div class="pill" id="booksCountPill" style="display:none"></div>
-            <div class="pill" id="viafPill" style="display:none"></div>
-            <div class="pill" id="isniPill" style="display:none"></div>
-            <div class="pill" id="wikidataPill" style="display:none"></div>
-            <div class="pill" id="sourcePill" style="display:none"></div>
+    <div class="grid">
+      <div class="card">
+        <div class="detail">
+          <div class="photobox empty" id="photoBox">
+            <img class="photoimg" id="photoImg" alt="Foto do autor" />
           </div>
 
+          <div class="contentbox">
+            <div class="mini subtle" id="sortLine" style="display:none"></div>
+            <div class="section-title" style="margin-top:0">Biografia e notas</div>
+            <div class="bio" id="bioLine">—</div>
+            <div class="status" id="status"></div>
+          </div>
         </div>
       </div>
 
-      <div class="hr"></div>
-
-      <div class="bio muted" id="bioLine">—</div>
-
-      <div class="status" id="status"></div>
-    </div>
-
-    <div class="card" style="margin-top:16px">
-      <h2 class="section-title">Livros no catálogo</h2>
-      <div id="booksList" class="books"></div>
-      <div id="booksEmpty" class="empty-note" style="display:none">Nenhum livro publicado foi encontrado para este autor.</div>
+      <div class="card">
+        <h2 class="section-title">Livros no catálogo</h2>
+        <div id="booksList" class="books"></div>
+        <div id="booksEmpty" class="empty-note" style="display:none">Nenhum livro publicado foi encontrado para este autor.</div>
+      </div>
     </div>
   </div>
 
@@ -231,6 +240,7 @@
       CADASTRO: `${GH_BASE}/blmf-conta/cadastro.html`,
       CONTA: `${GH_BASE}/blmf-conta/conta.html`,
       LIVRO: `${GH_BASE}/blmf-catalogo/livro.html`,
+      PAINEL: new URL("painel.html", `${GH_BASE}/blmf-conta/conta.html`).href,
     };
 
     document.getElementById("btnCatalogo").href = ROUTES.CATALOGO;
@@ -240,7 +250,7 @@
     const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFzcHRmbW9renlrd3psc2hzbmN3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzI1MzcxNzcsImV4cCI6MjA4ODExMzE3N30.JkMLHPCV2AH5ELZV_1RfcoW250QEofLGvnDKSDpkcn0";
 
     const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
-      auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true }
+      auth: { storage: window.sessionStorage, persistSession: true, autoRefreshToken: true, detectSessionInUrl: true }
     });
 
     const AUTHOR_BUILD = "20260313-1";
@@ -336,6 +346,18 @@
       if (!b && d) return `/ ${d}`;
       if (!b && !d) return "/";
       return "";
+    }
+
+    function buildHeroIntro(author, booksCount) {
+      const parts = [];
+      if (author?.country) parts.push(String(author.country).trim());
+      if (Number.isFinite(Number(booksCount))) {
+        const n = Number(booksCount);
+        parts.push(`${n} ${n === 1 ? "livro ligado" : "livros ligados"}`);
+      }
+      const sourceLabel = [author?.source_kind || "", author?.source_label || ""].filter(Boolean).join(" · ");
+      if (sourceLabel) parts.push(sourceLabel);
+      return parts.join(" · ") || "Página pública de autor/a do catálogo BLMF.";
     }
 
     function uniqueStrings(values) {
@@ -641,18 +663,33 @@
       const btnEntrar = $("btnEntrar");
       const { data: { session } } = await supabase.auth.getSession();
       if (session?.user?.id) {
+        let isLibrarian = false;
+        try {
+          const { data } = await supabase
+            .from("profiles")
+            .select("is_librarian")
+            .eq("id", session.user.id)
+            .maybeSingle();
+          isLibrarian = !!data?.is_librarian;
+        } catch (_) {}
+
+        const targetHref = isLibrarian ? ROUTES.PAINEL : ROUTES.CONTA;
+        btnConta.textContent = isLibrarian ? "Painel" : "Minha conta";
         btnConta.setAttribute("aria-disabled", "false");
-        btnConta.title = "Abrir minha conta";
-        btnConta.addEventListener("click", () => location.assign(ROUTES.CONTA));
+        btnConta.title = isLibrarian ? "Abrir painel" : "Abrir minha conta";
+        btnConta.onclick = () => location.assign(targetHref);
+
         btnEntrar.setAttribute("aria-disabled", "true");
         btnEntrar.classList.add("disabled");
         btnEntrar.title = "Você já está logado(a/e).";
         btnEntrar.removeAttribute("href");
         btnEntrar.addEventListener("click", (e) => e.preventDefault());
       } else {
+        btnConta.textContent = "Painel / minha conta";
         btnConta.setAttribute("aria-disabled", "true");
         btnConta.title = "Disponível apenas quando logado(a/e).";
-        btnConta.addEventListener("click", (e) => e.preventDefault());
+        btnConta.onclick = (e) => e.preventDefault();
+
         btnEntrar.setAttribute("aria-disabled", "false");
         btnEntrar.classList.remove("disabled");
         btnEntrar.title = "Entrar";
@@ -665,7 +702,8 @@
 
       if (!authorId && !authorName) {
         $("nameLine").textContent = "Autor não encontrado";
-        $("bioLine").textContent = "Faltou um id válido ou um nome de autor na URL.";
+        $("heroIntro").textContent = "Faltou um id válido ou um nome de autor na URL.";
+        $("bioLine").textContent = "Abra esta página a partir de um nome de autor clicável no catálogo.";
         setPhoto("");
         setStatus("Abra esta página a partir de um nome de autor clicável no catálogo.", "warn");
         $("booksEmpty").style.display = "";
@@ -684,7 +722,8 @@
 
       if (!author) {
         $("nameLine").textContent = "Autor não encontrado";
-        $("bioLine").textContent = "Não encontrei este autor nas vistas públicas.";
+        $("heroIntro").textContent = "Não encontrei este autor nas vistas públicas.";
+        $("bioLine").textContent = "Confira o link de origem ou volte ao catálogo para tentar de novo.";
         setPhoto("");
         setStatus("Autor não encontrado.", "warn");
         $("booksEmpty").style.display = "";
@@ -693,8 +732,14 @@
 
       const books = sortBooks(await fetchLinkedBooks(author.id, author));
 
-      $("nameLine").textContent = author.display_name || author.preferred_name || author.sort_name || "Sem nome";
-      setLine("sortLine", "");
+      const displayName = author.display_name || author.preferred_name || author.sort_name || "Sem nome";
+      const secondaryName = [author.sort_name, author.preferred_name]
+        .map(v => String(v || "").trim())
+        .find(v => v && v !== displayName) || "";
+
+      $("nameLine").textContent = displayName;
+      $("heroIntro").textContent = buildHeroIntro(author, author.books_count_resolved || books.length || author.books_count || 0);
+      setLine("sortLine", secondaryName);
       $("bioLine").textContent = String(author.biography || author.notes || "—").trim() || "—";
 
       setPill("yearsPill", "nascimento - falecimento", yearsLabel(author.birth_year, author.death_year));
