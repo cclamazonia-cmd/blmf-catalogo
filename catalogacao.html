@@ -60,40 +60,87 @@
       padding: 24px;
     }
 
+    .topbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      flex-wrap: wrap;
+      margin-bottom: 14px;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .logo {
+      height: 64px;
+      width: auto;
+      max-width: 170px;
+      object-fit: contain;
+      display: block;
+      flex-shrink: 0;
+      filter: drop-shadow(0 8px 18px rgba(0,0,0,.35));
+    }
+
+    .topbar-actions {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+
+    .btn {
+      border: 1px solid rgba(255,255,255,.10);
+      background: rgba(18,18,18,.92);
+      color: var(--text);
+      border-radius: 14px;
+      padding: 10px 12px;
+      cursor: pointer;
+      box-shadow: 0 10px 30px rgba(0,0,0,.35);
+      font-weight: 900;
+      font-size: .95rem;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      text-decoration: none;
+      line-height: 1.2;
+    }
+
+    .btn:hover,
+    .btn:focus {
+      border-color: rgba(255,255,255,.22);
+      color: var(--text);
+    }
+
+    .btn.primary {
+      border: none;
+      background: linear-gradient(135deg, var(--red-2), var(--red));
+    }
+
     .hero {
       background: linear-gradient(135deg, rgba(179,0,24,.95), rgba(90,0,12,.96));
       border: 1px solid rgba(255,255,255,.08);
       border-radius: 22px;
-      padding: 28px;
+      padding: 18px;
       box-shadow: var(--shadow);
-      margin-bottom: 22px;
-    }
-
-    .hero-topbar {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 20px;
-      flex-wrap: wrap;
+      margin-bottom: 16px;
     }
 
     .hero h1 {
-      margin: 0 0 8px;
-      font-size: clamp(1.8rem, 3vw, 3rem);
-      line-height: 1.05;
+      margin: 0 0 6px;
+      font-size: 1.5rem;
+      line-height: 1.1;
     }
 
     .hero p {
       margin: 0;
-      color: rgba(255,255,255,.95);
-      font-size: 1rem;
-      max-width: 900px;
-    }
-
-    .topbar-logo {
-      width: 150px;
-      height: auto;
-      flex: 0 0 auto;
+      color: rgba(255,255,255,.92);
+      font-size: .98rem;
+      line-height: 1.35;
+      max-width: 980px;
     }
 
     .toolbar {
@@ -1074,7 +1121,7 @@
     }
 
     @media (max-width: 980px) {
-      .topbar-logo { width: 118px; }
+      .logo { width: auto; max-width: 118px; height: 56px; }
       .grid.cols-2,
       .grid.cols-4,
       .statusbar {
@@ -1206,17 +1253,21 @@
 </head>
 <body>
   <div class="wrap">
-    <section class="hero">
-      <div class="hero-topbar">
-        <div>
-          <h1>Catalogação interna da BLMF - ANARBIB</h1>
-          <p>Biblioteca Libertária Maxwell Ferreira · CCLA · Rascunhos, lotes, capas, autores, exemplares e publicação editorial do catálogo.</p>
-          <div class="row-actions" style="margin-top:14px;">
-            <a id="manualBtn" class="button manual-link" href="./Manual_do_AnarBib.pdf" target="_blank" rel="noopener noreferrer">Manual do AnarBib</a>
-          </div>
-        </div>
-        <img src="https://cclamazonia.noblogs.org/files/2026/03/logo_detoure_BLMF.png" alt="Logotipo da Biblioteca Libertária Maxwell Ferreira" class="topbar-logo">
+    <div class="topbar">
+      <div class="brand">
+        <img class="logo" src="https://cclamazonia.noblogs.org/files/2026/03/logo_detoure_BLMF.png" alt="BLMF">
       </div>
+      <div class="topbar-actions">
+        <a class="btn" id="btnPainel" href="#">Voltar ao painel</a>
+        <a class="btn" id="btnCatalogoTop" href="#">Voltar ao catálogo</a>
+        <a class="btn" id="btnCadastroTop" href="#">Cadastro</a>
+        <a class="btn" id="btnManualTop" href="./Manual_do_AnarBib.pdf" target="_blank" rel="noopener noreferrer">Manual do AnarBib</a>
+      </div>
+    </div>
+
+    <section class="hero">
+      <h1>Catalogação interna da BLMF - ANARBIB</h1>
+      <p>Área bibliotecária da Biblioteca Libertária Maxwell Ferreira para rascunhos, lotes, capas, autores, exemplares, rótulos e publicação editorial do catálogo.</p>
     </section>
 
     <section class="toolbar">
@@ -2097,7 +2148,14 @@
       auth: { storage: window.sessionStorage, persistSession: true, autoRefreshToken: true, detectSessionInUrl: true }
     });
 
-    const LOGIN_URL = 'https://cclamazonia-cmd.github.io/blmf-conta/cadastro.html';
+    const GH_BASE = location.origin;
+    const ROUTES = {
+      PAINEL: 'https://cclamazonia-cmd.github.io/blmf-conta/painel.html',
+      CATALOGO: 'https://cclamazonia-cmd.github.io/blmf-catalogo/',
+      CADASTRO: 'https://cclamazonia-cmd.github.io/blmf-conta/cadastro.html',
+      MANUAL: `${GH_BASE}/blmf-catalogo/Manual_do_AnarBib.pdf`,
+    };
+    const LOGIN_URL = ROUTES.CADASTRO;
 
     const state = {
       session: null,
@@ -2221,6 +2279,11 @@
       applyLabelSuggestionBtn: el('applyLabelSuggestionBtn'),
 
     };
+
+    if (el('btnPainel')) el('btnPainel').href = ROUTES.PAINEL;
+    if (el('btnCatalogoTop')) el('btnCatalogoTop').href = ROUTES.CATALOGO;
+    if (el('btnCadastroTop')) el('btnCadastroTop').href = ROUTES.CADASTRO;
+    if (el('btnManualTop')) el('btnManualTop').href = ROUTES.MANUAL;
 
     function getBnUiRefs() {
       return {
