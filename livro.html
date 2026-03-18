@@ -156,8 +156,8 @@
 
     <div class="hero">
       <h1 id="title">Carregando…</h1>
-      <div class="muted" id="subtitleLine" style="display:none;margin-top:8px"></div>
       <p id="heroIntro">Carregando dados do livro…</p>
+      <div class="muted" id="subtitleLine" style="display:none;margin-top:8px"></div>
       <div class="author-inline-wrap" id="authorLine" style="margin-top:10px">—</div>
       <div class="chips">
         <div class="chip" id="heroRefChip" style="display:none"></div>
@@ -208,6 +208,7 @@
 
           <div class="actions">
             <button class="btn primary" id="btnReservar" type="button">Reservar este livro</button>
+            <button class="btn" id="btnLer" type="button" style="display:none">Ler</button>
             <button class="btn" id="btnAbrirPdf" type="button" style="display:none">Abrir PDF</button>
           </div>
 
@@ -218,7 +219,7 @@
   </div>
 
   <script type="module">
-    import { supabase } from "./js/blmf-supabase.js";
+    import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
     const GH_BASE = location.origin;
     const ROUTES = {
@@ -233,6 +234,13 @@
 
     document.getElementById("btnCatalogo").href = ROUTES.CATALOGO;
     document.getElementById("btnEntrar").href = ROUTES.CADASTRO;
+
+    const SUPABASE_URL = "https://asptfmokzykwzlshsncw.supabase.co";
+    const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFzcHRmbW9renlrd3psc2hzbmN3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzI1MzcxNzcsImV4cCI6MjA4ODExMzE3N30.JkMLHPCV2AH5ELZV_1RfcoW250QEofLGvnDKSDpkcn0";
+
+    const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+      auth: { storage: window.sessionStorage, persistSession: true, autoRefreshToken: true, detectSessionInUrl: true }
+    });
 
     const $ = (id) => document.getElementById(id);
 
@@ -838,6 +846,30 @@
       if (pdf) {
         $("btnAbrirPdf").style.display = "inline-flex";
         $("btnAbrirPdf").addEventListener("click", () => location.assign(pdf));
+      }
+
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+
+        if (session?.user?.id) {
+          const { data: readState, error: readStateError } = await supabase.rpc(
+            "fn_book_restricted_pdf_state_for_current_user",
+            { p_bib_ref: bib_ref }
+          );
+
+          const row = Array.isArray(readState) ? readState[0] : null;
+
+          if (!readStateError && row?.can_show_read_button) {
+            $("btnLer").style.display = "inline-flex";
+            $("btnLer").addEventListener("click", () => {
+              const viewerUrl = new URL("ler.html", location.href);
+              viewerUrl.searchParams.set("ref", bib_ref);
+              location.assign(viewerUrl.toString());
+            });
+          }
+        }
+      } catch (err) {
+        console.warn("BLMF livro: falha ao verificar leitura restrita", err);
       }
 
       $("btnReservar").addEventListener("click", () => reserve(bib_ref));
